@@ -20,6 +20,7 @@ import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
 import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
+import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
 
@@ -79,6 +80,12 @@ const AuthenticatedObrasObraIdRoute =
     path: '/obras/$obraId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCadastrosOcorrenciasRoute =
+  AuthenticatedCadastrosOcorrenciasRouteImport.update({
+    id: '/cadastros/ocorrencias',
+    path: '/cadastros/ocorrencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCadastrosMaoDeObraRoute =
   AuthenticatedCadastrosMaoDeObraRouteImport.update({
     id: '/cadastros/mao-de-obra',
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -129,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
+    | '/cadastros/ocorrencias'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
+    | '/cadastros/ocorrencias'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/mao-de-obra'
+    | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/obras/$obraId'
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
@@ -268,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cadastros/ocorrencias': {
+      id: '/_authenticated/cadastros/ocorrencias'
+      path: '/cadastros/ocorrencias'
+      fullPath: '/cadastros/ocorrencias'
+      preLoaderRoute: typeof AuthenticatedCadastrosOcorrenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cadastros/mao-de-obra': {
       id: '/_authenticated/cadastros/mao-de-obra'
       path: '/cadastros/mao-de-obra'
@@ -289,6 +309,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
+  AuthenticatedCadastrosOcorrenciasRoute: typeof AuthenticatedCadastrosOcorrenciasRoute
   AuthenticatedObrasObraIdRoute: typeof AuthenticatedObrasObraIdRoute
   AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
   AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
@@ -302,6 +323,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCadastrosEquipamentosRoute:
     AuthenticatedCadastrosEquipamentosRoute,
   AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,
+  AuthenticatedCadastrosOcorrenciasRoute:
+    AuthenticatedCadastrosOcorrenciasRoute,
   AuthenticatedObrasObraIdRoute: AuthenticatedObrasObraIdRoute,
   AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
   AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
