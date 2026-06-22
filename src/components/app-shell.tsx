@@ -56,10 +56,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
       {/* Header azul */}
-      <header className="bg-brand text-brand-foreground border-b border-brand">
-        <div className="px-6 h-14 flex items-center gap-6">
+      <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
+        <div className="px-4 md:px-6 h-14 flex items-center gap-4 md:gap-6">
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="h-7 w-7 rounded-md bg-brand-foreground/15 grid place-items-center">
               <Building2 className="h-4 w-4" />
@@ -67,7 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="font-serif text-lg leading-none">Diário de Obra</span>
           </Link>
 
-          <nav className="flex items-center gap-1 ml-4">
+          {/* Top nav: somente desktop */}
+          <nav className="hidden md:flex items-center gap-1 ml-4">
             {mainNav.map((item) => {
               const active = item.match
                 ? pathname.startsWith(item.match)
@@ -114,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Conteúdo: sidebar só em /cadastros */}
+      {/* Conteúdo: sidebar só em /cadastros no desktop */}
       <div className="flex-1 flex">
         {isCadastros && (
           <aside className="w-60 border-r border-border bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
@@ -143,8 +144,33 @@ export function AppShell({ children }: { children: ReactNode }) {
           </aside>
         )}
 
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
       </div>
+
+      {/* Bottom tab bar — mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
+        <ul className="grid grid-cols-5">
+          {mainNav.map((item) => {
+            const active = item.match
+              ? pathname.startsWith(item.match)
+              : pathname === item.to || pathname.startsWith(item.to + "/");
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to as any}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px]",
+                    active ? "text-brand" : "text-muted-foreground",
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="leading-none">{item.label.split(" ")[0]}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </div>
   );
 }
