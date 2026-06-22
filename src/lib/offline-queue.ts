@@ -63,18 +63,32 @@ export async function removeQueued(local_id: string) {
   await db.delete(STORE, local_id);
 }
 
+export interface FlushProgress { index: number; total: number; current: QueuedRdo; }
+
 /** Roda a fila pendente; chama `sender` para cada item; mantém na fila se falhar. */
-export async function flushQueue(sender: (payload: any) => Promise<{ id: string }>) {
-  if (!navigator.onLine) return;
-  const items = await listQueued();
-  for (const it of items) {
-    if (it.status === "sincronizado") continue;
+export async function flushQueue(
+  sender: (payload: any) => Promise<{ id: string }>,
+  onProgress?: (p: FlushProgress) => void,
+): Promise<{ ok: number; fail: number }> {
+  if (!navigator.onLine) return { ok: 0, fail: 0 };
+  const items = (await listQueued()).filter((i) => i.status !== "sincronizado");
+  let ok = 0, fail = 0;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    onProgress?.({ index: i + 1, total: items.length, current: it });
     await markQueued(it.local_id, { status: "enviando", error: undefined });
     try {
       const res = await sender(it.payload);
       await markQueued(it.local_id, { status: "sincronizado", remote_id: res.id });
+      ok++;
     } catch (e: any) {
       await markQueued(it.local_id, { status: "erro", error: e?.message ?? "Falha" });
+      fail++;
     }
   }
+  return { ok, fail };
+}
+
+export async function retryQueued(local_id: string) {
+  await markQueued(local_id, { status: "pendente", error: undefined });
 }
