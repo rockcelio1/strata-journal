@@ -11,6 +11,7 @@ import {
   HardHat,
   Truck,
   AlertTriangle,
+  Images,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,6 +27,7 @@ const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> =
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
   { to: "/rdo", label: "Diário (RDO)", icon: FileText },
+  { to: "/galeria", label: "Galeria", icon: Images },
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
 ];
@@ -149,7 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom tab bar — mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           {mainNav.map((item) => {
             const active = item.match
               ? pathname.startsWith(item.match)

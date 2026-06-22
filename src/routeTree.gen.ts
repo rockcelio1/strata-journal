@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticated/galeria'
 import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
@@ -43,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedGaleriaRoute = AuthenticatedGaleriaRouteImport.update({
+  id: '/galeria',
+  path: '/galeria',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEmpresaRoute = AuthenticatedEmpresaRouteImport.update({
   id: '/empresa',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
+  '/galeria': typeof AuthenticatedGaleriaRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
+  '/galeria': typeof AuthenticatedGaleriaRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
+  '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard'
     | '/empresa'
+    | '/galeria'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/dashboard'
     | '/empresa'
+    | '/galeria'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa'
+    | '/_authenticated/galeria'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
@@ -243,6 +255,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/galeria': {
+      id: '/_authenticated/galeria'
+      path: '/galeria'
+      fullPath: '/galeria'
+      preLoaderRoute: typeof AuthenticatedGaleriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/empresa': {
       id: '/_authenticated/empresa'
@@ -327,6 +346,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
+  AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
   AuthenticatedCadastrosOcorrenciasRoute: typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -341,6 +361,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
+  AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
   AuthenticatedCadastrosEquipamentosRoute:
     AuthenticatedCadastrosEquipamentosRoute,
   AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,

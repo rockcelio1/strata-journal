@@ -273,6 +273,7 @@ export type Database = {
           created_at: string
           empresa_id: string
           id: string
+          legenda: string | null
           mime_type: string | null
           nome: string
           rdo_id: string
@@ -284,6 +285,7 @@ export type Database = {
           created_at?: string
           empresa_id: string
           id?: string
+          legenda?: string | null
           mime_type?: string | null
           nome: string
           rdo_id: string
@@ -295,6 +297,7 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           id?: string
+          legenda?: string | null
           mime_type?: string | null
           nome?: string
           rdo_id?: string
