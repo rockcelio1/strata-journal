@@ -24,6 +24,33 @@ function EmpresaPage() {
   const { data: membros = [] } = useQuery({ queryKey: ["membros"], queryFn: () => memFn() });
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [consultando, setConsultando] = useState(false);
+
+  const formatCnpj = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 14);
+    return d
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  };
+
+  const consultarCnpj = async () => {
+    const digits = cnpj.replace(/\D/g, "");
+    if (digits.length !== 14) { toast.error("Informe um CNPJ com 14 dígitos"); return; }
+    setConsultando(true);
+    try {
+      const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!r.ok) throw new Error("CNPJ não encontrado");
+      const d = await r.json();
+      setNome(d.razao_social || d.nome_fantasia || nome);
+      toast.success(`Encontrado: ${d.razao_social ?? d.nome_fantasia}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao consultar CNPJ");
+    } finally {
+      setConsultando(false);
+    }
+  };
 
   useEffect(() => {
     if (me?.empresa) { setNome(me.empresa.nome ?? ""); setCnpj(me.empresa.cnpj ?? ""); }
