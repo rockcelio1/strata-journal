@@ -11,6 +11,7 @@ import {
   HardHat,
   Truck,
   AlertTriangle,
+  Images,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,6 +27,7 @@ const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> =
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
   { to: "/rdo", label: "Diário (RDO)", icon: FileText },
+  { to: "/galeria", label: "Galeria", icon: Images },
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
 ];
