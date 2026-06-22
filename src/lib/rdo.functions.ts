@@ -151,11 +151,15 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
       .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
     if (error) throw error;
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
+      if (a.storage_provider === "onedrive") {
+        return { ...a, url: a.onedrive_download_url ?? a.onedrive_web_url ?? null };
+      }
       const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
       return { ...a, url: signed.data?.signedUrl ?? null };
     }));
     return withUrls;
   });
+
 
 export const registrarAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
