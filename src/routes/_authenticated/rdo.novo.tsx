@@ -14,9 +14,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck,
+} from "@phosphor-icons/react";
+import { compressImage } from "@/lib/image-compress";
+import { fetchPosicao, fetchClima, classificaClima, type ClimaSnapshot } from "@/lib/weather";
+import { sha256OfJson } from "@/lib/hash";
+import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
@@ -72,32 +78,102 @@ function NovoRdoPage() {
     ocorrencias: [] as any[],
   });
   const [fotos, setFotos] = useState<File[]>([]);
-  const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
+  const [legendas, setLegendas] = useState<string[]>([]);
+  const [compressing, setCompressing] = useState(false);
+  const [climaInfo, setClimaInfo] = useState<ClimaSnapshot | null>(null);
+  const [climaLoading, setClimaLoading] = useState(false);
 
-  async function uploadAttachments(rdoId: string, empresaId: string) {
-    const all: { file: Blob; name: string; mime: string }[] = [
-      ...fotos.map((f) => ({ file: f, name: f.name, mime: f.type || "image/jpeg" })),
-    ];
+  const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
+  const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
+  useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
+
+  async function importarClima() {
+    setClimaLoading(true);
+    try {
+      const pos = await fetchPosicao();
+      const snap = await fetchClima(pos.latitude, pos.longitude);
+      setClimaInfo(snap);
+      const turno = new Date().getHours();
+      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
+      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
+    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
+    finally { setClimaLoading(false); }
+  }
+
+  async function onAddFotos(files: FileList) {
+    setCompressing(true);
+    try {
+      const out: File[] = [];
+      for (const f of Array.from(files)) out.push(await compressImage(f, { maxBytes: 5 * 1024 * 1024 }));
+      setFotos((p) => [...p, ...out]);
+      setLegendas((p) => [...p, ...out.map(() => "")]);
+    } catch (e: any) { toast.error(e.message ?? "Falha ao processar imagem"); }
+    finally { setCompressing(false); }
+  }
+
+  async function uploadAttachments(rdoId: string, empresaId: string, sigManifest: any | null) {
+    const all: { file: Blob; name: string; mime: string; legenda?: string }[] = fotos.map((f, i) => ({
+      file: f, name: f.name, mime: f.type || "image/jpeg", legenda: legendas[i] || undefined,
+    }));
     if (assinaturaBlob) all.push({ file: assinaturaBlob, name: "assinatura.png", mime: "image/png" });
+    if (sigManifest) {
+      const json = new Blob([JSON.stringify(sigManifest, null, 2)], { type: "application/json" });
+      all.push({ file: json, name: "assinatura.json", mime: "application/json" });
+    }
     for (const a of all) {
       const safe = a.name.replace(/[^\w.\-]+/g, "_");
       const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
       const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
       if (up.error) throw up.error;
-      await registrarFn({ data: { rdo_id: rdoId, nome: a.name, storage_path: path, mime_type: a.mime, tamanho_bytes: (a.file as any).size ?? 0 } });
+      await registrarFn({ data: {
+        rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+        storage_path: path, mime_type: a.mime, tamanho_bytes: (a.file as any).size ?? 0,
+      }});
     }
+  }
+
+  async function buildSignatureManifest(payload: any): Promise<any | null> {
+    if (!assinaturaBlob || !signer.nome || !signer.cargo) return null;
+    let geo: { latitude: number; longitude: number } | null = null;
+    try { geo = await fetchPosicao(); } catch {/* opcional */}
+    const hash = await sha256OfJson(payload);
+    return {
+      nome: signer.nome, cargo: signer.cargo,
+      assinado_em: new Date().toISOString(),
+      hash_sha256: hash,
+      geolocalizacao: geo,
+      user_agent: navigator.userAgent,
+    };
   }
 
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
-      const rdo: any = await createFn({ data: { ...form, enviar } });
-      if ((fotos.length || assinaturaBlob) && me?.profile?.empresa_id) {
-        try { await uploadAttachments(rdo.id, me.profile.empresa_id); }
-        catch (e: any) { toast.error("Anexos: " + (e.message ?? "falha")); }
+      const payload = { ...form, enviar };
+      const sigManifest = await buildSignatureManifest(payload);
+      const queued = await enqueueRdo({ ...payload, _assinatura: sigManifest });
+
+      if (!navigator.onLine) {
+        toast.info("Salvo offline. Será sincronizado quando voltar a conexão.");
+        return { offline: true as const, local_id: queued.local_id };
       }
-      return rdo;
+      try {
+        const rdo: any = await createFn({ data: payload });
+        if ((fotos.length || assinaturaBlob) && me?.profile?.empresa_id) {
+          try { await uploadAttachments(rdo.id, me.profile.empresa_id, sigManifest); }
+          catch (e: any) { toast.error("Anexos: " + (e.message ?? "falha")); }
+        }
+        await markQueued(queued.local_id, { status: "sincronizado", remote_id: rdo.id });
+        return { offline: false as const, rdo };
+      } catch (e: any) {
+        await markQueued(queued.local_id, { status: "erro", error: e?.message });
+        throw e;
+      }
     },
-    onSuccess: (rdo: any) => { toast.success("RDO criado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: rdo.id } }); },
+    onSuccess: (r: any) => {
+      if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
+      else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -113,12 +189,11 @@ function NovoRdoPage() {
   return (
     <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-3">
-        <ArrowLeft className="h-3 w-3" /> RDOs
+        <ArrowLeft size={14} /> RDOs
       </Link>
       <h1 className="font-serif text-2xl md:text-3xl mb-1">Novo RDO</h1>
       <p className="text-xs text-muted-foreground mb-4">Etapa {stepIdx + 1} de {steps.length} · {steps[stepIdx].label}</p>
 
-      {/* Stepper */}
       <div className="flex gap-1.5 mb-5">
         {steps.map((s, i) => (
           <div key={s.key} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-brand" : "bg-muted")} />
@@ -149,18 +224,32 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 1 && (
-          <Card className="p-5 grid grid-cols-1 gap-3">
-            {(["manha", "tarde", "noite"] as const).map((p) => (
-              <div key={p}>
-                <Label className="capitalize">Clima {p}</Label>
-                <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          <Card className="p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-serif text-lg">Clima do dia</h3>
+              <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
+                <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Obter agora"}
+              </Button>
+            </div>
+            {climaInfo && (
+              <div className="text-xs text-muted-foreground border border-border rounded-md p-2 bg-muted/30">
+                {climaInfo.descricao} · {climaInfo.temperatura_c}°C · vento {climaInfo.vento_kmh} km/h · chuva {climaInfo.precipitacao_mm} mm
+                <span className="block">📍 {climaInfo.latitude.toFixed(4)}, {climaInfo.longitude.toFixed(4)}</span>
               </div>
-            ))}
+            )}
+            <div className="grid grid-cols-1 gap-3">
+              {(["manha", "tarde", "noite"] as const).map((p) => (
+                <div key={p}>
+                  <Label className="capitalize">Clima {p}</Label>
+                  <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
 
@@ -247,48 +336,66 @@ function NovoRdoPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
                 <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                  <Camera className="h-4 w-4" /> Tirar foto
+                  <Camera size={16} /> {compressing ? "Comprimindo…" : "Tirar foto"}
                   <input
                     type="file" accept="image/*" capture="environment" multiple className="sr-only"
-                    onChange={(e) => { if (e.target.files) setFotos((p) => [...p, ...Array.from(e.target.files!)]); e.target.value = ""; }}
+                    onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
                   />
                 </label>
               </div>
               {fotos.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada.</p>
+                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. Imagens são comprimidas até ~5MB antes do envio.</p>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {fotos.map((f, i) => (
-                    <div key={i} className="relative group aspect-square overflow-hidden rounded-md border border-border">
-                      <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
-                      <button onClick={() => setFotos((p) => p.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                        <X className="h-3 w-3" />
-                      </button>
+                    <div key={i} className="space-y-1.5">
+                      <div className="relative aspect-square overflow-hidden rounded-md border border-border">
+                        <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
+                        <button onClick={() => { setFotos((p) => p.filter((_, j) => j !== i)); setLegendas((p) => p.filter((_, j) => j !== i)); }} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
+                          <X size={12} />
+                        </button>
+                      </div>
+                      <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
+                      <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
                     </div>
                   ))}
                 </div>
               )}
             </Card>
 
-            <SignaturePad onChange={setAssinaturaBlob} hasSignature={!!assinaturaBlob} />
+            <Card className="p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-lg">Assinatura digital</h3>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <ShieldCheck size={14} /> SHA-256 + geolocalização
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Nome</Label><Input value={signer.nome} onChange={(e) => setSigner({ ...signer, nome: e.target.value })} /></div>
+                <div><Label className="text-xs">Cargo</Label><Input value={signer.cargo} onChange={(e) => setSigner({ ...signer, cargo: e.target.value })} placeholder="Engenheiro, Mestre…" /></div>
+              </div>
+              <SignaturePad onChange={setAssinaturaBlob} />
+              <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                <MapPin size={12} /> Ao enviar, capturamos data/hora, IP do dispositivo e localização (se permitido) e gravamos o hash do relatório como prova de integridade.
+              </p>
+            </Card>
           </>
         )}
       </div>
 
-      {/* Footer ações */}
       <div className="sticky bottom-16 md:bottom-0 mt-6 -mx-4 md:mx-0 bg-background/95 backdrop-blur border-t border-border md:border-0 px-4 py-3 flex justify-between gap-2">
         <Button variant="ghost" disabled={stepIdx === 0} onClick={() => setStepIdx((s) => Math.max(0, s - 1))}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+          <ArrowLeft size={16} className="mr-1" /> Voltar
         </Button>
         {!isLast ? (
           <Button disabled={!canNext} onClick={() => setStepIdx((s) => Math.min(steps.length - 1, s + 1))} className="bg-brand text-brand-foreground">
-            Próximo <ArrowRight className="h-4 w-4 ml-1" />
+            Próximo <ArrowRight size={16} className="ml-1" />
           </Button>
         ) : (
           <div className="flex gap-2">
             <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
             <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(true)}>
-              <Check className="h-4 w-4 mr-1" /> Enviar
+              <Check size={16} className="mr-1" /> Enviar
             </Button>
           </div>
         )}
@@ -302,7 +409,7 @@ function Section({ title, children, onAdd }: { title: string; children: React.Re
     <Card className="p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-serif text-lg">{title}</h3>
-        <Button size="sm" variant="outline" onClick={onAdd}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>
+        <Button size="sm" variant="outline" onClick={onAdd}><Plus size={12} className="mr-1" />Adicionar</Button>
       </div>
       <div className="space-y-3">{children}</div>
     </Card>
@@ -310,10 +417,10 @@ function Section({ title, children, onAdd }: { title: string; children: React.Re
 }
 
 function RmBtn({ onClick }: { onClick: () => void }) {
-  return <Button size="sm" variant="ghost" className="text-destructive" onClick={onClick}><X className="h-4 w-4 mr-1" /> Remover</Button>;
+  return <Button size="sm" variant="ghost" className="text-destructive" onClick={onClick}><X size={16} className="mr-1" /> Remover</Button>;
 }
 
-function SignaturePad({ onChange, hasSignature }: { onChange: (b: Blob | null) => void; hasSignature: boolean }) {
+function SignaturePad({ onChange }: { onChange: (b: Blob | null) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const dirty = useRef(false);
@@ -326,9 +433,7 @@ function SignaturePad({ onChange, hasSignature }: { onChange: (b: Blob | null) =
     c.height = rect.height * ratio;
     const ctx = c.getContext("2d")!;
     ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#1f2937";
+    ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.strokeStyle = "#111111";
   }, []);
 
   function pos(e: React.PointerEvent) {
@@ -357,15 +462,13 @@ function SignaturePad({ onChange, hasSignature }: { onChange: (b: Blob | null) =
   function clear() {
     const c = canvasRef.current!;
     c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
-    dirty.current = false;
-    onChange(null);
+    dirty.current = false; onChange(null);
   }
 
   return (
-    <Card className="p-5 space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className="font-serif text-lg">Assinatura do responsável</h3>
-        <Button size="sm" variant="ghost" onClick={clear}><Eraser className="h-4 w-4 mr-1" /> Limpar</Button>
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="ghost" onClick={clear}><Eraser size={14} className="mr-1" /> Limpar</Button>
       </div>
       <div className="rounded-md border border-dashed border-border bg-muted/30">
         <canvas
@@ -374,7 +477,6 @@ function SignaturePad({ onChange, hasSignature }: { onChange: (b: Blob | null) =
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
         />
       </div>
-      <p className="text-xs text-muted-foreground">{hasSignature ? "Assinatura capturada." : "Assine no campo acima."}</p>
-    </Card>
+    </div>
   );
 }

@@ -2,6 +2,10 @@
 @source "../src";
 @import "tw-animate-css";
 
+@import "@fontsource-variable/geist/index.css";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -51,8 +55,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Geist Variable", "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Fraunces", ui-serif, Georgia, serif;
 }
 
 :root {
