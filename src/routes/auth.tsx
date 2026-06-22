@@ -72,7 +72,7 @@ function AuthPage() {
           <span className="font-serif text-xl">Diário de Obra</span>
         </div>
         <div className="max-w-md">
-          <h1 className="font-serif text-4xl leading-tight">Gestão de canteiros, sem ruído.</h1>
+          <h1 className="font-serif text-4xl leading-tight">Gestão de canteiros.</h1>
           <p className="mt-4 text-brand-foreground/75 text-sm leading-relaxed">
             Centralize obras, equipes, equipamentos e RDOs com fluxo de aprovação. Cada empresa em seu próprio espaço seguro.
           </p>

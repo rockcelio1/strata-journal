@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Loader2, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa")({
   component: EmpresaPage,
@@ -23,6 +24,33 @@ function EmpresaPage() {
   const { data: membros = [] } = useQuery({ queryKey: ["membros"], queryFn: () => memFn() });
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
+  const [consultando, setConsultando] = useState(false);
+
+  const formatCnpj = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 14);
+    return d
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  };
+
+  const consultarCnpj = async () => {
+    const digits = cnpj.replace(/\D/g, "");
+    if (digits.length !== 14) { toast.error("Informe um CNPJ com 14 dígitos"); return; }
+    setConsultando(true);
+    try {
+      const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!r.ok) throw new Error("CNPJ não encontrado");
+      const d = await r.json();
+      setNome(d.razao_social || d.nome_fantasia || nome);
+      toast.success(`Encontrado: ${d.razao_social ?? d.nome_fantasia}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao consultar CNPJ");
+    } finally {
+      setConsultando(false);
+    }
+  };
 
   useEffect(() => {
     if (me?.empresa) { setNome(me.empresa.nome ?? ""); setCnpj(me.empresa.cnpj ?? ""); }
@@ -52,7 +80,12 @@ function EmpresaPage() {
           </div>
           <div>
             <Label>CNPJ</Label>
-            <Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} disabled={!isAdmin} />
+            <div className="flex gap-2">
+              <Input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} disabled={!isAdmin} placeholder="00.000.000/0000-00" />
+              <Button type="button" variant="outline" onClick={consultarCnpj} disabled={consultando || !isAdmin} title="Consultar CNPJ online">
+                {consultando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </div>
         {isAdmin && (
