@@ -20,6 +20,7 @@ import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
 import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
+import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -77,12 +78,19 @@ const AuthenticatedObrasObraIdRoute =
     path: '/obras/$obraId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCadastrosMaoDeObraRoute =
+  AuthenticatedCadastrosMaoDeObraRouteImport.update({
+    id: '/cadastros/mao-de-obra',
+    path: '/cadastros/mao-de-obra',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/dashboard'
+    | '/cadastros/mao-de-obra'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/dashboard'
+    | '/cadastros/mao-de-obra'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/dashboard'
+    | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/obras/$obraId'
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
@@ -242,11 +255,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cadastros/mao-de-obra': {
+      id: '/_authenticated/cadastros/mao-de-obra'
+      path: '/cadastros/mao-de-obra'
+      fullPath: '/cadastros/mao-de-obra'
+      preLoaderRoute: typeof AuthenticatedCadastrosMaoDeObraRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
   AuthenticatedObrasObraIdRoute: typeof AuthenticatedObrasObraIdRoute
   AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
   AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
@@ -257,6 +278,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,
   AuthenticatedObrasObraIdRoute: AuthenticatedObrasObraIdRoute,
   AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
   AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
