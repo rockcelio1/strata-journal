@@ -126,3 +126,73 @@ export const deleteRdo = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// ============== AUDIT LOGS ==============
+export const listRdoLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from("rdo_audit_logs")
+      .select("*, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome)")
+      .eq("rdo_id", data.rdo_id)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return rows;
+  });
+
+// ============== ANEXOS ==============
+export const listRdoAnexos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
+    if (error) throw error;
+    const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
+      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+      return { ...a, url: signed.data?.signedUrl ?? null };
+    }));
+    return withUrls;
+  });
+
+export const registrarAnexo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string; nome: string; storage_path: string; mime_type?: string; tamanho_bytes?: number }) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      nome: z.string().min(1),
+      storage_path: z.string().min(1),
+      mime_type: z.string().optional(),
+      tamanho_bytes: z.number().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const { error, data: created } = await context.supabase.from("rdo_anexos").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: me.data.empresa_id,
+      autor_id: context.userId,
+      nome: data.nome,
+      storage_path: data.storage_path,
+      mime_type: data.mime_type ?? null,
+      tamanho_bytes: data.tamanho_bytes ?? null,
+    }).select().single();
+    if (error) throw error;
+    return created;
+  });
+
+export const removerAnexo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const row = await context.supabase.from("rdo_anexos").select("storage_path").eq("id", data.id).maybeSingle();
+    if (row.data?.storage_path) {
+      await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
+    }
+    const { error } = await context.supabase.from("rdo_anexos").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
