@@ -85,7 +85,7 @@ function NovoRdoPage() {
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
-  useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile.nome })); }, [me]);
+  useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
 
   async function importarClima() {
     setClimaLoading(true);
