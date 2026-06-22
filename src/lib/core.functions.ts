@@ -158,7 +158,7 @@ export const seedDemoFacom = createServerFn({ method: "POST" })
     const obras = [
       { empresa_id: eid, nome: "Residencial Aurora", endereco: "Av. das Palmeiras, 1200", status: "em_andamento", avanco_pct: 42 },
       { empresa_id: eid, nome: "Edifício Comercial Norte", endereco: "Rua Industrial, 87", status: "em_andamento", avanco_pct: 18 },
-      { empresa_id: eid, nome: "Galpão Logístico Sul", endereco: "Rod. BR-101, km 312", status: "planejada", avanco_pct: 0 },
+      { empresa_id: eid, nome: "Galpão Logístico Sul", endereco: "Rod. BR-101, km 312", status: "planejamento", avanco_pct: 0 },
     ];
     await supabase.from("obras").insert(obras as any);
 
