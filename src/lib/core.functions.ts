@@ -141,3 +141,47 @@ export const removerMembro = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// ============== SEED DEMO FACOM (apenas admin) ==============
+export const seedDemoFacom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const isAdmin = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin.data) throw new Error("Somente administradores");
+    const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const eid = me.data.empresa_id;
+
+    await supabase.from("empresas").update({ nome: "FACOM Construções" }).eq("id", eid);
+
+    const obras = [
+      { empresa_id: eid, nome: "Residencial Aurora", endereco: "Av. das Palmeiras, 1200", status: "em_andamento", avanco_pct: 42 },
+      { empresa_id: eid, nome: "Edifício Comercial Norte", endereco: "Rua Industrial, 87", status: "em_andamento", avanco_pct: 18 },
+      { empresa_id: eid, nome: "Galpão Logístico Sul", endereco: "Rod. BR-101, km 312", status: "planejada", avanco_pct: 0 },
+    ];
+    await supabase.from("obras").insert(obras as any);
+
+    const mao = [
+      { empresa_id: eid, nome: "João Pereira", funcao: "Mestre de obras" },
+      { empresa_id: eid, nome: "Maria Santos", funcao: "Pedreira" },
+      { empresa_id: eid, nome: "Carlos Lima", funcao: "Eletricista" },
+      { empresa_id: eid, nome: "Ana Souza", funcao: "Engenheira civil" },
+    ];
+    const equip = [
+      { empresa_id: eid, nome: "Betoneira 400L", tipo: "Equipamento" },
+      { empresa_id: eid, nome: "Andaime tubular", tipo: "Estrutura" },
+      { empresa_id: eid, nome: "Compressor 10HP", tipo: "Equipamento" },
+    ];
+    const tipos = [
+      { empresa_id: eid, nome: "Atraso por chuva", severidade: "media" },
+      { empresa_id: eid, nome: "Falta de material", severidade: "alta" },
+      { empresa_id: eid, nome: "Acidente leve", severidade: "alta" },
+    ];
+    await Promise.all([
+      supabase.from("mao_de_obra").insert(mao as any),
+      supabase.from("equipamentos").insert(equip as any),
+      supabase.from("tipos_ocorrencia").insert(tipos as any),
+    ]);
+    return { ok: true };
+  });
