@@ -22,13 +22,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const mainNav = [
+const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
   { to: "/rdo", label: "Diário (RDO)", icon: FileText },
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
-] as const;
+];
 
 const cadastrosNav = [
   { to: "/cadastros/mao-de-obra", label: "Mão de obra", icon: HardHat },
