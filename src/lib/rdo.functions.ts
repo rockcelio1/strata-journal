@@ -225,7 +225,7 @@ export const listGaleria = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     let q = context.supabase
       .from("rdo_anexos")
-      .select("id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .select("id, nome, legenda, storage_path, storage_provider, onedrive_web_url, onedrive_download_url, thumbnail_url, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.rdo_id) q = q.eq("rdo_id", data.rdo_id);
@@ -243,8 +243,15 @@ export const listGaleria = createServerFn({ method: "GET" })
     };
     const filtered = (rows ?? []).filter((r: any) => !data.tipo || tipoDe(r.mime_type) === data.tipo);
     const withUrls = await Promise.all(filtered.map(async (a: any) => {
-      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
-      return { ...a, tipo: tipoDe(a.mime_type), url: signed.data?.signedUrl ?? null };
+      let url: string | null = null;
+      if (a.storage_provider === "onedrive") {
+        url = a.onedrive_download_url ?? a.onedrive_web_url ?? null;
+      } else {
+        const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+        url = signed.data?.signedUrl ?? null;
+      }
+      return { ...a, tipo: tipoDe(a.mime_type), url };
     }));
     return withUrls;
   });
+
