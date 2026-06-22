@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom tab bar — mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           {mainNav.map((item) => {
             const active = item.match
               ? pathname.startsWith(item.match)
