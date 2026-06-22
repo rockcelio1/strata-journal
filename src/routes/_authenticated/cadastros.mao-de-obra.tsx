@@ -46,11 +46,11 @@ function MaoDeObraPage() {
         onDelete={(r: any) => del.mutate(r.id)}
       />
       <CrudDialog open={open} onOpenChange={setOpen} title={form.id ? "Editar" : "Nova mão de obra"} onSave={() => save.mutate()} saving={save.isPending} canSave={!!form.nome && !!form.funcao}>
-        <FieldText label="Nome" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} />
-        <FieldText label="Função" value={form.funcao} onChange={(v) => setForm({ ...form, funcao: v })} />
-        <FieldText label="Empresa terceira" value={form.empresa_terceira} onChange={(v) => setForm({ ...form, empresa_terceira: v })} />
-        <FieldText label="Contato" value={form.contato} onChange={(v) => setForm({ ...form, contato: v })} />
-        <FieldSwitch label="Ativo" value={form.ativo} onChange={(v) => setForm({ ...form, ativo: v })} />
+        <FieldText label="Nome" value={form.nome} onChange={(v: string) => setForm({ ...form, nome: v })} />
+        <FieldText label="Função" value={form.funcao} onChange={(v: string) => setForm({ ...form, funcao: v })} />
+        <FieldText label="Empresa terceira" value={form.empresa_terceira} onChange={(v: string) => setForm({ ...form, empresa_terceira: v })} />
+        <FieldText label="Contato" value={form.contato} onChange={(v: string) => setForm({ ...form, contato: v })} />
+        <FieldSwitch label="Ativo" value={form.ativo} onChange={(v: boolean) => setForm({ ...form, ativo: v })} />
       </CrudDialog>
     </CadastroLayout>
   );
