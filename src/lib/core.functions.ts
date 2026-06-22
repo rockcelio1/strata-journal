@@ -37,10 +37,24 @@ export const listMembros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { data, error } = await supabase.from("profiles").select("id, nome, email, cargo, user_roles(role)");
-    if (error) throw error;
-    return data;
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("id, nome, email, cargo"),
+      supabase.from("user_roles").select("user_id, role"),
+    ]);
+    if (profilesRes.error) throw profilesRes.error;
+    if (rolesRes.error) throw rolesRes.error;
+    const rolesByUser = new Map<string, string[]>();
+    for (const r of rolesRes.data ?? []) {
+      const arr = rolesByUser.get(r.user_id) ?? [];
+      arr.push(r.role);
+      rolesByUser.set(r.user_id, arr);
+    }
+    return (profilesRes.data ?? []).map((p) => ({
+      ...p,
+      user_roles: (rolesByUser.get(p.id) ?? []).map((role) => ({ role })),
+    }));
   });
+
 
 // ============== DASHBOARD ==============
 export const getDashboard = createServerFn({ method: "GET" })

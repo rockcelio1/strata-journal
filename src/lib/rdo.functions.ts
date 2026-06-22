@@ -151,11 +151,15 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
       .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
     if (error) throw error;
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
+      if (a.storage_provider === "onedrive") {
+        return { ...a, url: a.onedrive_download_url ?? a.onedrive_web_url ?? null };
+      }
       const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
       return { ...a, url: signed.data?.signedUrl ?? null };
     }));
     return withUrls;
   });
+
 
 export const registrarAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -188,14 +192,24 @@ export const removerAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const row = await context.supabase.from("rdo_anexos").select("storage_path").eq("id", data.id).maybeSingle();
-    if (row.data?.storage_path) {
+    const row = await context.supabase.from("rdo_anexos").select("storage_path, storage_provider, onedrive_item_id").eq("id", data.id).maybeSingle();
+    if (row.data?.storage_provider === "supabase" && row.data?.storage_path) {
       await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
+    } else if (row.data?.storage_provider === "onedrive" && row.data?.onedrive_item_id) {
+      const apiKey = process.env.LOVABLE_API_KEY;
+      const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
+      if (apiKey && connKey) {
+        await fetch(`https://connector-gateway.lovable.dev/microsoft_onedrive/v1.0/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
+        }).catch(() => {});
+      }
     }
     const { error } = await context.supabase.from("rdo_anexos").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
+
 
 // ============== GALERIA (mídias da empresa, com filtros) ==============
 export const listGaleria = createServerFn({ method: "GET" })
@@ -211,7 +225,7 @@ export const listGaleria = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     let q = context.supabase
       .from("rdo_anexos")
-      .select("id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .select("id, nome, legenda, storage_path, storage_provider, onedrive_web_url, onedrive_download_url, thumbnail_url, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.rdo_id) q = q.eq("rdo_id", data.rdo_id);
@@ -229,8 +243,15 @@ export const listGaleria = createServerFn({ method: "GET" })
     };
     const filtered = (rows ?? []).filter((r: any) => !data.tipo || tipoDe(r.mime_type) === data.tipo);
     const withUrls = await Promise.all(filtered.map(async (a: any) => {
-      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
-      return { ...a, tipo: tipoDe(a.mime_type), url: signed.data?.signedUrl ?? null };
+      let url: string | null = null;
+      if (a.storage_provider === "onedrive") {
+        url = a.onedrive_download_url ?? a.onedrive_web_url ?? null;
+      } else {
+        const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+        url = signed.data?.signedUrl ?? null;
+      }
+      return { ...a, tipo: tipoDe(a.mime_type), url };
     }));
     return withUrls;
   });
+

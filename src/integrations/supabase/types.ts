@@ -276,9 +276,14 @@ export type Database = {
           legenda: string | null
           mime_type: string | null
           nome: string
+          onedrive_download_url: string | null
+          onedrive_item_id: string | null
+          onedrive_web_url: string | null
           rdo_id: string
           storage_path: string
+          storage_provider: string
           tamanho_bytes: number | null
+          thumbnail_url: string | null
         }
         Insert: {
           autor_id?: string | null
@@ -288,9 +293,14 @@ export type Database = {
           legenda?: string | null
           mime_type?: string | null
           nome: string
+          onedrive_download_url?: string | null
+          onedrive_item_id?: string | null
+          onedrive_web_url?: string | null
           rdo_id: string
           storage_path: string
+          storage_provider?: string
           tamanho_bytes?: number | null
+          thumbnail_url?: string | null
         }
         Update: {
           autor_id?: string | null
@@ -300,9 +310,14 @@ export type Database = {
           legenda?: string | null
           mime_type?: string | null
           nome?: string
+          onedrive_download_url?: string | null
+          onedrive_item_id?: string | null
+          onedrive_web_url?: string | null
           rdo_id?: string
           storage_path?: string
+          storage_provider?: string
           tamanho_bytes?: number | null
+          thumbnail_url?: string | null
         }
         Relationships: [
           {
