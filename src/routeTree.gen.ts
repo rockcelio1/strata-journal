@@ -9,38 +9,234 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
+import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
+import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
+import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
+import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
+import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
+import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
+import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
+import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedEmpresaRoute = AuthenticatedEmpresaRouteImport.update({
+  id: '/empresa',
+  path: '/empresa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRdoIndexRoute = AuthenticatedRdoIndexRouteImport.update({
+  id: '/rdo/',
+  path: '/rdo/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedObrasIndexRoute = AuthenticatedObrasIndexRouteImport.update({
+  id: '/obras/',
+  path: '/obras/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCadastrosIndexRoute =
+  AuthenticatedCadastrosIndexRouteImport.update({
+    id: '/cadastros/',
+    path: '/cadastros/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRdoNovoRoute = AuthenticatedRdoNovoRouteImport.update({
+  id: '/rdo/novo',
+  path: '/rdo/novo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRdoRdoIdRoute = AuthenticatedRdoRdoIdRouteImport.update({
+  id: '/rdo/$rdoId',
+  path: '/rdo/$rdoId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedObrasObraIdRoute =
+  AuthenticatedObrasObraIdRouteImport.update({
+    id: '/obras/$obraId',
+    path: '/obras/$obraId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosOcorrenciasRoute =
+  AuthenticatedCadastrosOcorrenciasRouteImport.update({
+    id: '/cadastros/ocorrencias',
+    path: '/cadastros/ocorrencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosMaoDeObraRoute =
+  AuthenticatedCadastrosMaoDeObraRouteImport.update({
+    id: '/cadastros/mao-de-obra',
+    path: '/cadastros/mao-de-obra',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosEquipamentosRoute =
+  AuthenticatedCadastrosEquipamentosRouteImport.update({
+    id: '/cadastros/equipamentos',
+    path: '/cadastros/equipamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/empresa': typeof AuthenticatedEmpresaRoute
+  '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
+  '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
+  '/rdo/novo': typeof AuthenticatedRdoNovoRoute
+  '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
+  '/obras/': typeof AuthenticatedObrasIndexRoute
+  '/rdo/': typeof AuthenticatedRdoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/empresa': typeof AuthenticatedEmpresaRoute
+  '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
+  '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
+  '/rdo/novo': typeof AuthenticatedRdoNovoRoute
+  '/cadastros': typeof AuthenticatedCadastrosIndexRoute
+  '/obras': typeof AuthenticatedObrasIndexRoute
+  '/rdo': typeof AuthenticatedRdoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
+  '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
+  '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
+  '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
+  '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
+  '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
+  '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
+  '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/dashboard'
+    | '/empresa'
+    | '/cadastros/equipamentos'
+    | '/cadastros/mao-de-obra'
+    | '/cadastros/ocorrencias'
+    | '/obras/$obraId'
+    | '/rdo/$rdoId'
+    | '/rdo/novo'
+    | '/cadastros/'
+    | '/obras/'
+    | '/rdo/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/dashboard'
+    | '/empresa'
+    | '/cadastros/equipamentos'
+    | '/cadastros/mao-de-obra'
+    | '/cadastros/ocorrencias'
+    | '/obras/$obraId'
+    | '/rdo/$rdoId'
+    | '/rdo/novo'
+    | '/cadastros'
+    | '/obras'
+    | '/rdo'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/empresa'
+    | '/_authenticated/cadastros/equipamentos'
+    | '/_authenticated/cadastros/mao-de-obra'
+    | '/_authenticated/cadastros/ocorrencias'
+    | '/_authenticated/obras/$obraId'
+    | '/_authenticated/rdo/$rdoId'
+    | '/_authenticated/rdo/novo'
+    | '/_authenticated/cadastros/'
+    | '/_authenticated/obras/'
+    | '/_authenticated/rdo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +244,125 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/empresa': {
+      id: '/_authenticated/empresa'
+      path: '/empresa'
+      fullPath: '/empresa'
+      preLoaderRoute: typeof AuthenticatedEmpresaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/': {
+      id: '/_authenticated/rdo/'
+      path: '/rdo'
+      fullPath: '/rdo/'
+      preLoaderRoute: typeof AuthenticatedRdoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/obras/': {
+      id: '/_authenticated/obras/'
+      path: '/obras'
+      fullPath: '/obras/'
+      preLoaderRoute: typeof AuthenticatedObrasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/': {
+      id: '/_authenticated/cadastros/'
+      path: '/cadastros'
+      fullPath: '/cadastros/'
+      preLoaderRoute: typeof AuthenticatedCadastrosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/novo': {
+      id: '/_authenticated/rdo/novo'
+      path: '/rdo/novo'
+      fullPath: '/rdo/novo'
+      preLoaderRoute: typeof AuthenticatedRdoNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/$rdoId': {
+      id: '/_authenticated/rdo/$rdoId'
+      path: '/rdo/$rdoId'
+      fullPath: '/rdo/$rdoId'
+      preLoaderRoute: typeof AuthenticatedRdoRdoIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/obras/$obraId': {
+      id: '/_authenticated/obras/$obraId'
+      path: '/obras/$obraId'
+      fullPath: '/obras/$obraId'
+      preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/ocorrencias': {
+      id: '/_authenticated/cadastros/ocorrencias'
+      path: '/cadastros/ocorrencias'
+      fullPath: '/cadastros/ocorrencias'
+      preLoaderRoute: typeof AuthenticatedCadastrosOcorrenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/mao-de-obra': {
+      id: '/_authenticated/cadastros/mao-de-obra'
+      path: '/cadastros/mao-de-obra'
+      fullPath: '/cadastros/mao-de-obra'
+      preLoaderRoute: typeof AuthenticatedCadastrosMaoDeObraRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/equipamentos': {
+      id: '/_authenticated/cadastros/equipamentos'
+      path: '/cadastros/equipamentos'
+      fullPath: '/cadastros/equipamentos'
+      preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
+  AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
+  AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
+  AuthenticatedCadastrosOcorrenciasRoute: typeof AuthenticatedCadastrosOcorrenciasRoute
+  AuthenticatedObrasObraIdRoute: typeof AuthenticatedObrasObraIdRoute
+  AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
+  AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
+  AuthenticatedCadastrosIndexRoute: typeof AuthenticatedCadastrosIndexRoute
+  AuthenticatedObrasIndexRoute: typeof AuthenticatedObrasIndexRoute
+  AuthenticatedRdoIndexRoute: typeof AuthenticatedRdoIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
+  AuthenticatedCadastrosEquipamentosRoute:
+    AuthenticatedCadastrosEquipamentosRoute,
+  AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,
+  AuthenticatedCadastrosOcorrenciasRoute:
+    AuthenticatedCadastrosOcorrenciasRoute,
+  AuthenticatedObrasObraIdRoute: AuthenticatedObrasObraIdRoute,
+  AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
+  AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
+  AuthenticatedCadastrosIndexRoute: AuthenticatedCadastrosIndexRoute,
+  AuthenticatedObrasIndexRoute: AuthenticatedObrasIndexRoute,
+  AuthenticatedRdoIndexRoute: AuthenticatedRdoIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,0 +1,746 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      convites: {
+        Row: {
+          aceito: boolean
+          created_at: string
+          email: string
+          empresa_id: string
+          expires_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+        }
+        Insert: {
+          aceito?: boolean
+          created_at?: string
+          email: string
+          empresa_id: string
+          expires_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+        }
+        Update: {
+          aceito?: boolean
+          created_at?: string
+          email?: string
+          empresa_id?: string
+          expires_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convites_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      equipamentos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          empresa_id: string
+          id: string
+          identificacao: string | null
+          nome: string
+          observacoes: string | null
+          status: Database["public"]["Enums"]["equipamento_status"]
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id: string
+          id?: string
+          identificacao?: string | null
+          nome: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["equipamento_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          identificacao?: string | null
+          nome?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["equipamento_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mao_de_obra: {
+        Row: {
+          ativo: boolean
+          contato: string | null
+          created_at: string
+          empresa_id: string
+          empresa_terceira: string | null
+          funcao: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          contato?: string | null
+          created_at?: string
+          empresa_id: string
+          empresa_terceira?: string | null
+          funcao: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          contato?: string | null
+          created_at?: string
+          empresa_id?: string
+          empresa_terceira?: string | null
+          funcao?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mao_de_obra_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obras: {
+        Row: {
+          avanco_pct: number
+          cliente: string | null
+          codigo: string | null
+          created_at: string
+          data_inicio: string | null
+          data_previsao_fim: string | null
+          descricao: string | null
+          empresa_id: string
+          endereco: string | null
+          id: string
+          nome: string
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["obra_status"]
+          updated_at: string
+        }
+        Insert: {
+          avanco_pct?: number
+          cliente?: string | null
+          codigo?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_previsao_fim?: string | null
+          descricao?: string | null
+          empresa_id: string
+          endereco?: string | null
+          id?: string
+          nome: string
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["obra_status"]
+          updated_at?: string
+        }
+        Update: {
+          avanco_pct?: number
+          cliente?: string | null
+          codigo?: string | null
+          created_at?: string
+          data_inicio?: string | null
+          data_previsao_fim?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["obra_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obras_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          email: string
+          empresa_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          email: string
+          empresa_id: string
+          id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          email?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_atividades: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          pct_executado: number
+          rdo_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          pct_executado?: number
+          rdo_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          pct_executado?: number
+          rdo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_atividades_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_equipamentos: {
+        Row: {
+          created_at: string
+          equipamento_id: string
+          horas_uso: number
+          id: string
+          rdo_id: string
+          status_uso: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipamento_id: string
+          horas_uso?: number
+          id?: string
+          rdo_id: string
+          status_uso?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipamento_id?: string
+          horas_uso?: number
+          id?: string
+          rdo_id?: string
+          status_uso?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_equipamentos_equipamento_id_fkey"
+            columns: ["equipamento_id"]
+            isOneToOne: false
+            referencedRelation: "equipamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_equipamentos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_mao_de_obra: {
+        Row: {
+          atividade: string | null
+          created_at: string
+          horas: number
+          id: string
+          mao_de_obra_id: string
+          rdo_id: string
+        }
+        Insert: {
+          atividade?: string | null
+          created_at?: string
+          horas?: number
+          id?: string
+          mao_de_obra_id: string
+          rdo_id: string
+        }
+        Update: {
+          atividade?: string | null
+          created_at?: string
+          horas?: number
+          id?: string
+          mao_de_obra_id?: string
+          rdo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_mao_de_obra_mao_de_obra_id_fkey"
+            columns: ["mao_de_obra_id"]
+            isOneToOne: false
+            referencedRelation: "mao_de_obra"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_mao_de_obra_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_ocorrencias: {
+        Row: {
+          created_at: string
+          descricao: string
+          foto_url: string | null
+          id: string
+          rdo_id: string
+          tipo_ocorrencia_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          foto_url?: string | null
+          id?: string
+          rdo_id: string
+          tipo_ocorrencia_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          foto_url?: string | null
+          id?: string
+          rdo_id?: string
+          tipo_ocorrencia_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_ocorrencias_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_ocorrencias_tipo_ocorrencia_id_fkey"
+            columns: ["tipo_ocorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_ocorrencia"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdos: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          autor_id: string
+          clima_manha: Database["public"]["Enums"]["clima"] | null
+          clima_noite: Database["public"]["Enums"]["clima"] | null
+          clima_tarde: Database["public"]["Enums"]["clima"] | null
+          created_at: string
+          data: string
+          empresa_id: string
+          enviado_em: string | null
+          id: string
+          motivo_reprovacao: string | null
+          numero: number
+          obra_id: string
+          observacoes: string | null
+          status: Database["public"]["Enums"]["rdo_status"]
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          autor_id: string
+          clima_manha?: Database["public"]["Enums"]["clima"] | null
+          clima_noite?: Database["public"]["Enums"]["clima"] | null
+          clima_tarde?: Database["public"]["Enums"]["clima"] | null
+          created_at?: string
+          data: string
+          empresa_id: string
+          enviado_em?: string | null
+          id?: string
+          motivo_reprovacao?: string | null
+          numero?: number
+          obra_id: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["rdo_status"]
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          autor_id?: string
+          clima_manha?: Database["public"]["Enums"]["clima"] | null
+          clima_noite?: Database["public"]["Enums"]["clima"] | null
+          clima_tarde?: Database["public"]["Enums"]["clima"] | null
+          created_at?: string
+          data?: string
+          empresa_id?: string
+          enviado_em?: string | null
+          id?: string
+          motivo_reprovacao?: string | null
+          numero?: number
+          obra_id?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["rdo_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_ocorrencia: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_id: string
+          id: string
+          nome: string
+          severidade: Database["public"]["Enums"]["severidade"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          nome: string
+          severidade?: Database["public"]["Enums"]["severidade"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          nome?: string
+          severidade?: Database["public"]["Enums"]["severidade"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tipos_ocorrencia_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      can_approve_rdo: { Args: { _user_id: string }; Returns: boolean }
+      get_user_empresa: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      rdo_autor: { Args: { _rdo_id: string }; Returns: string }
+      rdo_empresa: { Args: { _rdo_id: string }; Returns: string }
+    }
+    Enums: {
+      app_role: "admin" | "engenheiro" | "mestre" | "visualizador"
+      clima:
+        | "ensolarado"
+        | "nublado"
+        | "chuvoso"
+        | "chuva_forte"
+        | "impraticavel"
+      equipamento_status: "disponivel" | "em_uso" | "manutencao"
+      obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
+      rdo_status: "rascunho" | "enviado" | "aprovado" | "reprovado"
+      severidade: "baixa" | "media" | "alta" | "critica"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_role: ["admin", "engenheiro", "mestre", "visualizador"],
+      clima: [
+        "ensolarado",
+        "nublado",
+        "chuvoso",
+        "chuva_forte",
+        "impraticavel",
+      ],
+      equipamento_status: ["disponivel", "em_uso", "manutencao"],
+      obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
+      rdo_status: ["rascunho", "enviado", "aprovado", "reprovado"],
+      severidade: ["baixa", "media", "alta", "critica"],
+    },
+  },
+} as const
