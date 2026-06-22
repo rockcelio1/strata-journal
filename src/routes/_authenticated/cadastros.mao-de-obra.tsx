@@ -38,12 +38,12 @@ function MaoDeObraPage() {
         columns={[
           { key: "nome", label: "Nome" },
           { key: "funcao", label: "Função" },
-          { key: "empresa_terceira", label: "Empresa", render: (r) => r.empresa_terceira ?? "—" },
-          { key: "contato", label: "Contato", render: (r) => r.contato ?? "—" },
-          { key: "ativo", label: "Ativo", render: (r) => r.ativo ? "Sim" : "Não" },
+          { key: "empresa_terceira", label: "Empresa", render: (r: any) => r.empresa_terceira ?? "—" },
+          { key: "contato", label: "Contato", render: (r: any) => r.contato ?? "—" },
+          { key: "ativo", label: "Ativo", render: (r: any) => r.ativo ? "Sim" : "Não" },
         ]}
-        onEdit={(r) => { setForm({ ...r, empresa_terceira: r.empresa_terceira ?? "", contato: r.contato ?? "" }); setOpen(true); }}
-        onDelete={(r) => del.mutate(r.id)}
+        onEdit={(r: any) => { setForm({ ...r, empresa_terceira: r.empresa_terceira ?? "", contato: r.contato ?? "" }); setOpen(true); }}
+        onDelete={(r: any) => del.mutate(r.id)}
       />
       <CrudDialog open={open} onOpenChange={setOpen} title={form.id ? "Editar" : "Nova mão de obra"} onSave={() => save.mutate()} saving={save.isPending} canSave={!!form.nome && !!form.funcao}>
         <FieldText label="Nome" value={form.nome} onChange={(v) => setForm({ ...form, nome: v })} />
