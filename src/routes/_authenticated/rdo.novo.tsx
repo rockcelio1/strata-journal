@@ -116,6 +116,17 @@ function NovoRdoPage() {
     finally { setCompressing(false); }
   }
 
+  async function blobToBase64(blob: Blob): Promise<string> {
+    const buf = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
   async function uploadAttachments(rdoId: string, empresaId: string, sigManifest: any | null) {
     const all: { file: Blob; name: string; mime: string; legenda?: string }[] = fotos.map((f, i) => ({
       file: f, name: f.name, mime: f.type || "image/jpeg", legenda: legendas[i] || undefined,
@@ -126,16 +137,27 @@ function NovoRdoPage() {
       all.push({ file: json, name: "assinatura.json", mime: "application/json" });
     }
     for (const a of all) {
-      const safe = a.name.replace(/[^\w.\-]+/g, "_");
-      const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
-      const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
-      if (up.error) throw up.error;
-      await registrarFn({ data: {
-        rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
-        storage_path: path, mime_type: a.mime, tamanho_bytes: (a.file as any).size ?? 0,
-      }});
+      const size = (a.file as any).size ?? 0;
+      try {
+        const base64 = await blobToBase64(a.file);
+        await uploadOneDriveFn({ data: {
+          rdo_id: rdoId, nome: a.name, mime_type: a.mime, tamanho_bytes: size,
+          base64, legenda: a.legenda,
+        }});
+      } catch (e: any) {
+        console.warn("OneDrive falhou, usando Supabase Storage:", e?.message);
+        const safe = a.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
+        const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
+        if (up.error) throw up.error;
+        await registrarFn({ data: {
+          rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+          storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+        }});
+      }
     }
   }
+
 
   async function buildSignatureManifest(payload: any): Promise<any | null> {
     if (!assinaturaBlob || !signer.nome || !signer.cargo) return null;
