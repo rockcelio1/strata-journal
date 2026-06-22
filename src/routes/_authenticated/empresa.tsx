@@ -80,7 +80,12 @@ function EmpresaPage() {
           </div>
           <div>
             <Label>CNPJ</Label>
-            <Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} disabled={!isAdmin} />
+            <div className="flex gap-2">
+              <Input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} disabled={!isAdmin} placeholder="00.000.000/0000-00" />
+              <Button type="button" variant="outline" onClick={consultarCnpj} disabled={consultando || !isAdmin} title="Consultar CNPJ online">
+                {consultando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </div>
         {isAdmin && (
