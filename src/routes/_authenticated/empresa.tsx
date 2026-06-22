@@ -39,6 +39,7 @@ function EmpresaPage() {
   const revogarFn = useServerFn(revogarConvite);
   const atualizarPapelFn = useServerFn(atualizarPapelMembro);
   const removerFn = useServerFn(removerMembro);
+  const seedFacomFn = useServerFn(seedDemoFacom);
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const { data: membros = [] } = useQuery({ queryKey: ["membros"], queryFn: () => memFn() });
