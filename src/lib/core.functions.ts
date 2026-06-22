@@ -67,3 +67,77 @@ export const getDashboard = createServerFn({ method: "GET" })
       recent_rdos: recentRdos.data ?? [],
     };
   });
+
+// ============== CONVITES / MEMBROS ==============
+const roleEnum = z.enum(["admin", "engenheiro", "mestre", "visualizador"]);
+
+export const listConvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("convites")
+      .select("id, email, role, aceito, expires_at, created_at, token")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  });
+
+export const criarConvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; role: string }) =>
+    z.object({ email: z.string().email(), role: roleEnum }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const isAdmin = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin.data) throw new Error("Somente administradores");
+    const { data: created, error } = await context.supabase.from("convites").insert({
+      empresa_id: me.data.empresa_id,
+      email: data.email.toLowerCase(),
+      role: data.role as any,
+    }).select().single();
+    if (error) throw error;
+    return created;
+  });
+
+export const revogarConvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("convites").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const atualizarPapelMembro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string; role: string }) =>
+    z.object({ user_id: z.string().uuid(), role: roleEnum }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    // Remove papéis anteriores e insere o novo (modelo de papel único por usuário/empresa)
+    await context.supabase.from("user_roles").delete().eq("user_id", data.user_id).eq("empresa_id", me.data.empresa_id);
+    const { error } = await context.supabase.from("user_roles").insert({
+      user_id: data.user_id,
+      empresa_id: me.data.empresa_id,
+      role: data.role as any,
+    });
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const removerMembro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string }) => z.object({ user_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    if (data.user_id === context.userId) throw new Error("Você não pode remover a si mesmo");
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const { error } = await context.supabase.from("user_roles").delete()
+      .eq("user_id", data.user_id).eq("empresa_id", me.data.empresa_id);
+    if (error) throw error;
+    return { ok: true };
+  });

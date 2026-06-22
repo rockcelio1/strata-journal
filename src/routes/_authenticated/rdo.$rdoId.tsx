@@ -1,14 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { getRdo, submitRdo, approveRdo } from "@/lib/rdo.functions";
+import { useRef, useState } from "react";
+import {
+  getRdo, submitRdo, approveRdo,
+  listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
+} from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { exportRdoPdf } from "@/lib/rdo-pdf";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle2, XCircle, Send, Cloud } from "lucide-react";
+import {
+  ArrowLeft, CheckCircle2, XCircle, Send, Cloud,
+  Download, Paperclip, Upload, Trash2, History,
+} from "lucide-react";
 import { rdoStatusMeta, severidadeMeta, climaLabel } from "@/components/status";
 import { toast } from "sonner";
 import {
@@ -27,12 +35,23 @@ function RdoDetailPage() {
   const meFn = useServerFn(getMe);
   const submitFn = useServerFn(submitRdo);
   const approveFn = useServerFn(approveRdo);
+  const logsFn = useServerFn(listRdoLogs);
+  const anexosFn = useServerFn(listRdoAnexos);
+  const registrarFn = useServerFn(registrarAnexo);
+  const removerFn = useServerFn(removerAnexo);
+
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
+  const { data: logs = [] } = useQuery({ queryKey: ["rdo-logs", rdoId], queryFn: () => logsFn({ data: { rdo_id: rdoId } }) });
+  const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
+
   const [motivo, setMotivo] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["rdo", rdoId] });
+    qc.invalidateQueries({ queryKey: ["rdo-logs", rdoId] });
     qc.invalidateQueries({ queryKey: ["rdos"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
@@ -47,6 +66,50 @@ function RdoDetailPage() {
     onSuccess: () => { toast.success("Decisão registrada"); refresh(); },
     onError: (e: any) => toast.error(e.message),
   });
+  const removerAnx = useMutation({
+    mutationFn: (id: string) => removerFn({ data: { id } }),
+    onSuccess: () => { toast.success("Anexo removido"); qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length || !me?.profile?.empresa_id) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const safe = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${me.profile.empresa_id}/${rdoId}/${Date.now()}-${safe}`;
+        const up = await supabase.storage.from("rdo-anexos").upload(path, file, { upsert: false });
+        if (up.error) throw up.error;
+        await registrarFn({ data: {
+          rdo_id: rdoId, nome: file.name, storage_path: path,
+          mime_type: file.type || undefined, tamanho_bytes: file.size,
+        }});
+      }
+      toast.success("Anexos enviados");
+      qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] });
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha no upload");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const baixarPdf = () => {
+    if (!data) return;
+    exportRdoPdf({
+      rdo: data.rdo,
+      atividades: data.atividades,
+      mao_de_obra: data.mao_de_obra,
+      equipamentos: data.equipamentos,
+      ocorrencias: data.ocorrencias,
+      logs: logs as any[],
+      anexos: anexos as any[],
+      empresa: (me as any)?.empresa,
+    });
+  };
 
   if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
   const r = data.rdo as any;
@@ -68,7 +131,8 @@ function RdoDetailPage() {
             {r.obras?.nome} · {new Date(r.data).toLocaleDateString("pt-BR")} · por {r.autor?.nome}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={baixarPdf}><Download className="h-4 w-4 mr-1" />PDF</Button>
           {r.status === "rascunho" && isAuthor && (
             <Button onClick={() => submit.mutate()} className="bg-brand text-brand-foreground"><Send className="h-4 w-4 mr-1" />Enviar</Button>
           )}
@@ -157,6 +221,75 @@ function RdoDetailPage() {
           );
         })}
       </SectionList>
+
+      {/* Anexos */}
+      <Card className="p-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-serif text-lg flex items-center gap-2"><Paperclip className="h-4 w-4" /> Anexos</h3>
+          <div>
+            <input ref={fileRef} type="file" multiple className="hidden" onChange={onUpload} />
+            <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Upload className="h-4 w-4 mr-1" />{uploading ? "Enviando…" : "Enviar arquivos"}
+            </Button>
+          </div>
+        </div>
+        {(anexos as any[]).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
+        ) : (
+          <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {(anexos as any[]).map((a) => {
+              const isImg = a.mime_type?.startsWith("image/");
+              return (
+                <li key={a.id} className="border border-border rounded-md overflow-hidden group">
+                  {isImg && a.url ? (
+                    <a href={a.url} target="_blank" rel="noreferrer" className="block aspect-square bg-muted overflow-hidden">
+                      <img src={a.url} alt={a.nome} className="w-full h-full object-cover" />
+                    </a>
+                  ) : (
+                    <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
+                      <Paperclip className="h-8 w-8 text-muted-foreground" />
+                    </a>
+                  )}
+                  <div className="p-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium truncate">{a.nome}</div>
+                      <div className="text-[10px] text-muted-foreground">{a.autor?.nome ?? "—"}</div>
+                    </div>
+                    <button onClick={() => removerAnx.mutate(a.id)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
+
+      {/* Trilha de auditoria */}
+      <Card className="p-4 mb-4">
+        <h3 className="font-serif text-lg flex items-center gap-2 mb-3"><History className="h-4 w-4" /> Histórico</h3>
+        {(logs as any[]).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum evento.</p>
+        ) : (
+          <ol className="relative border-l border-border ml-2">
+            {(logs as any[]).map((l) => (
+              <li key={l.id} className="ml-4 pb-3">
+                <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
+                <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
+                <div className="text-sm">
+                  <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
+                  {l.status_anterior && l.status_novo && (
+                    <span className="text-muted-foreground"> · {l.status_anterior} → {l.status_novo}</span>
+                  )}
+                  {l.autor?.nome && <span className="text-muted-foreground"> · {l.autor.nome}</span>}
+                </div>
+                {l.motivo && <div className="text-xs text-muted-foreground mt-1 italic">"{l.motivo}"</div>}
+              </li>
+            ))}
+          </ol>
+        )}
+      </Card>
     </div>
   );
 }

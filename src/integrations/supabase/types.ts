@@ -267,6 +267,57 @@ export type Database = {
           },
         ]
       }
+      rdo_anexos: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          mime_type: string | null
+          nome: string
+          rdo_id: string
+          storage_path: string
+          tamanho_bytes: number | null
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          mime_type?: string | null
+          nome: string
+          rdo_id: string
+          storage_path: string
+          tamanho_bytes?: number | null
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          rdo_id?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_anexos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_anexos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rdo_atividades: {
         Row: {
           created_at: string
@@ -292,6 +343,57 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "rdo_atividades_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_audit_logs: {
+        Row: {
+          acao: string
+          autor_id: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          motivo: string | null
+          rdo_id: string
+          status_anterior: Database["public"]["Enums"]["rdo_status"] | null
+          status_novo: Database["public"]["Enums"]["rdo_status"] | null
+        }
+        Insert: {
+          acao: string
+          autor_id?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          motivo?: string | null
+          rdo_id: string
+          status_anterior?: Database["public"]["Enums"]["rdo_status"] | null
+          status_novo?: Database["public"]["Enums"]["rdo_status"] | null
+        }
+        Update: {
+          acao?: string
+          autor_id?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          motivo?: string | null
+          rdo_id?: string
+          status_anterior?: Database["public"]["Enums"]["rdo_status"] | null
+          status_novo?: Database["public"]["Enums"]["rdo_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_audit_logs_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_audit_logs_rdo_id_fkey"
             columns: ["rdo_id"]
             isOneToOne: false
             referencedRelation: "rdos"
