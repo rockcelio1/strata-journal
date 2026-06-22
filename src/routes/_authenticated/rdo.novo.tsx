@@ -61,6 +61,8 @@ function NovoRdoPage() {
   const createFn = useServerFn(createRdo);
   const meFn = useServerFn(getMe);
   const registrarFn = useServerFn(registrarAnexo);
+  const uploadOneDriveFn = useServerFn(uploadOneDriveAnexo);
+
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
   const { data: maoOpts = [] } = useQuery({ queryKey: ["mao_de_obra"], queryFn: () => maoFn() });
