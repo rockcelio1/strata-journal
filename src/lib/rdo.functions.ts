@@ -192,14 +192,24 @@ export const removerAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const row = await context.supabase.from("rdo_anexos").select("storage_path").eq("id", data.id).maybeSingle();
-    if (row.data?.storage_path) {
+    const row = await context.supabase.from("rdo_anexos").select("storage_path, storage_provider, onedrive_item_id").eq("id", data.id).maybeSingle();
+    if (row.data?.storage_provider === "supabase" && row.data?.storage_path) {
       await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
+    } else if (row.data?.storage_provider === "onedrive" && row.data?.onedrive_item_id) {
+      const apiKey = process.env.LOVABLE_API_KEY;
+      const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
+      if (apiKey && connKey) {
+        await fetch(`https://connector-gateway.lovable.dev/microsoft_onedrive/v1.0/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
+        }).catch(() => {});
+      }
     }
     const { error } = await context.supabase.from("rdo_anexos").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
   });
+
 
 // ============== GALERIA (mídias da empresa, com filtros) ==============
 export const listGaleria = createServerFn({ method: "GET" })
