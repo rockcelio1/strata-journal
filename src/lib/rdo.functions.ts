@@ -196,3 +196,41 @@ export const removerAnexo = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// ============== GALERIA (mídias da empresa, com filtros) ==============
+export const listGaleria = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { obra_id?: string; data?: string; rdo_id?: string; tipo?: "imagem" | "video" | "pdf" | "outro" } = {}) =>
+    z.object({
+      obra_id: z.string().uuid().optional(),
+      data: z.string().optional(),
+      rdo_id: z.string().uuid().optional(),
+      tipo: z.enum(["imagem", "video", "pdf", "outro"]).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    let q = context.supabase
+      .from("rdo_anexos")
+      .select("id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (data.rdo_id) q = q.eq("rdo_id", data.rdo_id);
+    if (data.obra_id) q = q.eq("rdos.obra_id", data.obra_id);
+    if (data.data) q = q.eq("rdos.data", data.data);
+    const { data: rows, error } = await q;
+    if (error) throw error;
+
+    const tipoDe = (mime?: string | null) => {
+      if (!mime) return "outro";
+      if (mime.startsWith("image/")) return "imagem";
+      if (mime.startsWith("video/")) return "video";
+      if (mime === "application/pdf") return "pdf";
+      return "outro";
+    };
+    const filtered = (rows ?? []).filter((r: any) => !data.tipo || tipoDe(r.mime_type) === data.tipo);
+    const withUrls = await Promise.all(filtered.map(async (a: any) => {
+      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+      return { ...a, tipo: tipoDe(a.mime_type), url: signed.data?.signedUrl ?? null };
+    }));
+    return withUrls;
+  });
