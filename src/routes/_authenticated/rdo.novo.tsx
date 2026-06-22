@@ -6,6 +6,8 @@ import { z } from "zod";
 import { listObras } from "@/lib/obras.functions";
 import { listMaoDeObra, listEquipamentos, listTiposOcorrencia } from "@/lib/cadastros.functions";
 import { createRdo, registrarAnexo } from "@/lib/rdo.functions";
+import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
+
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
