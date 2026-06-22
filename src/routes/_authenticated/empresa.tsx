@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  getMe, updateEmpresa, listMembros,
+  getMe, updateEmpresa, listMembros, seedDemoFacom,
   listConvites, criarConvite, revogarConvite,
   atualizarPapelMembro, removerMembro,
 } from "@/lib/core.functions";
@@ -152,6 +152,21 @@ function EmpresaPage() {
           </div>
         )}
       </Card>
+
+      {isAdmin && (
+        <Card className="p-6 mb-6 bg-muted/30">
+          <h2 className="font-serif text-xl mb-1">Dados de demonstração — FACOM</h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Popula a empresa atual com obras, mão de obra, equipamentos e tipos de ocorrência de exemplo.
+          </p>
+          <Button
+            variant="outline"
+            onClick={async () => { try { await seedDemoFacom(); toast.success("Dados FACOM inseridos"); qc.invalidateQueries(); } catch (e: any) { toast.error(e.message); } }}
+          >
+            Inserir dados de demonstração
+          </Button>
+        </Card>
+      )}
 
       {isAdmin && (
         <Card className="p-6 mb-6">
