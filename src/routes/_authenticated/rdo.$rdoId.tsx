@@ -199,7 +199,13 @@ function RdoDetailPage() {
         ))}
       </div>
 
-      <ClimaRelatorio endereco={r.obras?.endereco} data={r.data} />
+      <ClimaRelatorio
+        rdoId={rdoId}
+        endereco={r.obras?.endereco}
+        data={r.data}
+        onData={(local, dias) => setClimaState({ local, dias })}
+      />
+
 
 
       {r.observacoes && (
