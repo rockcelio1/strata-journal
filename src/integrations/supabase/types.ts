@@ -271,6 +271,8 @@ export type Database = {
         Row: {
           avanco_pct: number
           cliente: string | null
+          clima_cache: Json | null
+          clima_cache_at: string | null
           codigo: string | null
           created_at: string
           data_inicio: string | null
@@ -287,6 +289,8 @@ export type Database = {
         Insert: {
           avanco_pct?: number
           cliente?: string | null
+          clima_cache?: Json | null
+          clima_cache_at?: string | null
           codigo?: string | null
           created_at?: string
           data_inicio?: string | null
@@ -303,6 +307,8 @@ export type Database = {
         Update: {
           avanco_pct?: number
           cliente?: string | null
+          clima_cache?: Json | null
+          clima_cache_at?: string | null
           codigo?: string | null
           created_at?: string
           data_inicio?: string | null
