@@ -42,12 +42,28 @@ function OneDriveSettings() {
     }
   }, [folders.error]);
 
-  function saveRoot(name: string) {
+  async function saveRoot(name: string) {
     const clean = name.trim().replace(/^\/+|\/+$/g, "") || "DiarioDeObra";
+    try {
+      const r = await ensureFn({ data: { path: clean } });
+      if (!r.ok) {
+        toast.error("Pasta raiz inválida", { description: r.error });
+        return;
+      }
+    } catch (e: any) {
+      toast.error("Falha ao validar pasta", { description: e?.message });
+      return;
+    }
     setRootFolder(clean);
     localStorage.setItem(ROOT_KEY, clean);
-    toast.success("Pasta raiz salva", { description: clean });
+    toast.success("Pasta raiz salva e validada", { description: clean });
   }
+
+  const test = useMutation({
+    mutationFn: () => testFn({ data: { path: rootFolder } }),
+    onError: (e: any) => toast.error("Falha no teste", { description: e?.message }),
+  });
+
 
   const ok = verify.data?.ok === true;
   const acc = ok ? verify.data!.account : null;
