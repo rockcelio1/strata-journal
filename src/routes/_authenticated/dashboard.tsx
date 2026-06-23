@@ -8,13 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Building2, FileText, AlertTriangle, CheckCircle2, ArrowRight, SlidersHorizontal, Wrench, HardHat, BarChart3 } from "lucide-react";
+import { Building2, FileText, AlertTriangle, CheckCircle2, ArrowRight, SlidersHorizontal, Wrench, HardHat, BarChart3, RotateCw } from "lucide-react";
 import { rdoStatusMeta } from "@/components/status";
 import { useMemo, useState } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LabelList,
-} from "recharts";
+import { Bars3D, Pie3D, Chart3DLegend, type Chart3DDatum } from "@/components/charts-3d";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
