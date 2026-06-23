@@ -147,31 +147,52 @@ function RdoListPage() {
           <p className="text-muted-foreground">Nenhum RDO neste filtro.</p>
         </Card>
       ) : (
-        <Card className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3 font-medium">#</th>
-                <th className="p-3 font-medium">Obra</th>
-                <th className="p-3 font-medium">Data</th>
-                <th className="p-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r: any) => {
-                const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
-                return (
-                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                    <td className="p-3 tabular-nums"><Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="font-medium hover:underline">#{r.numero}</Link></td>
-                    <td className="p-3">{r.obras?.nome}</td>
-                    <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
-                    <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
+        <>
+          {/* Mobile: cards */}
+          <div className="md:hidden flex flex-col gap-2">
+            {filtered.map((r: any) => {
+              const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+              return (
+                <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }}>
+                  <Card className="p-3 active:bg-muted/50">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium tabular-nums">#{r.numero}</span>
+                      <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                    </div>
+                    <div className="mt-1 text-sm truncate">{r.obras?.nome}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(r.data).toLocaleDateString("pt-BR")}</div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+          {/* Desktop: tabela */}
+          <Card className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="p-3 font-medium">#</th>
+                  <th className="p-3 font-medium">Obra</th>
+                  <th className="p-3 font-medium">Data</th>
+                  <th className="p-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r: any) => {
+                  const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                  return (
+                    <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                      <td className="p-3 tabular-nums"><Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="font-medium hover:underline">#{r.numero}</Link></td>
+                      <td className="p-3">{r.obras?.nome}</td>
+                      <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+        </>
       )}
     </div>
   );

@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   Images,
   Settings,
+  Menu,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
@@ -51,6 +53,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isMaster = (me?.roles ?? []).includes("master");
   const mainNav = isMaster ? [...baseNav, masterNavItem] : baseNav;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Bottom bar: 4 primários + botão "Mais"
+  const bottomNav = mainNav.slice(0, 4);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
@@ -69,8 +74,60 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
       {/* Header azul */}
       <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
-        <div className="px-4 md:px-6 h-14 flex items-center gap-4 md:gap-6">
-          <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
+        <div className="px-4 md:px-6 h-14 flex items-center gap-3 md:gap-6">
+          {/* Hamburger — mobile */}
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <button
+                aria-label="Abrir menu"
+                className="md:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md hover:bg-brand-foreground/10"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle className="font-serif">{empresaName || "Menu"}</SheetTitle>
+              </SheetHeader>
+              <nav className="p-2 flex flex-col">
+                {mainNav.map((item) => {
+                  const active = item.match
+                    ? pathname.startsWith(item.match)
+                    : pathname === item.to || pathname.startsWith(item.to + "/");
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to as any}
+                      onClick={() => setDrawerOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px]",
+                        active ? "bg-muted text-foreground" : "text-foreground/80",
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <div className="mt-2 pt-2 border-t">
+                  <div className="px-3 py-1 text-xs uppercase tracking-wider text-muted-foreground">Cadastros</div>
+                  {cadastrosNav.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to as any}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+
+          <Link to="/dashboard" className="flex items-center gap-2 shrink-0 min-h-[44px]">
             {(me?.empresa as any)?.logo_url ? (
               <img
                 src={(me!.empresa as any).logo_url}
@@ -165,10 +222,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
       </div>
 
-      {/* Bottom tab bar — mobile */}
+      {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid" style={{ gridTemplateColumns: `repeat(${mainNav.length}, minmax(0, 1fr))` }}>
-          {mainNav.map((item) => {
+        <ul className="grid grid-cols-5">
+          {bottomNav.map((item) => {
             const active = item.match
               ? pathname.startsWith(item.match)
               : pathname === item.to || pathname.startsWith(item.to + "/");
@@ -177,16 +234,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to as any}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px]",
+                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60",
                     active ? "text-brand" : "text-muted-foreground",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="leading-none">{item.label.split(" ")[0]}</span>
+                  <span className="leading-none truncate max-w-full px-1">{item.label.split(" ")[0]}</span>
                 </Link>
               </li>
             );
           })}
+          <li>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Mais opções"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="leading-none">Mais</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </div>

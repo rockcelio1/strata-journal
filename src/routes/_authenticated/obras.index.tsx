@@ -93,36 +93,61 @@ function ObrasPage() {
           })}
         </div>
       ) : (
-        <Card>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="p-3 font-medium">Nome</th>
-                <th className="p-3 font-medium">Cliente</th>
-                <th className="p-3 font-medium">Status</th>
-                <th className="p-3 font-medium text-right">Avanço</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => {
-                const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
-                return (
-                  <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                    <td className="p-3"><Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline">{o.nome}</Link></td>
-                    <td className="p-3 text-muted-foreground">{o.cliente ?? "—"}</td>
-                    <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
-                    <td className="p-3 text-right tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</td>
-                    <td className="p-3 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+        <>
+          {/* Mobile: cards empilhados */}
+          <div className="md:hidden flex flex-col gap-2">
+            {filtered.map((o) => {
+              const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
+              return (
+                <Card key={o.id} className="p-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline min-w-0 truncate">{o.nome}</Link>
+                    <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                  </div>
+                  {o.cliente && <p className="text-xs text-muted-foreground truncate">{o.cliente}</p>}
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
                       <DeleteBtn onConfirm={() => del.mutate(o.id)} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+          {/* Desktop: tabela */}
+          <Card className="hidden md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="p-3 font-medium">Nome</th>
+                  <th className="p-3 font-medium">Cliente</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium text-right">Avanço</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o) => {
+                  const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
+                  return (
+                    <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                      <td className="p-3"><Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline">{o.nome}</Link></td>
+                      <td className="p-3 text-muted-foreground">{o.cliente ?? "—"}</td>
+                      <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
+                      <td className="p-3 text-right tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</td>
+                      <td className="p-3 text-right">
+                        <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+                        <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+        </>
       )}
 
       <ObraDialog open={open} onOpenChange={setOpen} obra={editing} />
