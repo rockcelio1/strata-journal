@@ -99,6 +99,16 @@ function UsuariosPage() {
     onSuccess: () => toast.success("E-mail de redefinição enviado"),
     onError: (e: any) => toast.error(e.message),
   });
+  const mReenviar = useMutation({
+    mutationFn: (id: string) => reenviarFn({ data: { id } }),
+    onSuccess: () => { toast.success("Convite reenviado"); invalidate(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const mAprovar = useMutation({
+    mutationFn: (v: { user_id: string; aprovado: boolean }) => aprovarFn({ data: v }),
+    onSuccess: (_, v) => { toast.success(v.aprovado ? "Usuário aprovado" : "Aprovação removida"); invalidate(); },
+    onError: (e: any) => toast.error(e.message),
+  });
   const mRevogarConv = useMutation({
     mutationFn: (id: string) => revogarConviteFn({ data: { id } }),
     onSuccess: () => { toast.success("Convite revogado"); invalidate(); },
