@@ -40,7 +40,7 @@ export async function fetchPosicao(): Promise<{ latitude: number; longitude: num
 }
 
 export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapshot> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=auto`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
   const r = await fetch(url);
   if (!r.ok) throw new Error("Falha ao consultar clima");
   const j = await r.json();
@@ -56,3 +56,24 @@ export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapsho
     timestamp: c.time,
   };
 }
+
+// Geocodifica um endereço usando o serviço gratuito do Open-Meteo.
+export async function geocodeEndereco(endereco: string): Promise<{ latitude: number; longitude: number; nome: string } | null> {
+  const q = encodeURIComponent(endereco.trim());
+  if (!q) return null;
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1&language=pt&format=json`;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const j = await r.json();
+  const hit = j?.results?.[0];
+  if (!hit) return null;
+  return { latitude: hit.latitude, longitude: hit.longitude, nome: [hit.name, hit.admin1, hit.country].filter(Boolean).join(", ") };
+}
+
+export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnapshot & { local: string }> {
+  const g = await geocodeEndereco(endereco);
+  if (!g) throw new Error("Endereço não localizado");
+  const snap = await fetchClima(g.latitude, g.longitude);
+  return { ...snap, local: g.nome };
+}
+

@@ -22,7 +22,7 @@ import {
   ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
-import { fetchPosicao, fetchClima, classificaClima, type ClimaSnapshot } from "@/lib/weather";
+import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, type ClimaSnapshot } from "@/lib/weather";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
@@ -102,6 +102,21 @@ function NovoRdoPage() {
       const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
       setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
+    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
+    finally { setClimaLoading(false); }
+  }
+
+  async function importarClimaPorObra() {
+    const obra = (obras as any[]).find((o) => o.id === form.obra_id);
+    if (!obra?.endereco) { toast.error("Selecione uma obra com endereço cadastrado"); return; }
+    setClimaLoading(true);
+    try {
+      const snap = await fetchClimaPorEndereco(obra.endereco);
+      setClimaInfo(snap);
+      const turno = new Date().getHours();
+      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
+      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
     } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
     finally { setClimaLoading(false); }
   }
@@ -305,16 +320,22 @@ function NovoRdoPage() {
 
         {stepIdx === 1 && (
           <Card className="p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-serif text-lg">Clima do dia</h3>
-              <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
-                <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Obter agora"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={importarClimaPorObra}>
+                  <CloudSun size={16} className="mr-1" /> Pelo endereço da obra
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
+                  <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Minha localização"}
+                </Button>
+              </div>
             </div>
             {climaInfo && (
               <div className="text-xs text-muted-foreground border border-border rounded-md p-2 bg-muted/30">
                 {climaInfo.descricao} · {climaInfo.temperatura_c}°C · vento {climaInfo.vento_kmh} km/h · chuva {climaInfo.precipitacao_mm} mm
-                <span className="block">📍 {climaInfo.latitude.toFixed(4)}, {climaInfo.longitude.toFixed(4)}</span>
+                <span className="block">📍 {(climaInfo as any).local ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
+                <span className="block">🕒 {new Date(climaInfo.timestamp).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (Brasília)</span>
               </div>
             )}
             <div className="grid grid-cols-1 gap-3">
