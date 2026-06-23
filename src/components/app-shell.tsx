@@ -49,9 +49,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getMeFn() });
   const [empresaName, setEmpresaName] = useState("");
 
+  const isMaster = (me?.roles ?? []).includes("master");
+  const mainNav = isMaster ? [...baseNav, masterNavItem] : baseNav;
+
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
+
 
   const isCadastros = pathname.startsWith("/cadastros");
   const initials = (me?.profile?.nome ?? "U").split(" ").map((s: string) => s[0]).slice(0, 2).join("").toUpperCase();
