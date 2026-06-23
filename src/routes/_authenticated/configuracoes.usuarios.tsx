@@ -172,22 +172,41 @@ function UsuariosPage() {
                     <div className="text-xs text-muted-foreground">{m.email}</div>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => mAprovar.mutate({ user_id: m.id, aprovado: true })}
-                      className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Check className="h-4 w-4 mr-1" /> Aprovar
-                    </Button>
+                    <ConfirmAction
+                      title="Aprovar cadastro"
+                      description={`Liberar acesso para ${m.nome} (${m.email})?`}
+                      confirmLabel="Aprovar"
+                      onConfirm={() => mAprovar.mutate({ user_id: m.id, aprovado: true })}
+                      trigger={
+                        <Button
+                          size="sm"
+                          disabled={mAprovar.isPending && mAprovar.variables?.user_id === m.id}
+                          className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {mAprovar.isPending && mAprovar.variables?.user_id === m.id
+                            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            : <Check className="h-4 w-4 mr-1" />}
+                          Aprovar
+                        </Button>
+                      }
+                    />
                     <ConfirmAction
                       title="Recusar cadastro"
-                      description="O usuário será excluído permanentemente."
+                      description={`${m.nome} (${m.email}) será excluído permanentemente.`}
                       confirmLabel="Recusar"
                       destructive
                       onConfirm={() => mDelete.mutate(m.id)}
                       trigger={
-                        <Button size="sm" variant="outline" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring">
-                          <X className="h-4 w-4 mr-1" /> Recusar
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={mDelete.isPending && mDelete.variables === m.id}
+                          className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {mDelete.isPending && mDelete.variables === m.id
+                            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            : <X className="h-4 w-4 mr-1" />}
+                          Recusar
                         </Button>
                       }
                     />
