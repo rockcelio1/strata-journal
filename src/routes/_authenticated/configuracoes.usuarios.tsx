@@ -569,22 +569,36 @@ function MembroActions({
   const currentRole = m.user_roles?.[0]?.role ?? "visualizador";
   return (
     <div className="flex flex-wrap items-center gap-2 justify-end">
-      <Select defaultValue={currentRole} onValueChange={onChangePapel}>
-        <SelectTrigger className="h-10 w-[150px] focus-visible:ring-2 focus-visible:ring-ring" aria-label="Alterar papel">
-          <ShieldCheck className="h-4 w-4 mr-1" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ROLES.map((r) => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}
-        </SelectContent>
-      </Select>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Select defaultValue={currentRole} onValueChange={onChangePapel}>
+            <SelectTrigger className="h-10 w-[150px] focus-visible:ring-2 focus-visible:ring-ring hover-ring" aria-label="Alterar papel">
+              <ShieldCheck className="h-4 w-4 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLES.map((r) => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}
+            </SelectContent>
+          </Select>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          Define o papel deste usuário: Master e Admin gerenciam tudo, Engenheiro cria e aprova RDOs, Encarregado executa registros, Visualizador apenas consulta.
+        </TooltipContent>
+      </Tooltip>
 
       <EditMembroDialog m={m} onSave={onEdit} />
       <SetPasswordDialog onSave={onSetPwd} />
 
-      <Button size="sm" variant="ghost" onClick={onReset} aria-label="Enviar e-mail de redefinição" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
-        <Mail className="h-4 w-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="ghost" onClick={onReset} aria-label="Enviar e-mail de redefinição" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring hover-ring">
+            <Mail className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          Envia um e-mail com link seguro para o próprio usuário cadastrar uma nova senha. Não altera a senha imediatamente.
+        </TooltipContent>
+      </Tooltip>
 
       <ConfirmAction
         title="Desabilitar usuário"
@@ -592,9 +606,16 @@ function MembroActions({
         confirmLabel="Desabilitar"
         onConfirm={() => onToggle(true)}
         trigger={
-          <Button size="sm" variant="ghost" aria-label="Desabilitar usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
-            <Ban className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" aria-label="Desabilitar usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring hover-ring">
+                <Ban className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Bloqueia o login deste usuário mantendo o histórico. Pode ser reativado depois.
+            </TooltipContent>
+          </Tooltip>
         }
       />
 
@@ -605,12 +626,129 @@ function MembroActions({
         destructive
         onConfirm={onDelete}
         trigger={
-          <Button size="sm" variant="ghost" aria-label="Excluir usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" aria-label="Excluir usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring text-destructive hover-ring">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Exclui o usuário permanentemente do sistema (login, perfil e papéis). Não pode ser desfeito.
+            </TooltipContent>
+          </Tooltip>
         }
       />
     </div>
+  );
+}
+
+function BulkBar({
+  count, onSetRole, onSetPassword, onResetEmail, onEditCargo, onDelete,
+}: {
+  count: number;
+  onSetRole: (role: string) => Promise<void>;
+  onSetPassword: (password: string) => Promise<void>;
+  onResetEmail: () => Promise<void>;
+  onEditCargo: (cargo: string | null) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [pwd, setPwd] = useState("");
+  const [cargo, setCargo] = useState("");
+  return (
+    <Card className="p-3 border-brand/40 bg-brand/5 flex flex-wrap items-center gap-2 animate-fade-in">
+      <Users className="h-4 w-4 text-brand" />
+      <span className="text-sm font-medium">{count} selecionado(s)</span>
+      <span className="mx-1 text-muted-foreground">·</span>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <Select onValueChange={(v) => onSetRole(v)}>
+              <SelectTrigger className="h-9 w-[170px] hover-ring"><ShieldCheck className="h-4 w-4 mr-1" /><SelectValue placeholder="Aplicar papel" /></SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Aplica o mesmo papel a todos os usuários selecionados.</TooltipContent>
+      </Tooltip>
+
+      <Dialog>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="hover-ring"><KeyRound className="h-4 w-4 mr-1" />Trocar senha</Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Define a mesma senha para todos os usuários selecionados.</TooltipContent>
+        </Tooltip>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Definir senha em massa</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Nova senha (mín. 8 caracteres) — será aplicada a {count} usuário(s)</Label>
+            <Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <DialogTrigger asChild><Button variant="outline">Cancelar</Button></DialogTrigger>
+            <DialogTrigger asChild>
+              <Button onClick={() => { if (pwd.length < 8) { toast.error("Senha muito curta"); return; } onSetPassword(pwd); setPwd(""); }}>Aplicar</Button>
+            </DialogTrigger>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="hover-ring"><Pencil className="h-4 w-4 mr-1" />Editar cargo</Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Atualiza o campo "Cargo" no perfil de todos os usuários selecionados.</TooltipContent>
+        </Tooltip>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar cargo em massa</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Novo cargo (vazio para limpar)</Label>
+            <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <DialogTrigger asChild><Button variant="outline">Cancelar</Button></DialogTrigger>
+            <DialogTrigger asChild>
+              <Button onClick={() => onEditCargo(cargo.trim() || null)}>Aplicar</Button>
+            </DialogTrigger>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="outline" className="hover-ring" onClick={onResetEmail}>
+            <Mail className="h-4 w-4 mr-1" />Reset por e-mail
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Envia um e-mail de redefinição de senha para cada usuário selecionado.</TooltipContent>
+      </Tooltip>
+
+      <ConfirmAction
+        title={`Excluir ${count} usuário(s)?`}
+        description="Esta ação é permanente. Remove logins, perfis e papéis dos usuários selecionados. Você mesmo é ignorado automaticamente."
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => { onDelete(); }}
+        trigger={
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" className="text-destructive border-destructive hover-ring">
+                <Trash2 className="h-4 w-4 mr-1" />Excluir
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Exclui permanentemente todos os usuários selecionados.</TooltipContent>
+          </Tooltip>
+        }
+      />
+    </Card>
   );
 }
 
