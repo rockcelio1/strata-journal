@@ -4,6 +4,32 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
 
+// Sanity: o gateway já mapeia para o Microsoft Graph; "/v1.0" NÃO pode estar no base URL,
+// senão o Graph responde "Resource not found for the segment 'v1.0'".
+if (/\/v\d+(\.\d+)?\/?$/.test(GATEWAY_URL)) {
+  throw new Error(
+    `Configuração inválida do gateway OneDrive: GATEWAY_URL não pode conter versão de API (/v1.0). Atual: ${GATEWAY_URL}`,
+  );
+}
+
+// Diagnóstico em memória (últimas chamadas) — exibido em Configurações → OneDrive.
+type DiagEntry = {
+  ts: string;
+  method: string;
+  url: string;
+  status: number;
+  ok: boolean;
+  requestId?: string | null;
+  step?: string | null;
+  error?: string | null;
+};
+const DIAG_MAX = 30;
+const diagBuf: DiagEntry[] = [];
+function pushDiag(e: DiagEntry) {
+  diagBuf.unshift(e);
+  if (diagBuf.length > DIAG_MAX) diagBuf.length = DIAG_MAX;
+}
+
 function slugSegment(s: string): string {
   return (s || "sem-nome")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -27,9 +53,30 @@ function getKeys() {
   return { apiKey, connKey };
 }
 
-async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Promise<Response> {
+function parseGraphError(status: number, body: string, step: string, url: string, requestId?: string | null): string {
+  let code = "", message = body.slice(0, 200);
+  try {
+    const j = JSON.parse(body);
+    code = j?.error?.code ?? "";
+    message = j?.error?.message ?? message;
+  } catch { /* texto puro */ }
+  let hint = "";
+  if (code === "BadRequest" && /segment 'v\d/i.test(message)) {
+    hint = " — confira a rota do gateway (base URL não deve conter /v1.0).";
+  } else if (status === 404 || code === "itemNotFound") {
+    hint = " — recurso/pasta não existe no OneDrive.";
+  } else if (status === 401 || status === 403) {
+    hint = " — token expirado ou sem permissão; reconecte o OneDrive.";
+  } else if (status === 429) {
+    hint = " — limite de requisições da Microsoft (tente novamente).";
+  }
+  return `[${step}] ${status} ${code || ""} ${message}${hint} (URL: ${url}${requestId ? ` | request-id: ${requestId}` : ""})`.trim();
+}
+
+async function gatewayFetch(path: string, init?: RequestInit, retries = 2, step = "graph"): Promise<Response> {
   const { apiKey, connKey } = getKeys();
   const url = `${GATEWAY_URL}${path}`;
+  const method = init?.method ?? "GET";
   let lastErr: any;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -41,18 +88,27 @@ async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Prom
           ...(init?.headers ?? {}),
         },
       });
+      const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
       if (res.status >= 500 || res.status === 429) {
         if (attempt < retries) {
           const wait = 300 * Math.pow(2, attempt);
-          console.warn(`[onedrive] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
+          console.warn(`[onedrive:${step}] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
           await new Promise((r) => setTimeout(r, wait));
           continue;
         }
       }
+      pushDiag({
+        ts: new Date().toISOString(), method, url, status: res.status, ok: res.ok,
+        requestId, step,
+      });
       return res;
-    } catch (e) {
+    } catch (e: any) {
       lastErr = e;
-      console.error(`[onedrive] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
+      console.error(`[onedrive:${step}] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
+      pushDiag({
+        ts: new Date().toISOString(), method, url, status: 0, ok: false,
+        step, error: e?.message ?? "network",
+      });
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, 300 * Math.pow(2, attempt)));
         continue;
@@ -62,15 +118,38 @@ async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Prom
   throw lastErr ?? new Error("OneDrive: falha de rede após retentativas");
 }
 
+async function gatewayCall(path: string, init: RequestInit | undefined, step: string): Promise<{ res: Response; body: string; requestId: string | null }> {
+  const res = await gatewayFetch(path, init, 2, step);
+  const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const msg = parseGraphError(res.status, body, step, `${GATEWAY_URL}${path}`, requestId);
+    pushDiag({
+      ts: new Date().toISOString(), method: init?.method ?? "GET",
+      url: `${GATEWAY_URL}${path}`, status: res.status, ok: false, requestId, step, error: msg,
+    });
+    const err = new Error(msg) as Error & { status?: number; requestId?: string | null; step?: string };
+    err.status = res.status; err.requestId = requestId; err.step = step;
+    throw err;
+  }
+  return { res, body: "", requestId };
+}
+
+export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: diagBuf.slice(0, DIAG_MAX) }));
+
 export const verifyOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     try {
-      const res = await gatewayFetch("/me");
+      const res = await gatewayFetch("/me", undefined, 2, "verify");
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        console.error("[onedrive] verify falhou", res.status, body);
-        return { ok: false as const, status: res.status, error: body.slice(0, 300) || `HTTP ${res.status}` };
+        const requestId = res.headers.get("request-id");
+        const err = parseGraphError(res.status, body, "verify", `${GATEWAY_URL}/me`, requestId);
+        console.error("[onedrive] verify falhou", err);
+        return { ok: false as const, status: res.status, error: err };
       }
       const me = await res.json() as { id?: string; displayName?: string; userPrincipalName?: string; mail?: string };
       return {
