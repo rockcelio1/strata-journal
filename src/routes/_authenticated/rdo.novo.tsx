@@ -89,7 +89,12 @@ function NovoRdoPage() {
   const [legendas, setLegendas] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [climaInfo, setClimaInfo] = useState<ClimaSnapshot | null>(null);
-  const [climaLoading, setClimaLoading] = useState(false);
+  const [climaStatus, setClimaStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [climaErro, setClimaErro] = useState<string | null>(null);
+  const [previsao5, setPrevisao5] = useState<DiaPrevisao[] | null>(null);
+  const [previsaoLocal, setPrevisaoLocal] = useState<string | null>(null);
+  const [previsaoAt, setPrevisaoAt] = useState<string | null>(null);
+  const climaLoading = climaStatus === "loading";
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
