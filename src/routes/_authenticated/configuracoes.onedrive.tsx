@@ -15,6 +15,9 @@ const ROOT_KEY = "onedrive.root_folder";
 function OneDriveSettings() {
   const verifyFn = useServerFn(verifyOneDrive);
   const listFn = useServerFn(listOneDriveFolders);
+  const testFn = useServerFn(testOneDrivePermissions);
+  const ensureFn = useServerFn(ensureOneDriveFolder);
+
   const [path, setPath] = useState<string>("");
   const [rootFolder, setRootFolder] = useState<string>(() =>
     typeof window !== "undefined" ? localStorage.getItem(ROOT_KEY) ?? "DiarioDeObra" : "DiarioDeObra",
