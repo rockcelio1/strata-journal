@@ -234,7 +234,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to as any}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60",
+                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                     active ? "text-brand" : "text-muted-foreground",
                   )}
                 >
@@ -248,7 +248,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               onClick={() => setDrawerOpen(true)}
               aria-label="Mais opções"
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <Menu className="h-5 w-5" />
               <span className="leading-none">Mais</span>
