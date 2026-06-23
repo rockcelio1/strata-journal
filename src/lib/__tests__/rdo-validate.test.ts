@@ -3,8 +3,8 @@ import {
   validateRdoForm,
   sanitizeRdoPayload,
   isUuid,
+  assertRowsValid,
 } from "@/lib/rdo-validate";
-import { assertRowsValid } from "@/lib/rdo.functions";
 
 const GOOD = "11111111-2222-3333-4444-555555555555";
 const GOOD2 = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
