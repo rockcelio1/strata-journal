@@ -217,7 +217,18 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     const folder = `${root}/${slugSegment(empresaNome)}/${slugSegment(obraNome)}/${ano}/${mes}/${dia}`;
     const fullPath = `${folder}/${filename}`;
 
+    // Valida que a pasta raiz existe antes de enviar (erro claro em vez de criar pasta nova silenciosamente)
+    const rootCheck = await gatewayFetch(`/me/drive/root:/${encodePath(root)}?$select=id,folder`);
+    if (rootCheck.status === 404) {
+      throw new Error(`Pasta raiz "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive.`);
+    }
+    if (!rootCheck.ok) {
+      const b = await rootCheck.text().catch(() => "");
+      throw new Error(`Falha ao validar pasta raiz "${root}" (${rootCheck.status}): ${b.slice(0, 200)}`);
+    }
+
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
+
 
     const res = await gatewayFetch(`/me/drive/root:/${encodePath(fullPath)}:/content`, {
       method: "PUT",
