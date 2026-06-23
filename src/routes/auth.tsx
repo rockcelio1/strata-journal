@@ -165,13 +165,33 @@ function AuthPage() {
                   </div>
                   <div>
                     <Label htmlFor="email2">Email</Label>
-                    <Input id="email2" name="email" type="email" required autoComplete="email" />
+                    <Input
+                      id="email2" name="email" type="email" required autoComplete="email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      aria-invalid={emailStatus === "taken" || emailStatus === "invalid"}
+                      className={
+                        emailStatus === "taken" || emailStatus === "invalid"
+                          ? "border-destructive focus-visible:ring-destructive bg-destructive/5"
+                          : emailStatus === "available"
+                          ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-500/5"
+                          : ""
+                      }
+                    />
+                    {emailStatus === "checking" && <p className="text-xs text-muted-foreground mt-1">Verificando...</p>}
+                    {emailStatus === "invalid" && <p className="text-xs text-destructive mt-1">E-mail inválido.</p>}
+                    {emailStatus === "taken" && <p className="text-xs text-destructive mt-1">Este e-mail já está cadastrado. Faça login.</p>}
+                    {emailStatus === "available" && <p className="text-xs text-emerald-600 mt-1">E-mail disponível para cadastro.</p>}
                   </div>
                   <div>
                     <Label htmlFor="password2">Senha</Label>
                     <Input id="password2" name="password" type="password" required minLength={6} autoComplete="new-password" />
                   </div>
-                  <Button type="submit" className="w-full bg-brand text-brand-foreground hover:bg-brand/90" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+                    disabled={loading || emailStatus === "taken" || emailStatus === "invalid" || emailStatus === "checking"}
+                  >
                     Criar empresa
                   </Button>
                 </form>
