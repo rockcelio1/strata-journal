@@ -106,6 +106,21 @@ function NovoRdoPage() {
     finally { setClimaLoading(false); }
   }
 
+  async function importarClimaPorObra() {
+    const obra = (obras as any[]).find((o) => o.id === form.obra_id);
+    if (!obra?.endereco) { toast.error("Selecione uma obra com endereço cadastrado"); return; }
+    setClimaLoading(true);
+    try {
+      const snap = await fetchClimaPorEndereco(obra.endereco);
+      setClimaInfo(snap);
+      const turno = new Date().getHours();
+      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
+      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
+    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
+    finally { setClimaLoading(false); }
+  }
+
   async function onAddFotos(files: FileList) {
     setCompressing(true);
     try {
