@@ -108,6 +108,7 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    import("@/lib/pwa-register").then((m) => m.registerPwa()).catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
@@ -115,6 +116,15 @@ function RootComponent() {
     });
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    const unsub = router.subscribe("onResolved", (e: any) => {
+      const ms = Math.round(performance.now() - ((e as any).timestamp ?? performance.now()));
+      // eslint-disable-next-line no-console
+      console.info(`[perf] route ${e.toLocation?.pathname ?? ""} resolved`, `${ms}ms`);
+    });
+    return () => unsub();
+  }, [router]);
 
   return (
     <QueryClientProvider client={queryClient}>
