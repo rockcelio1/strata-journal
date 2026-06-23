@@ -324,6 +324,37 @@ export const logRdoEdit = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const logRdoClimaUpdate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string; endereco?: string | null; local?: string | null; ok: boolean; erro?: string | null }) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      endereco: z.string().max(500).nullable().optional(),
+      local: z.string().max(200).nullable().optional(),
+      ok: z.boolean(),
+      erro: z.string().max(500).nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const r = await context.supabase.from("rdos").select("empresa_id, obra_id").eq("id", data.rdo_id).maybeSingle();
+    if (!r.data) return { ok: false };
+    const motivo = JSON.stringify({
+      endereco: data.endereco ?? null,
+      local: data.local ?? null,
+      ok: data.ok,
+      erro: data.erro ?? null,
+      ts: new Date().toISOString(),
+    });
+    await context.supabase.from("rdo_audit_logs").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: r.data.empresa_id,
+      autor_id: context.userId,
+      acao: data.ok ? "clima_atualizado" : "clima_falhou",
+      motivo,
+    });
+    return { ok: true };
+  });
+
 export const getRdoAuditSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
