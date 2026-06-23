@@ -4,6 +4,32 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
 
+// Sanity: o gateway já mapeia para o Microsoft Graph; "/v1.0" NÃO pode estar no base URL,
+// senão o Graph responde "Resource not found for the segment 'v1.0'".
+if (/\/v\d+(\.\d+)?\/?$/.test(GATEWAY_URL)) {
+  throw new Error(
+    `Configuração inválida do gateway OneDrive: GATEWAY_URL não pode conter versão de API (/v1.0). Atual: ${GATEWAY_URL}`,
+  );
+}
+
+// Diagnóstico em memória (últimas chamadas) — exibido em Configurações → OneDrive.
+type DiagEntry = {
+  ts: string;
+  method: string;
+  url: string;
+  status: number;
+  ok: boolean;
+  requestId?: string | null;
+  step?: string | null;
+  error?: string | null;
+};
+const DIAG_MAX = 30;
+const diagBuf: DiagEntry[] = [];
+function pushDiag(e: DiagEntry) {
+  diagBuf.unshift(e);
+  if (diagBuf.length > DIAG_MAX) diagBuf.length = DIAG_MAX;
+}
+
 function slugSegment(s: string): string {
   return (s || "sem-nome")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -27,9 +53,30 @@ function getKeys() {
   return { apiKey, connKey };
 }
 
-async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Promise<Response> {
+function parseGraphError(status: number, body: string, step: string, url: string, requestId?: string | null): string {
+  let code = "", message = body.slice(0, 200);
+  try {
+    const j = JSON.parse(body);
+    code = j?.error?.code ?? "";
+    message = j?.error?.message ?? message;
+  } catch { /* texto puro */ }
+  let hint = "";
+  if (code === "BadRequest" && /segment 'v\d/i.test(message)) {
+    hint = " — confira a rota do gateway (base URL não deve conter /v1.0).";
+  } else if (status === 404 || code === "itemNotFound") {
+    hint = " — recurso/pasta não existe no OneDrive.";
+  } else if (status === 401 || status === 403) {
+    hint = " — token expirado ou sem permissão; reconecte o OneDrive.";
+  } else if (status === 429) {
+    hint = " — limite de requisições da Microsoft (tente novamente).";
+  }
+  return `[${step}] ${status} ${code || ""} ${message}${hint} (URL: ${url}${requestId ? ` | request-id: ${requestId}` : ""})`.trim();
+}
+
+async function gatewayFetch(path: string, init?: RequestInit, retries = 2, step = "graph"): Promise<Response> {
   const { apiKey, connKey } = getKeys();
   const url = `${GATEWAY_URL}${path}`;
+  const method = init?.method ?? "GET";
   let lastErr: any;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -41,18 +88,27 @@ async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Prom
           ...(init?.headers ?? {}),
         },
       });
+      const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
       if (res.status >= 500 || res.status === 429) {
         if (attempt < retries) {
           const wait = 300 * Math.pow(2, attempt);
-          console.warn(`[onedrive] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
+          console.warn(`[onedrive:${step}] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
           await new Promise((r) => setTimeout(r, wait));
           continue;
         }
       }
+      pushDiag({
+        ts: new Date().toISOString(), method, url, status: res.status, ok: res.ok,
+        requestId, step,
+      });
       return res;
-    } catch (e) {
+    } catch (e: any) {
       lastErr = e;
-      console.error(`[onedrive] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
+      console.error(`[onedrive:${step}] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
+      pushDiag({
+        ts: new Date().toISOString(), method, url, status: 0, ok: false,
+        step, error: e?.message ?? "network",
+      });
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, 300 * Math.pow(2, attempt)));
         continue;
@@ -62,15 +118,38 @@ async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Prom
   throw lastErr ?? new Error("OneDrive: falha de rede após retentativas");
 }
 
+async function gatewayCall(path: string, init: RequestInit | undefined, step: string): Promise<{ res: Response; body: string; requestId: string | null }> {
+  const res = await gatewayFetch(path, init, 2, step);
+  const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const msg = parseGraphError(res.status, body, step, `${GATEWAY_URL}${path}`, requestId);
+    pushDiag({
+      ts: new Date().toISOString(), method: init?.method ?? "GET",
+      url: `${GATEWAY_URL}${path}`, status: res.status, ok: false, requestId, step, error: msg,
+    });
+    const err = new Error(msg) as Error & { status?: number; requestId?: string | null; step?: string };
+    err.status = res.status; err.requestId = requestId; err.step = step;
+    throw err;
+  }
+  return { res, body: "", requestId };
+}
+
+export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: diagBuf.slice(0, DIAG_MAX) }));
+
 export const verifyOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     try {
-      const res = await gatewayFetch("/me");
+      const res = await gatewayFetch("/me", undefined, 2, "verify");
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        console.error("[onedrive] verify falhou", res.status, body);
-        return { ok: false as const, status: res.status, error: body.slice(0, 300) || `HTTP ${res.status}` };
+        const requestId = res.headers.get("request-id");
+        const err = parseGraphError(res.status, body, "verify", `${GATEWAY_URL}/me`, requestId);
+        console.error("[onedrive] verify falhou", err);
+        return { ok: false as const, status: res.status, error: err };
       }
       const me = await res.json() as { id?: string; displayName?: string; userPrincipalName?: string; mail?: string };
       return {
@@ -95,17 +174,17 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
     const url = path
       ? `/me/drive/root:/${encodePath(path)}:/children?$select=id,name,folder,parentReference&$top=200`
       : `/me/drive/root/children?$select=id,name,folder,parentReference&$top=200`;
-    const res = await gatewayFetch(url);
+    const res = await gatewayFetch(url, undefined, 2, "listFolders");
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error("[onedrive] listFolders falhou", res.status, body);
-      throw new Error(`OneDrive: falha ao listar pastas (${res.status}) ${body.slice(0,200)}`);
+      const requestId = res.headers.get("request-id");
+      throw new Error(parseGraphError(res.status, body, "listFolders", `${GATEWAY_URL}${url}`, requestId));
     }
     const json = await res.json() as { value: Array<{ id: string; name: string; folder?: { childCount: number } }> };
     const folders = (json.value ?? []).filter((it) => it.folder).map((it) => ({
       id: it.id, name: it.name, childCount: it.folder?.childCount ?? 0,
     }));
-    return { path, folders };
+    return { path, folders, debug: { url: `${GATEWAY_URL}${url}` } };
   });
 
 export const ensureOneDriveFolder = createServerFn({ method: "POST" })
@@ -114,11 +193,13 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const clean = data.path.replace(/^\/+|\/+$/g, "");
     if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
-    const res = await gatewayFetch(`/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`);
-    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive` };
+    const url = `/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
+    const res = await gatewayFetch(url, undefined, 2, "ensureFolder");
+    const requestId = res.headers.get("request-id");
+    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive (request-id: ${requestId ?? "n/a"})` };
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      return { ok: false as const, status: res.status, error: body.slice(0, 200) || `HTTP ${res.status}` };
+      return { ok: false as const, status: res.status, error: parseGraphError(res.status, body, "ensureFolder", `${GATEWAY_URL}${url}`, requestId) };
     }
     const item = await res.json() as { id: string; name: string; folder?: unknown };
     if (!item.folder) return { ok: false as const, status: 409, error: `"${clean}" existe mas não é uma pasta` };
@@ -132,30 +213,27 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
     const path = data.path.replace(/^\/+|\/+$/g, "");
     const log: Array<{ step: string; ok: boolean; detail?: string }> = [];
 
-    // 1) Existência
-    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`);
+    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`, undefined, 2, "test:exists");
     if (exists.status === 404) {
-      log.push({ step: "Pasta existe", ok: false, detail: "Não encontrada (404)" });
+      log.push({ step: "Pasta existe", ok: false, detail: `Não encontrada (404, request-id: ${exists.headers.get("request-id") ?? "n/a"})` });
       return { ok: false as const, log };
     }
     if (!exists.ok) {
       const b = await exists.text().catch(() => "");
-      log.push({ step: "Pasta existe", ok: false, detail: `HTTP ${exists.status} ${b.slice(0,120)}` });
+      log.push({ step: "Pasta existe", ok: false, detail: parseGraphError(exists.status, b, "test:exists", `${GATEWAY_URL}/me/drive/root:/${encodePath(path)}`, exists.headers.get("request-id")) });
       return { ok: false as const, log };
     }
     log.push({ step: "Pasta existe", ok: true });
 
-    // 2) Leitura/listagem
-    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`);
-    log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status}` });
+    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`, undefined, 2, "test:list");
+    log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status} request-id ${list.headers.get("request-id") ?? "n/a"}` });
 
-    // 3) Escrita (arquivo de teste)
     const testName = `.lovable-test-${Date.now()}.txt`;
     const testPath = `${path}/${testName}`;
     const put = await gatewayFetch(`/me/drive/root:/${encodePath(testPath)}:/content`, {
       method: "PUT", headers: { "Content-Type": "text/plain" }, body: "ok",
-    });
-    log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status}` });
+    }, 2, "test:write");
+    log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status} request-id ${put.headers.get("request-id") ?? "n/a"}` });
 
     let itemId: string | null = null;
     if (put.ok) {
@@ -163,15 +241,13 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
       itemId = created?.id ?? null;
     }
 
-    // 4) Remoção
     if (itemId) {
-      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }, 2, "test:delete");
       log.push({ step: "Remover arquivo de teste", ok: del.ok || del.status === 204, detail: del.ok ? undefined : `HTTP ${del.status}` });
     }
 
     const ok = log.every((l) => l.ok);
     return { ok, log };
-
   });
 
 
@@ -218,27 +294,30 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     const fullPath = `${folder}/${filename}`;
 
     // Valida que a pasta raiz existe antes de enviar (erro claro em vez de criar pasta nova silenciosamente)
-    const rootCheck = await gatewayFetch(`/me/drive/root:/${encodePath(root)}?$select=id,folder`);
+    const rootUrl = `/me/drive/root:/${encodePath(root)}?$select=id,folder`;
+    const rootCheck = await gatewayFetch(rootUrl, undefined, 2, "upload:validateRoot");
+    const rootReqId = rootCheck.headers.get("request-id");
     if (rootCheck.status === 404) {
-      throw new Error(`Pasta raiz "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive.`);
+      throw new Error(`[validar pasta raiz] Pasta "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive. (request-id: ${rootReqId ?? "n/a"})`);
     }
     if (!rootCheck.ok) {
       const b = await rootCheck.text().catch(() => "");
-      throw new Error(`Falha ao validar pasta raiz "${root}" (${rootCheck.status}): ${b.slice(0, 200)}`);
+      throw new Error(parseGraphError(rootCheck.status, b, "validar pasta raiz", `${GATEWAY_URL}${rootUrl}`, rootReqId));
     }
 
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
 
-
-    const res = await gatewayFetch(`/me/drive/root:/${encodePath(fullPath)}:/content`, {
+    const uploadUrl = `/me/drive/root:/${encodePath(fullPath)}:/content`;
+    const res = await gatewayFetch(uploadUrl, {
       method: "PUT",
       headers: { "Content-Type": data.mime_type },
       body: binary,
-    });
+    }, 2, "upload:write");
     if (!res.ok) {
       const body = await res.text().catch(() => "");
+      const requestId = res.headers.get("request-id");
       console.error("[onedrive] upload falhou", res.status, fullPath, body);
-      throw new Error(`OneDrive upload falhou (${res.status}): ${body.slice(0, 300)}`);
+      throw new Error(parseGraphError(res.status, body, "escrever arquivo", `${GATEWAY_URL}${uploadUrl}`, requestId));
     }
 
     const item = await res.json() as {

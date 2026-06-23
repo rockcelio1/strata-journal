@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
-import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder } from "@/lib/onedrive.functions";
+import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics } from "@/lib/onedrive.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/onedrive")({
   component: OneDriveSettings,
@@ -17,6 +17,13 @@ function OneDriveSettings() {
   const listFn = useServerFn(listOneDriveFolders);
   const testFn = useServerFn(testOneDrivePermissions);
   const ensureFn = useServerFn(ensureOneDriveFolder);
+  const diagFn = useServerFn(getOneDriveDiagnostics);
+
+  const diag = useQuery({
+    queryKey: ["onedrive", "diag"],
+    queryFn: () => diagFn({ data: undefined as any }),
+    refetchInterval: 5000,
+  });
 
   const [path, setPath] = useState<string>("");
   const [rootFolder, setRootFolder] = useState<string>(() =>
@@ -247,6 +254,42 @@ function OneDriveSettings() {
           )}
         </section>
       )}
+
+      <section className="border border-border rounded-lg p-4 bg-card">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h3 className="font-medium text-sm">Diagnóstico (últimas chamadas ao OneDrive)</h3>
+          <button
+            onClick={() => diag.refetch()}
+            className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
+          >
+            <RefreshCw className="h-3 w-3" /> Atualizar
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2 break-all">
+          Gateway base: <code>{diag.data?.gatewayUrl}</code>
+        </p>
+        {diag.data?.entries?.length ? (
+          <ul className="text-[11px] space-y-1 max-h-72 overflow-auto">
+            {diag.data.entries.map((e, i) => (
+              <li key={i} className={`border-l-2 pl-2 ${e.ok ? "border-emerald-500" : "border-destructive"}`}>
+                <div className="flex flex-wrap gap-2">
+                  <span className="font-mono">{e.method}</span>
+                  <span className={e.ok ? "text-emerald-600" : "text-destructive"}>{e.status || "ERR"}</span>
+                  <span className="text-muted-foreground">{e.step}</span>
+                  <span className="text-muted-foreground">{new Date(e.ts).toLocaleTimeString()}</span>
+                  {e.requestId && <span className="text-muted-foreground">req: {e.requestId}</span>}
+                </div>
+                <div className="break-all text-muted-foreground">{e.url}</div>
+                {e.error && <div className="text-destructive break-all">{e.error}</div>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-muted-foreground">Sem chamadas registradas ainda.</p>
+        )}
+      </section>
+
+
 
 
 
