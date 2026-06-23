@@ -220,12 +220,14 @@ function OneDriveSettings() {
 
 
       <section className="border border-border rounded-lg p-4 bg-card">
-        <h3 className="font-medium text-sm mb-2">Desconectar / reconectar</h3>
+        <h3 className="font-medium text-sm mb-2">Trocar conta / Desconectar</h3>
         <p className="text-xs text-muted-foreground">
-          A conta do OneDrive é gerenciada no nível do projeto. Para trocar de conta ou revogar o acesso, abra
-          <strong> Configurações do projeto → Conectores → Microsoft OneDrive</strong>.
+          A escolha da conta Microsoft é feita no seletor de conectores da Lovable (OAuth oficial da Microsoft).
+          Peça ao assistente "trocar conta do OneDrive" ou "desconectar OneDrive" — o diálogo de contas abrirá
+          aqui no chat para você escolher/desconectar sem sair do sistema.
         </p>
       </section>
+
     </div>
   );
 }
