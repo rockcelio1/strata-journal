@@ -76,8 +76,23 @@ function UsuariosPage() {
 
   const exportCsvFn = useServerFn(exportAuditLogsCsv);
 
+  const bulkPapelFn = useServerFn(bulkAtualizarPapel);
+  const bulkPwdFn = useServerFn(bulkSetPassword);
+  const bulkDeleteFn = useServerFn(bulkDeleteUsuarios);
+  const bulkResetFn = useServerFn(bulkSendPasswordReset);
+  const bulkPerfilFn = useServerFn(bulkAtualizarPerfil);
+
   const membros = useQuery({ queryKey: ["membros"], queryFn: () => membrosFn() });
   const convites = useQuery({ queryKey: ["convites"], queryFn: () => convitesFn() });
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleOne = (id: string, on: boolean) => setSelected((s) => {
+    const n = new Set(s); on ? n.add(id) : n.delete(id); return n;
+  });
+  const toggleAll = (ids: string[], on: boolean) => setSelected((s) => {
+    const n = new Set(s); for (const id of ids) on ? n.add(id) : n.delete(id); return n;
+  });
+  const clearSel = () => setSelected(new Set());
 
   // Audit filters + pagination
   const [auditFilters, setAuditFilters] = useState({ user_id: "", acao: "", from: "", to: "" });
