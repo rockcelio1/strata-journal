@@ -164,7 +164,7 @@ function RdoDetailPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {(["manha", "tarde", "noite"] as const).map((p) => (
           <Card key={p} className="p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Cloud className="h-3 w-3" /> {p === "manha" ? "Manhã" : p === "tarde" ? "Tarde" : "Noite"}</div>
