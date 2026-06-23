@@ -74,8 +74,60 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
       {/* Header azul */}
       <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
-        <div className="px-4 md:px-6 h-14 flex items-center gap-4 md:gap-6">
-          <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
+        <div className="px-4 md:px-6 h-14 flex items-center gap-3 md:gap-6">
+          {/* Hamburger — mobile */}
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <button
+                aria-label="Abrir menu"
+                className="md:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md hover:bg-brand-foreground/10"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle className="font-serif">{empresaName || "Menu"}</SheetTitle>
+              </SheetHeader>
+              <nav className="p-2 flex flex-col">
+                {mainNav.map((item) => {
+                  const active = item.match
+                    ? pathname.startsWith(item.match)
+                    : pathname === item.to || pathname.startsWith(item.to + "/");
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to as any}
+                      onClick={() => setDrawerOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px]",
+                        active ? "bg-muted text-foreground" : "text-foreground/80",
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <div className="mt-2 pt-2 border-t">
+                  <div className="px-3 py-1 text-xs uppercase tracking-wider text-muted-foreground">Cadastros</div>
+                  {cadastrosNav.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to as any}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+
+          <Link to="/dashboard" className="flex items-center gap-2 shrink-0 min-h-[44px]">
             {(me?.empresa as any)?.logo_url ? (
               <img
                 src={(me!.empresa as any).logo_url}
