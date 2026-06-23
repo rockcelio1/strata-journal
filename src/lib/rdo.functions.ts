@@ -39,7 +39,7 @@ export const getRdo = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const [rdo, ativ, mao, equip, oc] = await Promise.all([
-      context.supabase.from("rdos").select("*, obras(id, nome), autor:profiles!rdos_autor_id_fkey(id, nome), aprovador:profiles!rdos_aprovado_por_fkey(id, nome)").eq("id", data.id).maybeSingle(),
+      context.supabase.from("rdos").select("*, obras(id, nome, endereco), autor:profiles!rdos_autor_id_fkey(id, nome), aprovador:profiles!rdos_aprovado_por_fkey(id, nome)").eq("id", data.id).maybeSingle(),
       context.supabase.from("rdo_atividades").select("*").eq("rdo_id", data.id),
       context.supabase.from("rdo_mao_de_obra").select("*, mao_de_obra(nome, funcao)").eq("rdo_id", data.id),
       context.supabase.from("rdo_equipamentos").select("*, equipamentos(nome, tipo)").eq("rdo_id", data.id),
