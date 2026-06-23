@@ -56,43 +56,9 @@ export const getRdo = createServerFn({ method: "GET" })
     };
   });
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Pré-valida linha a linha para retornar erros mapeados por índice
- *  (ex.: "equipamentos[2]: equipamento_id inválido"). Roda ANTES do Zod
- *  para que a mensagem do backend identifique exatamente a linha quebrada,
- *  mesmo se o cliente burlar a UI. */
-function assertRowsValid(data: any) {
-  const errors: string[] = [];
-  (data?.equipamentos ?? []).forEach((e: any, i: number) => {
-    if (!e || typeof e.equipamento_id !== "string" || !UUID_RE.test(e.equipamento_id)) {
-      errors.push(`equipamentos[${i}]: equipamento_id inválido`);
-    }
-  });
-  (data?.ocorrencias ?? []).forEach((o: any, i: number) => {
-    if (!o || typeof o.descricao !== "string" || !o.descricao.trim()) {
-      errors.push(`ocorrencias[${i}]: descrição obrigatória`);
-    }
-  });
-  (data?.mao_de_obra ?? []).forEach((m: any, i: number) => {
-    if (!m || typeof m.mao_de_obra_id !== "string" || !UUID_RE.test(m.mao_de_obra_id)) {
-      errors.push(`mao_de_obra[${i}]: mao_de_obra_id inválido`);
-    }
-  });
-  (data?.atividades ?? []).forEach((a: any, i: number) => {
-    if (!a || typeof a.descricao !== "string" || !a.descricao.trim()) {
-      errors.push(`atividades[${i}]: descrição obrigatória`);
-    }
-  });
-  if (errors.length) {
-    const err: any = new Error("RDO_INVALID_ROWS: " + errors.join("; "));
-    err.code = "RDO_INVALID_ROWS";
-    err.rows = errors;
-    throw err;
-  }
-}
-
+import { assertRowsValid } from "./rdo-validate";
 export { assertRowsValid };
+
 
 export const createRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
