@@ -180,3 +180,25 @@
   }
 }
 
+
+/* ============ Hover ring + flash (utilitário .hover-ring) ============ */
+@keyframes hover-flash {
+  0%   { box-shadow: 0 0 0 0 var(--color-ring); }
+  50%  { box-shadow: 0 0 0 6px color-mix(in oklch, var(--color-ring) 30%, transparent); }
+  100% { box-shadow: 0 0 0 0 var(--color-ring); }
+}
+.hover-ring {
+  position: relative;
+  border-radius: 0.5rem;
+  transition: outline-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.hover-ring:hover {
+  outline-color: var(--color-ring);
+  background-color: color-mix(in oklch, var(--color-accent) 30%, transparent);
+  animation: hover-flash 700ms ease-out 1;
+}
+.hover-ring:focus-visible {
+  outline-color: var(--color-ring);
+}
