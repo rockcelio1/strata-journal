@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
-import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder } from "@/lib/onedrive.functions";
+import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics } from "@/lib/onedrive.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/onedrive")({
   component: OneDriveSettings,
