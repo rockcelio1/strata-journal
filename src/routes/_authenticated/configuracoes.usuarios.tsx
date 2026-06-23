@@ -19,6 +19,11 @@ import {
   aprovarUsuario,
   listAuditLogs,
   exportAuditLogsCsv,
+  bulkAtualizarPapel,
+  bulkSetPassword,
+  bulkDeleteUsuarios,
+  bulkSendPasswordReset,
+  bulkAtualizarPerfil,
 } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +38,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
   component: UsuariosPage,
