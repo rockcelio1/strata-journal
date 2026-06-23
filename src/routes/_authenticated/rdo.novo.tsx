@@ -205,10 +205,25 @@ function NovoRdoPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const isLastStep = false;
+  const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
+  void isLastStep;
+
   function add(key: string, item: any) { setForm({ ...form, [key]: [...form[key], item] }); }
   function rm(key: string, idx: number) { setForm({ ...form, [key]: form[key].filter((_: any, i: number) => i !== idx) }); }
   function upd(key: string, idx: number, field: string, value: any) {
     setForm({ ...form, [key]: form[key].map((it: any, i: number) => i === idx ? { ...it, [field]: value } : it) });
+  }
+
+  function scrollToRow(key: "equipamentos" | "ocorrencias" | "mao_de_obra", idx: number, targetStep: number) {
+    setStepIdx(targetStep);
+    setTimeout(() => {
+      const el = document.getElementById(`rdo-${key}-${idx}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el.querySelector("[data-row-focus]") as HTMLElement | null)?.focus?.();
+      }
+    }, 50);
   }
 
   const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
