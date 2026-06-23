@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createObra, updateObra } from "@/lib/obras.functions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createObra, updateObra, listObras } from "@/lib/obras.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpenChange: (v: boolean) => void; obra: any | null }) {
   const createFn = useServerFn(createObra);
   const updateFn = useServerFn(updateObra);
+  const listFn = useServerFn(listObras);
+  const { data: obrasList = [] } = useQuery({ queryKey: ["obras"], queryFn: () => listFn(), enabled: open && !obra });
   const qc = useQueryClient();
   const [form, setForm] = useState<any>({
     nome: "", codigo: "", cliente: "", endereco: "", data_inicio: "", data_previsao_fim: "",
