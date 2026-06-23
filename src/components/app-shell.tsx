@@ -71,10 +71,18 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
         <div className="px-4 md:px-6 h-14 flex items-center gap-4 md:gap-6">
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
-            <div className="h-7 w-7 rounded-md bg-brand-foreground/15 grid place-items-center">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <span className="font-serif text-lg leading-none">Diário de Obra</span>
+            {(me?.empresa as any)?.logo_url ? (
+              <img
+                src={(me!.empresa as any).logo_url}
+                alt="Logo"
+                className="h-7 w-7 rounded-md object-contain bg-brand-foreground/10 p-0.5"
+              />
+            ) : (
+              <div className="h-7 w-7 rounded-md bg-brand-foreground/15 grid place-items-center">
+                <Building2 className="h-4 w-4" />
+              </div>
+            )}
+            <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>
           </Link>
 
           {/* Top nav: somente desktop */}
