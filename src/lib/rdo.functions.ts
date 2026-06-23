@@ -262,3 +262,77 @@ export const listGaleria = createServerFn({ method: "GET" })
     return withUrls;
   });
 
+
+// ============== AUDITORIA: visualização / edição ==============
+export const logRdoView = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const r = await context.supabase.from("rdos").select("empresa_id, autor_id").eq("id", data.rdo_id).maybeSingle();
+    if (!r.data) return { ok: false };
+    // Não registra se o próprio autor abrir (evita ruído); registra para todos os outros
+    if (r.data.autor_id === context.userId) return { ok: true, skipped: true };
+    await context.supabase.from("rdo_audit_logs").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: r.data.empresa_id,
+      autor_id: context.userId,
+      acao: "visualizado",
+    });
+    return { ok: true };
+  });
+
+export const logRdoEdit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string; detalhes?: string }) =>
+    z.object({ rdo_id: z.string().uuid(), detalhes: z.string().max(500).optional() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const r = await context.supabase.from("rdos").select("empresa_id").eq("id", data.rdo_id).maybeSingle();
+    if (!r.data) return { ok: false };
+    await context.supabase.from("rdo_audit_logs").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: r.data.empresa_id,
+      autor_id: context.userId,
+      acao: "editado",
+      motivo: data.detalhes ?? null,
+    });
+    return { ok: true };
+  });
+
+export const getRdoAuditSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const logs = await context.supabase
+      .from("rdo_audit_logs")
+      .select("acao, autor_id, created_at, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome, email)")
+      .eq("rdo_id", data.rdo_id);
+    if (logs.error) throw logs.error;
+
+    const ACOES_ALTERACAO = new Set(["enviado_para_aprovacao", "aprovado", "reprovado", "status_alterado"]);
+    type Row = { user_id: string; nome: string | null; email: string | null; criou: number; visualizou: number; editou: number; alterou: number; ultima: string | null };
+    const by = new Map<string, Row>();
+    const bump = (uid: string | null, nome: string | null, email: string | null, key: "criou" | "visualizou" | "editou" | "alterou", at: string) => {
+      const k = uid ?? "__anon";
+      const cur = by.get(k) ?? { user_id: k, nome, email, criou: 0, visualizou: 0, editou: 0, alterou: 0, ultima: null };
+      cur[key] += 1;
+      cur.nome = cur.nome ?? nome;
+      cur.email = cur.email ?? email;
+      if (!cur.ultima || at > cur.ultima) cur.ultima = at;
+      by.set(k, cur);
+    };
+    for (const l of (logs.data ?? []) as any[]) {
+      const nome = l.autor?.nome ?? null;
+      const email = l.autor?.email ?? null;
+      if (l.acao === "criado") bump(l.autor_id, nome, email, "criou", l.created_at);
+      else if (l.acao === "visualizado") bump(l.autor_id, nome, email, "visualizou", l.created_at);
+      else if (l.acao === "editado") bump(l.autor_id, nome, email, "editou", l.created_at);
+      else if (ACOES_ALTERACAO.has(l.acao)) bump(l.autor_id, nome, email, "alterou", l.created_at);
+    }
+    const totais = { criou: 0, visualizou: 0, editou: 0, alterou: 0 };
+    for (const r of by.values()) { totais.criou += r.criou; totais.visualizou += r.visualizou; totais.editou += r.editou; totais.alterou += r.alterou; }
+    return {
+      rows: Array.from(by.values()).sort((a, b) => (b.ultima ?? "").localeCompare(a.ultima ?? "")),
+      totais,
+    };
+  });
