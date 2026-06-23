@@ -117,6 +117,14 @@ function OneDriveSettings() {
               {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Verificar
             </button>
+            {ok && (
+              <button
+                onClick={() => setAccountModal("switch")}
+                className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
+              >
+                <UserCog className="h-3 w-3" /> Trocar conta
+              </button>
+            )}
             <button
               onClick={() => testConn.mutate()}
               disabled={testConn.isPending || !ok}
