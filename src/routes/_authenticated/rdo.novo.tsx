@@ -22,7 +22,7 @@ import {
   ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
-import { fetchPosicao, fetchClima, classificaClima, type ClimaSnapshot } from "@/lib/weather";
+import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, type ClimaSnapshot } from "@/lib/weather";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
