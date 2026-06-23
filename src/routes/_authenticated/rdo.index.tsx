@@ -39,26 +39,33 @@ function RdoListPage() {
     syncingRef.current = true;
     setSyncing(true);
     setProgress({ done: 0, total: 0 });
+    const totals = { equipamentos: 0, ocorrencias: 0, mao_de_obra: 0, atividades: 0 };
     try {
-      const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
       const res = await flushQueue(
         async (payload) => {
-          const sane = {
-            ...payload,
-            atividades: (payload.atividades ?? []).filter((a: any) => a?.descricao?.trim()),
-            mao_de_obra: (payload.mao_de_obra ?? []).filter((m: any) => isUuid(m?.mao_de_obra_id)),
-            equipamentos: (payload.equipamentos ?? []).filter((e: any) => isUuid(e?.equipamento_id)),
-            ocorrencias: (payload.ocorrencias ?? []).filter((o: any) => o?.descricao?.trim()),
-          };
+          const { sane, dropped } = sanitizeRdoPayload(payload);
+          totals.equipamentos += dropped.equipamentos;
+          totals.ocorrencias += dropped.ocorrencias;
+          totals.mao_de_obra += dropped.mao_de_obra;
+          totals.atividades += dropped.atividades;
           const r: any = await createFn({ data: sane }); return { id: r.id };
         },
         ({ index, total }) => setProgress({ done: index, total }),
       );
       await refreshQueue();
       qc.invalidateQueries({ queryKey: ["rdos"] });
-      if (res.ok && !res.fail) toast.success(`${res.ok} RDO(s) sincronizado(s)`);
-      else if (res.ok && res.fail) toast.warning(`${res.ok} enviados · ${res.fail} com erro`);
-      else if (res.fail) toast.error(`${res.fail} falharam ao sincronizar`);
+      const droppedTotal = totals.equipamentos + totals.ocorrencias + totals.mao_de_obra + totals.atividades;
+      const droppedDetails = droppedTotal > 0
+        ? ` · descartados: ${[
+            totals.equipamentos ? `${totals.equipamentos} equipamento(s) sem UUID` : "",
+            totals.ocorrencias ? `${totals.ocorrencias} ocorrência(s) sem descrição` : "",
+            totals.mao_de_obra ? `${totals.mao_de_obra} mão de obra sem pessoa` : "",
+            totals.atividades ? `${totals.atividades} atividade(s) sem descrição` : "",
+          ].filter(Boolean).join(", ")}`
+        : "";
+      if (res.ok && !res.fail) toast.success(`${res.ok} RDO(s) sincronizado(s)${droppedDetails}`, { duration: droppedTotal ? 8000 : 4000 });
+      else if (res.ok && res.fail) toast.warning(`${res.ok} enviados · ${res.fail} com erro${droppedDetails}`);
+      else if (res.fail) toast.error(`${res.fail} falharam ao sincronizar${droppedDetails}`);
     } finally {
       syncingRef.current = false;
       setSyncing(false);
