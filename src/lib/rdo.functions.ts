@@ -306,6 +306,23 @@ export const logRdoView = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+export const logRdoAuditView = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const r = await context.supabase.from("rdos").select("empresa_id").eq("id", data.rdo_id).maybeSingle();
+    if (!r.data) return { ok: false };
+    await context.supabase.from("rdo_audit_logs").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: r.data.empresa_id,
+      autor_id: context.userId,
+      acao: "auditoria_visualizada",
+    });
+    return { ok: true };
+  });
+
+
 export const logRdoEdit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string; detalhes?: string }) =>

@@ -101,14 +101,20 @@ function ObraDetail() {
         <main className="space-y-4 min-w-0">
           {view === "visao" && (
             <>
-              {/* KPIs */}
+              {/* KPIs (clicáveis) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-                <Kpi label="Relatórios" value={stats.relatorios} icon={<ClipboardText size={18} />} />
-                <Kpi label="Atividades" value={stats.atividades} icon={<ListChecks size={18} />} />
-                <Kpi label="Ocorrências" value={stats.ocorrencias} icon={<Warning size={18} />} />
-                <Kpi label="Comentários" value={stats.comentarios} icon={<ChatCircle size={18} />} />
-                <Kpi label="Fotos" value={stats.fotos} icon={<Camera size={18} />} />
+                <KpiButton label="Relatórios" value={stats.relatorios} icon={<ClipboardText size={18} />}
+                  onClick={() => setView("relatorios")} title="Ver relatórios desta obra" />
+                <KpiButton label="Atividades" value={stats.atividades} icon={<ListChecks size={18} />}
+                  onClick={() => setView("tarefas")} title="Ver lista de tarefas/atividades" />
+                <KpiLink label="Ocorrências" value={stats.ocorrencias} icon={<Warning size={18} />}
+                  to="/cadastros/ocorrencias" title="Abrir tipos de ocorrência" />
+                <KpiButton label="Comentários" value={stats.comentarios} icon={<ChatCircle size={18} />}
+                  onClick={() => setView("relatorios")} title="Ver comentários nos RDOs desta obra" />
+                <KpiLink label="Fotos" value={stats.fotos} icon={<Camera size={18} />}
+                  to="/galeria" title="Abrir galeria de fotos" />
               </div>
+
 
               {/* Recentes */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -297,6 +303,36 @@ function Kpi({ label, value, icon }: { label: string; value: number; icon: React
         </div>
       </div>
     </Card>
+  );
+}
+
+function KpiButton({ label, value, icon, onClick, title }: { label: string; value: number; icon: React.ReactNode; onClick: () => void; title?: string }) {
+  return (
+    <button type="button" onClick={onClick} title={title} aria-label={title ?? label}
+      className="text-left rounded-md border-t-2 border-t-brand bg-card overflow-hidden hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+      <div className="px-4 py-3">
+        <div className="text-2xl font-serif text-brand tabular-nums">{value.toLocaleString("pt-BR")}</div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground/70">{icon}</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function KpiLink({ label, value, icon, to, title }: { label: string; value: number; icon: React.ReactNode; to: string; title?: string }) {
+  return (
+    <Link to={to as any} title={title} aria-label={title ?? label}
+      className="text-left rounded-md border-t-2 border-t-brand bg-card overflow-hidden hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors block">
+      <div className="px-4 py-3">
+        <div className="text-2xl font-serif text-brand tabular-nums">{value.toLocaleString("pt-BR")}</div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground/70">{icon}</span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
