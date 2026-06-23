@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SheetTrigger asChild>
               <button
                 aria-label="Abrir menu"
-                className="md:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md hover:bg-brand-foreground/10"
+                className="md:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md active:bg-brand-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/70 focus-visible:ring-offset-2 focus-visible:ring-offset-brand"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -100,8 +100,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                       to={item.to as any}
                       onClick={() => setDrawerOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px]",
-                        active ? "bg-muted text-foreground" : "text-foreground/80",
+                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        active ? "bg-muted text-foreground" : "text-foreground/80 active:bg-muted/60",
                       )}
                     >
                       <item.icon className="h-5 w-5" />
@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={item.to}
                       to={item.to as any}
                       onClick={() => setDrawerOpen(false)}
-                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80"
+                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <item.icon className="h-5 w-5" />
                       {item.label}
@@ -234,7 +234,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to as any}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60",
+                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                     active ? "text-brand" : "text-muted-foreground",
                   )}
                 >
@@ -248,7 +248,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               onClick={() => setDrawerOpen(true)}
               aria-label="Mais opções"
-              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <Menu className="h-5 w-5" />
               <span className="leading-none">Mais</span>

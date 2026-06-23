@@ -99,7 +99,123 @@ export const getDashboard = createServerFn({ method: "GET" })
   });
 
 // ============== CONVITES / MEMBROS ==============
-const roleEnum = z.enum(["admin", "engenheiro", "mestre", "visualizador"]);
+const roleEnum = z.enum(["master", "admin", "engenheiro", "mestre", "visualizador"]);
+
+async function assertAdminOrMaster(supabase: any, userId: string) {
+  const [adm, mst] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    supabase.rpc("has_role", { _user_id: userId, _role: "master" }),
+  ]);
+  if (!adm.data && !mst.data) throw new Error("Acesso negado");
+}
+
+export const adminSetUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string; password: string }) =>
+    z.object({ user_id: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
+    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const adminSendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string }) => z.object({ user_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    if (data.user_id === context.userId) throw new Error("Não é possível excluir a si mesmo");
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
+    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const adminToggleUserDisabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string; disabled: boolean }) =>
+    z.object({ user_id: z.string().uuid(), disabled: z.boolean() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    if (data.user_id === context.userId) throw new Error("Não é possível desabilitar a si mesmo");
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
+    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // ban_duration: '876000h' (~100y) para desabilitar; 'none' para reabilitar
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      ban_duration: data.disabled ? "876000h" : "none",
+    } as any);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const adminCreateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; password: string; nome: string; role: string }) =>
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(8).max(72),
+      nome: z.string().min(1).max(120),
+      role: roleEnum,
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Cria convite ativo para que o trigger handle_new_user use a empresa+role correta
+    await context.supabase.from("convites").insert({
+      empresa_id: me.data.empresa_id,
+      email: data.email.toLowerCase(),
+      role: data.role as any,
+    });
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { nome: data.nome },
+    });
+    if (error) throw error;
+    return { ok: true, user_id: created.user?.id };
+  });
+
+export const adminUpdateProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string; nome: string; cargo?: string | null }) =>
+    z.object({ user_id: z.string().uuid(), nome: z.string().min(1).max(120), cargo: z.string().nullable().optional() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({ nome: data.nome, cargo: data.cargo ?? null })
+      .eq("id", data.user_id);
+    if (error) throw error;
+    return { ok: true };
+  });
 
 export const listConvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
