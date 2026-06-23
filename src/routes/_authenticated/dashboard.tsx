@@ -310,10 +310,13 @@ function DashboardPage() {
   );
 }
 
-function ChartFrame({ title, children }: { title: string; children: React.ReactNode }) {
+function ChartFrame({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-3 shadow-inner">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">{title}</div>
+      <div className="flex items-center justify-between mb-2 px-1">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
+        {hint && <div className="text-[10px] text-muted-foreground hidden sm:flex items-center gap-1"><RotateCw className="h-3 w-3" />{hint}</div>}
+      </div>
       {children}
     </div>
   );
