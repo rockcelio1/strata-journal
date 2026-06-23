@@ -300,6 +300,10 @@ function AuthPage() {
               Continuar com Google
             </Button>
           </Card>
+          <div className="text-center mt-4">
+            <a href="/instalar" className="text-sm text-brand hover:underline">📲 Instalar o app no celular</a>
+          </div>
+
         </div>
       </div>
     </div>
