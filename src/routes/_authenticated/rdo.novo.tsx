@@ -587,7 +587,14 @@ function NovoRdoPage() {
 
 
         {stepIdx === 6 && (
+          <></>
+        )}
+        {stepIdx === 6 && (
+          <></>
+        )}
+        {(stepIdx === 6 || stepIdx === 7) && (
           <>
+            {stepIdx === 6 && (
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
