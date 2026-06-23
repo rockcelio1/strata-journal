@@ -32,7 +32,10 @@ function SistemaPage() {
 
   async function handleFile(file: File) {
     if (!empresaId) return;
-    if (!file.type.startsWith("image/")) return toast.error("Selecione um arquivo de imagem");
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    const okExt = ["jpg", "jpeg", "png", "bmp", "webp", "svg", "gif", "img"].includes(ext);
+    const okMime = file.type.startsWith("image/");
+    if (!okMime && !okExt) return toast.error("Formato inválido. Use JPG, JPEG, PNG, BMP, WEBP, SVG, GIF ou IMG.");
     if (file.size > 2 * 1024 * 1024) return toast.error("Máximo 2 MB");
     setUploading(true);
     try {
