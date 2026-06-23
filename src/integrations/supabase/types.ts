@@ -60,6 +60,7 @@ export type Database = {
           cnpj: string | null
           created_at: string
           id: string
+          logo_url: string | null
           nome: string
           updated_at: string
         }
@@ -67,6 +68,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           id?: string
+          logo_url?: string | null
           nome: string
           updated_at?: string
         }
@@ -74,6 +76,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           id?: string
+          logo_url?: string | null
           nome?: string
           updated_at?: string
         }
