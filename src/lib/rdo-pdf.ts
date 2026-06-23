@@ -4,8 +4,9 @@ import { climaLabel, rdoStatusMeta } from "@/components/status";
 
 type AnyRec = Record<string, any>;
 
-const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString("pt-BR") : "—");
-const fmtDay = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
+const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
+const fmtDay = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
+const fmtDayBR = (yyyyMmDd?: string | null) => (yyyyMmDd ? new Date(`${yyyyMmDd}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 
 export function exportRdoPdf(args: {
   rdo: AnyRec;
@@ -16,8 +17,10 @@ export function exportRdoPdf(args: {
   logs: AnyRec[];
   anexos: AnyRec[];
   empresa?: { nome?: string; cnpj?: string | null } | null;
+  clima_dias?: AnyRec[] | null;
+  clima_local?: string | null;
 }) {
-  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa } = args;
+  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   let y = 40;
