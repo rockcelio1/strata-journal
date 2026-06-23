@@ -56,9 +56,16 @@ export const getRdo = createServerFn({ method: "GET" })
     };
   });
 
+import { assertRowsValid } from "./rdo-validate";
+export { assertRowsValid };
+
+
 export const createRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => rdoSchema.parse(d))
+  .inputValidator((d: unknown) => {
+    assertRowsValid(d);
+    return rdoSchema.parse(d);
+  })
   .handler(async ({ context, data }) => {
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");

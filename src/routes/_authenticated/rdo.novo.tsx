@@ -25,6 +25,7 @@ import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, classificaClima, type ClimaSnapshot } from "@/lib/weather";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
+import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
@@ -175,14 +176,7 @@ function NovoRdoPage() {
 
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
-      const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-      const cleaned = {
-        ...form,
-        atividades: (form.atividades ?? []).filter((a: any) => a.descricao?.trim()),
-        mao_de_obra: (form.mao_de_obra ?? []).filter((m: any) => isUuid(m.mao_de_obra_id)),
-        equipamentos: (form.equipamentos ?? []).filter((e: any) => isUuid(e.equipamento_id)),
-        ocorrencias: (form.ocorrencias ?? []).filter((o: any) => o.descricao?.trim()),
-      };
+      const { sane: cleaned } = sanitizeRdoPayload(form);
       const payload = { ...cleaned, enviar };
       const sigManifest = await buildSignatureManifest(payload);
       const queued = await enqueueRdo({ ...payload, _assinatura: sigManifest });
@@ -211,17 +205,25 @@ function NovoRdoPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
+
   function add(key: string, item: any) { setForm({ ...form, [key]: [...form[key], item] }); }
   function rm(key: string, idx: number) { setForm({ ...form, [key]: form[key].filter((_: any, i: number) => i !== idx) }); }
   function upd(key: string, idx: number, field: string, value: any) {
     setForm({ ...form, [key]: form[key].map((it: any, i: number) => i === idx ? { ...it, [field]: value } : it) });
   }
 
-  const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-  const equipInvalidIdx = form.equipamentos.map((e: any, i: number) => isUuid(e.equipamento_id) ? -1 : i).filter((i: number) => i >= 0);
-  const ocInvalidIdx = form.ocorrencias.map((o: any, i: number) => o.descricao?.trim() ? -1 : i).filter((i: number) => i >= 0);
-  const maoInvalidIdx = form.mao_de_obra.map((m: any, i: number) => isUuid(m.mao_de_obra_id) ? -1 : i).filter((i: number) => i >= 0);
-  const formValid = equipInvalidIdx.length === 0 && ocInvalidIdx.length === 0 && maoInvalidIdx.length === 0;
+  function scrollToRow(key: "equipamentos" | "ocorrencias" | "mao_de_obra", idx: number, targetStep: number) {
+    setStepIdx(targetStep);
+    setTimeout(() => {
+      const el = document.getElementById(`rdo-${key}-${idx}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el.querySelector("[data-row-focus]") as HTMLElement | null)?.focus?.();
+      }
+    }, 50);
+  }
+
   const canNext = stepIdx === 0 ? !!form.obra_id : true;
   const isLast = stepIdx === steps.length - 1;
 
@@ -239,7 +241,46 @@ function NovoRdoPage() {
         ))}
       </div>
 
+      {!formValid && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-4 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm"
+        >
+          <p className="font-medium text-destructive">
+            {equipInvalidIdx.length + ocInvalidIdx.length + maoInvalidIdx.length} item(ns) inválido(s):
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {equipInvalidIdx.map((i: number) => (
+              <li key={`e-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("equipamentos", i, 4)}>
+                  Equipamento linha {i + 1} — selecione um equipamento
+                </button>
+              </li>
+            ))}
+            {ocInvalidIdx.map((i: number) => (
+              <li key={`o-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("ocorrencias", i, 5)}>
+                  Ocorrência linha {i + 1} — descrição obrigatória
+                </button>
+              </li>
+            ))}
+            {maoInvalidIdx.map((i: number) => (
+              <li key={`m-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("mao_de_obra", i, 3)}>
+                  Mão de obra linha {i + 1} — selecione uma pessoa
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="space-y-4">
+
         {stepIdx === 0 && (
           <Card className="p-5 space-y-4">
             <div>
@@ -308,15 +349,21 @@ function NovoRdoPage() {
 
         {stepIdx === 3 && (
           <Section title="Mão de obra" onAdd={() => add("mao_de_obra", { mao_de_obra_id: "", horas: 8, atividade: "" })}>
-            {form.mao_de_obra.map((it: any, i: number) => (
-              <Card key={i} className="p-3 space-y-2">
+            {form.mao_de_obra.map((it: any, i: number) => {
+              const invalid = !isUuid(it.mao_de_obra_id);
+              const errId = `rdo-mao_de_obra-${i}-err`;
+              return (
+              <Card key={i} id={`rdo-mao_de_obra-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Pessoa</Label>
                   <Select value={it.mao_de_obra_id} onValueChange={(v) => upd("mao_de_obra", i, "mao_de_obra_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
                     <SelectContent>
                       {(maoOpts as any[]).map((m) => <SelectItem key={m.id} value={m.id}>{m.nome} — {m.funcao}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {invalid && <p id={errId} aria-live="polite" className="text-xs text-destructive mt-1">Selecione uma pessoa.</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Atividade</Label><Input value={it.atividade ?? ""} onChange={(e) => upd("mao_de_obra", i, "atividade", e.target.value)} /></div>
@@ -324,7 +371,8 @@ function NovoRdoPage() {
                 </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("mao_de_obra", i)} /></div>
               </Card>
-            ))}
+              );
+            })}
           </Section>
         )}
 
@@ -332,16 +380,19 @@ function NovoRdoPage() {
           <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 0, status_uso: "" })}>
             {form.equipamentos.map((it: any, i: number) => {
               const invalid = !isUuid(it.equipamento_id);
+              const errId = `rdo-equipamentos-${i}-err`;
               return (
-              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Equipamento</Label>
                   <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
-                    <SelectTrigger aria-invalid={invalid}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
                     <SelectContent>
                       {(equipOpts as any[]).map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {invalid && <p className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
+                  {invalid && <p id={errId} aria-live="polite" className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Observação</Label><Input value={it.status_uso ?? ""} onChange={(e) => upd("equipamentos", i, "status_uso", e.target.value)} /></div>
@@ -358,8 +409,9 @@ function NovoRdoPage() {
           <Section title="Ocorrências" onAdd={() => add("ocorrencias", { tipo_ocorrencia_id: null, descricao: "" })}>
             {form.ocorrencias.map((it: any, i: number) => {
               const invalid = !it.descricao?.trim();
+              const errId = `rdo-ocorrencias-${i}-err`;
               return (
-              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-ocorrencias-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Tipo</Label>
                   <Select value={it.tipo_ocorrencia_id ?? ""} onValueChange={(v) => upd("ocorrencias", i, "tipo_ocorrencia_id", v || null)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -370,8 +422,9 @@ function NovoRdoPage() {
                 </div>
                 <div>
                   <Label className="text-xs">Descrição</Label>
-                  <Input aria-invalid={invalid} value={it.descricao} onChange={(e) => upd("ocorrencias", i, "descricao", e.target.value)} />
-                  {invalid && <p className="text-xs text-destructive mt-1">Descrição é obrigatória.</p>}
+                  <Input data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}
+                    value={it.descricao} onChange={(e) => upd("ocorrencias", i, "descricao", e.target.value)} />
+                  {invalid && <p id={errId} aria-live="polite" className="text-xs text-destructive mt-1">Descrição é obrigatória.</p>}
                 </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("ocorrencias", i)} /></div>
               </Card>
@@ -379,6 +432,9 @@ function NovoRdoPage() {
             })}
           </Section>
         )}
+
+
+
 
         {stepIdx === 6 && (
           <>
