@@ -64,6 +64,8 @@ function NovoRdoPage() {
   const meFn = useServerFn(getMe);
   const registrarFn = useServerFn(registrarAnexo);
   const uploadOneDriveFn = useServerFn(uploadOneDriveAnexo);
+  const getClimaCacheFn = useServerFn(getObraClimaCache);
+  const saveClimaCacheFn = useServerFn(saveObraClimaCache);
 
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
