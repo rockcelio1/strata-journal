@@ -79,7 +79,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
               <Label>Cliente</Label>
               <Input value={form.cliente} onChange={(e) => setForm({ ...form, cliente: e.target.value })} />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Endereço</Label>
               <Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
             </div>
@@ -108,7 +108,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
               <Slider value={[Number(form.avanco_pct)]} min={0} max={100} step={1}
                 onValueChange={(v) => setForm({ ...form, avanco_pct: v[0] })} className="mt-3" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Descrição</Label>
               <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
             </div>
