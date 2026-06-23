@@ -48,10 +48,13 @@ function AuthPage() {
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
+    const t0 = performance.now();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password: String(fd.get("password")),
     });
+    // eslint-disable-next-line no-console
+    console.info("[perf] login", `${Math.round(performance.now() - t0)}ms`);
     setLoading(false);
     if (error) {
       if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
