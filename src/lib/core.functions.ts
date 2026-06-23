@@ -182,12 +182,17 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const [obras, rdosPendentes, rdosTotal, ocorrencias, recentRdos] = await Promise.all([
+    const [obras, rdosPendentes, rdosFull, ocorrenciasFull, recentRdos, equipamentos, maoDeObra, tiposOcorrencia, rdoEquip, rdoMao] = await Promise.all([
       supabase.from("obras").select("id, nome, status, avanco_pct"),
       supabase.from("rdos").select("id", { count: "exact", head: true }).eq("status", "enviado"),
-      supabase.from("rdos").select("id, status, data"),
-      supabase.from("rdo_ocorrencias").select("id, created_at"),
+      supabase.from("rdos").select("id, status, data, obra_id"),
+      supabase.from("rdo_ocorrencias").select("id, created_at, rdo_id, tipo_ocorrencia_id, rdos!inner(obra_id)"),
       supabase.from("rdos").select("id, numero, data, status, obras(nome)").order("created_at", { ascending: false }).limit(6),
+      supabase.from("equipamentos").select("id, nome"),
+      supabase.from("mao_de_obra").select("id, nome"),
+      supabase.from("tipos_ocorrencia").select("id, nome"),
+      supabase.from("rdo_equipamentos").select("equipamento_id, rdo_id, rdos!inner(obra_id)"),
+      supabase.from("rdo_mao_de_obra").select("mao_de_obra_id, rdo_id, rdos!inner(obra_id)"),
     ]);
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000);
     return {
@@ -195,11 +200,19 @@ export const getDashboard = createServerFn({ method: "GET" })
       obras_ativas: (obras.data ?? []).filter((o) => o.status === "em_andamento").length,
       obras_total: (obras.data ?? []).length,
       rdos_pendentes: rdosPendentes.count ?? 0,
-      rdos_total: (rdosTotal.data ?? []).length,
-      rdos_aprovados: (rdosTotal.data ?? []).filter((r) => r.status === "aprovado").length,
-      ocorrencias_semana: (ocorrencias.data ?? []).filter((o) => new Date(o.created_at) > sevenDaysAgo).length,
-      ocorrencias_total: (ocorrencias.data ?? []).length,
+      rdos_total: (rdosFull.data ?? []).length,
+      rdos_aprovados: (rdosFull.data ?? []).filter((r) => r.status === "aprovado").length,
+      ocorrencias_semana: (ocorrenciasFull.data ?? []).filter((o: any) => new Date(o.created_at) > sevenDaysAgo).length,
+      ocorrencias_total: (ocorrenciasFull.data ?? []).length,
       recent_rdos: recentRdos.data ?? [],
+      // dados para filtro avançado
+      rdos_all: rdosFull.data ?? [],
+      ocorrencias_all: ocorrenciasFull.data ?? [],
+      rdo_equipamentos: rdoEquip.data ?? [],
+      rdo_mao_de_obra: rdoMao.data ?? [],
+      equipamentos: equipamentos.data ?? [],
+      mao_de_obra: maoDeObra.data ?? [],
+      tipos_ocorrencia: tiposOcorrencia.data ?? [],
     };
   });
 
