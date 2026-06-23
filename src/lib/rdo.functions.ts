@@ -231,7 +231,7 @@ export const removerAnexo = createServerFn({ method: "POST" })
       const apiKey = process.env.LOVABLE_API_KEY;
       const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
       if (apiKey && connKey) {
-        await fetch(`https://connector-gateway.lovable.dev/microsoft_onedrive/v1.0/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, {
+        await fetch(`https://connector-gateway.lovable.dev/microsoft_onedrive/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
         }).catch(() => {});
