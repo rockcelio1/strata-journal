@@ -102,11 +102,33 @@ export const getDashboard = createServerFn({ method: "GET" })
 const roleEnum = z.enum(["master", "admin", "engenheiro", "mestre", "visualizador"]);
 
 async function assertAdminOrMaster(supabase: any, userId: string) {
-  const [adm, mst] = await Promise.all([
-    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-    supabase.rpc("has_role", { _user_id: userId, _role: "master" }),
-  ]);
-  if (!adm.data && !mst.data) throw new Error("Acesso negado");
+  const r = await supabase.rpc("has_admin_access", { _user_id: userId });
+  if (!r.data) throw new Error("Acesso negado: apenas administrador ou master");
+}
+
+async function getMyEmpresaId(supabase: any, userId: string): Promise<string> {
+  const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
+  if (!me.data) throw new Error("Sem empresa");
+  return me.data.empresa_id;
+}
+
+async function assertSameEmpresa(supabase: any, userId: string, targetUserId: string) {
+  const meEmp = await getMyEmpresaId(supabase, userId);
+  const t = await supabase.from("profiles").select("empresa_id").eq("id", targetUserId).maybeSingle();
+  if (!t.data || t.data.empresa_id !== meEmp) throw new Error("Usuário fora da empresa");
+  return meEmp;
+}
+
+async function logAudit(supabase: any, p: {
+  empresa_id: string; acao: string; alvo_user_id?: string | null; alvo_email?: string | null; detalhes?: any;
+}) {
+  await supabase.from("audit_logs_usuarios").insert({
+    empresa_id: p.empresa_id,
+    acao: p.acao,
+    alvo_user_id: p.alvo_user_id ?? null,
+    alvo_email: p.alvo_email ?? null,
+    detalhes: p.detalhes ?? null,
+  });
 }
 
 export const adminSetUserPassword = createServerFn({ method: "POST" })
