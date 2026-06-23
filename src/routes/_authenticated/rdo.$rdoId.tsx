@@ -369,7 +369,7 @@ function RdoDetailPage() {
               {logs.map((l: any) => (
                 <li key={l.id} className="ml-4 pb-3">
                   <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
-                  <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
+                  <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</div>
                   <div className="text-sm">
                     <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
                     {l.status_anterior && l.status_novo && (
