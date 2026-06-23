@@ -101,14 +101,20 @@ function ObraDetail() {
         <main className="space-y-4 min-w-0">
           {view === "visao" && (
             <>
-              {/* KPIs */}
+              {/* KPIs (clicáveis) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-                <Kpi label="Relatórios" value={stats.relatorios} icon={<ClipboardText size={18} />} />
-                <Kpi label="Atividades" value={stats.atividades} icon={<ListChecks size={18} />} />
-                <Kpi label="Ocorrências" value={stats.ocorrencias} icon={<Warning size={18} />} />
-                <Kpi label="Comentários" value={stats.comentarios} icon={<ChatCircle size={18} />} />
-                <Kpi label="Fotos" value={stats.fotos} icon={<Camera size={18} />} />
+                <KpiButton label="Relatórios" value={stats.relatorios} icon={<ClipboardText size={18} />}
+                  onClick={() => setView("relatorios")} title="Ver relatórios desta obra" />
+                <KpiButton label="Atividades" value={stats.atividades} icon={<ListChecks size={18} />}
+                  onClick={() => setView("tarefas")} title="Ver lista de tarefas/atividades" />
+                <KpiLink label="Ocorrências" value={stats.ocorrencias} icon={<Warning size={18} />}
+                  to="/cadastros/ocorrencias" title="Abrir tipos de ocorrência" />
+                <KpiButton label="Comentários" value={stats.comentarios} icon={<ChatCircle size={18} />}
+                  onClick={() => setView("relatorios")} title="Ver comentários nos RDOs desta obra" />
+                <KpiLink label="Fotos" value={stats.fotos} icon={<Camera size={18} />}
+                  to="/galeria" title="Abrir galeria de fotos" />
               </div>
+
 
               {/* Recentes */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
