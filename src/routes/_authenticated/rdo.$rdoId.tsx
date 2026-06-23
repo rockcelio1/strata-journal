@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getRdo, submitRdo, approveRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
+  logRdoView, getRdoAuditSummary,
 } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
