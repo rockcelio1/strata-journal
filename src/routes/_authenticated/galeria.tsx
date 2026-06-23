@@ -137,45 +137,66 @@ function GaleriaPage() {
           Nenhuma mídia encontrada com os filtros atuais.
         </Card>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {(itens as any[]).map((it) => {
-            const Icon = tipoIcon[it.tipo as Tipo];
-            const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
-            return (
-              <Card key={it.id} className="overflow-hidden group">
-                <button
-                  onClick={() => setPreview(it)}
-                  className="block relative aspect-square w-full bg-muted overflow-hidden"
-                >
-                  {it.tipo === "imagem" && it.url ? (
-                    <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                  ) : it.tipo === "video" && it.url ? (
-                    <video src={it.url} className="w-full h-full object-cover" muted preload="metadata" />
-                  ) : (
-                    <div className="w-full h-full grid place-items-center text-muted-foreground">
-                      <Icon size={40} />
+        (() => {
+          const grupos = new Map<string, any[]>();
+          for (const it of itens as any[]) {
+            const dia = (it.rdos?.data as string | undefined) ?? (it.created_at as string).slice(0, 10);
+            if (!grupos.has(dia)) grupos.set(dia, []);
+            grupos.get(dia)!.push(it);
+          }
+          const dias = Array.from(grupos.keys()).sort((a, b) => (a < b ? 1 : -1));
+          return (
+            <div className="space-y-6">
+              {dias.map((dia) => {
+                const lista = grupos.get(dia)!;
+                const d = new Date(dia + "T00:00:00");
+                const label = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+                return (
+                  <section key={dia}>
+                    <div className="flex items-baseline justify-between mb-2 border-b border-border pb-1">
+                      <h2 className="font-serif text-lg capitalize">{label}</h2>
+                      <span className="text-xs text-muted-foreground tabular-nums">{lista.length} item(ns)</span>
                     </div>
-                  )}
-                  {recente && (
-                    <Badge className="absolute top-1 left-1 bg-emerald-600 text-white border-0">
-                      <Broadcast size={10} className="mr-1 animate-pulse" /> Recebido agora
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="absolute top-1 right-1 bg-background/90 text-[10px] uppercase">{it.tipo}</Badge>
-                </button>
-                <div className="p-2 text-xs">
-                  <div className="font-medium truncate">{it.legenda || it.nome}</div>
-                  <div className="text-muted-foreground truncate">
-                    {it.rdos?.obras?.nome} · <Link to="/rdo/$rdoId" params={{ rdoId: it.rdo_id }} className="hover:underline">#{it.rdos?.numero}</Link>
-                  </div>
-                  <div className="text-muted-foreground truncate">
-                    {it.autor?.nome ?? "—"} · {new Date(it.created_at).toLocaleString("pt-BR")}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {lista.map((it: any) => {
+                        const Icon = tipoIcon[it.tipo as Tipo];
+                        const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
+                        return (
+                          <Card key={it.id} className="overflow-hidden group">
+                            <button onClick={() => setPreview(it)} className="block relative aspect-square w-full bg-muted overflow-hidden">
+                              {it.tipo === "imagem" && it.url ? (
+                                <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                              ) : it.tipo === "video" && it.url ? (
+                                <video src={it.url} className="w-full h-full object-cover" muted preload="metadata" />
+                              ) : (
+                                <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
+                              )}
+                              {recente && (
+                                <Badge className="absolute top-1 left-1 bg-emerald-600 text-white border-0">
+                                  <Broadcast size={10} className="mr-1 animate-pulse" /> Recebido agora
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="absolute top-1 right-1 bg-background/90 text-[10px] uppercase">{it.tipo}</Badge>
+                            </button>
+                            <div className="p-2 text-xs">
+                              <div className="font-medium truncate">{it.legenda || it.nome}</div>
+                              <div className="text-muted-foreground truncate">
+                                {it.rdos?.obras?.nome} · <Link to="/rdo/$rdoId" params={{ rdoId: it.rdo_id }} className="hover:underline">#{it.rdos?.numero}</Link>
+                              </div>
+                              <div className="text-muted-foreground truncate">
+                                {it.autor?.nome ?? "—"} · {new Date(it.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          );
+        })()
       )}
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
