@@ -65,7 +65,7 @@ export const listMembros = createServerFn({ method: "GET" })
       arr.push(r.role);
       rolesByUser.set(r.user_id, arr);
     }
-    return (profilesRes.data ?? []).map((p) => ({
+    return (profilesRes.data ?? []).map((p: any) => ({
       ...p,
       user_roles: (rolesByUser.get(p.id) ?? []).map((role) => ({ role })),
     }));
