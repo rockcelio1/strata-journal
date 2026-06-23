@@ -100,8 +100,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                       to={item.to as any}
                       onClick={() => setDrawerOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px]",
-                        active ? "bg-muted text-foreground" : "text-foreground/80",
+                        "flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        active ? "bg-muted text-foreground" : "text-foreground/80 active:bg-muted/60",
                       )}
                     >
                       <item.icon className="h-5 w-5" />
@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       key={item.to}
                       to={item.to as any}
                       onClick={() => setDrawerOpen(false)}
-                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80"
+                      className="flex items-center gap-3 px-3 rounded-md text-sm min-h-[44px] text-foreground/80 active:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <item.icon className="h-5 w-5" />
                       {item.label}
