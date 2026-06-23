@@ -46,14 +46,39 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: String(fd.get("email")),
+      email,
       password: String(fd.get("password")),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
+        setResendEmail(email);
+        return toast.error("Confirme seu e-mail antes de entrar. Use o botão para reenviar a verificação.");
+      }
+      return toast.error(error.message);
+    }
     navigate({ to: "/dashboard" });
+  }
+
+  async function handleResend() {
+    const email = (resendEmail || signupEmail).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return toast.error("Informe um e-mail válido para reenviar a verificação.");
+    }
+    setResendLoading(true);
+    try {
+      const res = await resendVerification({ data: { email } });
+      if (res.alreadyConfirmed) toast.success("Este e-mail já está confirmado. Faça login.");
+      else toast.success("E-mail de verificação reenviado. Confira sua caixa de entrada.");
+    } catch (err: any) {
+      if (err?.message === "EMAIL_NOT_FOUND") toast.error("E-mail não cadastrado.");
+      else toast.error(err?.message ?? "Não foi possível reenviar agora.");
+    } finally {
+      setResendLoading(false);
+    }
   }
 
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
