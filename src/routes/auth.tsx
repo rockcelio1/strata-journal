@@ -171,6 +171,8 @@ function AuthPage() {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       aria-invalid={emailStatus === "taken" || emailStatus === "invalid"}
+                      aria-describedby="email2-feedback"
+                      aria-busy={emailStatus === "checking"}
                       className={
                         emailStatus === "taken" || emailStatus === "invalid"
                           ? "border-destructive focus-visible:ring-destructive bg-destructive/5"
@@ -179,10 +181,30 @@ function AuthPage() {
                           : ""
                       }
                     />
-                    {emailStatus === "checking" && <p className="text-xs text-muted-foreground mt-1">Verificando...</p>}
-                    {emailStatus === "invalid" && <p className="text-xs text-destructive mt-1">E-mail inválido.</p>}
-                    {emailStatus === "taken" && <p className="text-xs text-destructive mt-1">Este e-mail já está cadastrado. Faça login.</p>}
-                    {emailStatus === "available" && <p className="text-xs text-emerald-600 mt-1">E-mail disponível para cadastro.</p>}
+                    <p
+                      id="email2-feedback"
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                      className={
+                        "text-xs mt-1 min-h-4 flex items-center gap-1 " +
+                        (emailStatus === "taken" || emailStatus === "invalid"
+                          ? "text-destructive"
+                          : emailStatus === "available"
+                          ? "text-emerald-600"
+                          : "text-muted-foreground")
+                      }
+                    >
+                      {emailStatus === "checking" && (
+                        <>
+                          <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin" aria-hidden="true" />
+                          Verificando e-mail...
+                        </>
+                      )}
+                      {emailStatus === "invalid" && "E-mail inválido."}
+                      {emailStatus === "taken" && "Este e-mail já está cadastrado. Faça login."}
+                      {emailStatus === "available" && "E-mail disponível para cadastro."}
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="password2">Senha</Label>
