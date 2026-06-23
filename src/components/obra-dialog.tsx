@@ -17,6 +17,8 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
   const listFn = useServerFn(listObras);
   const { data: obrasList = [] } = useQuery({ queryKey: ["obras"], queryFn: () => listFn(), enabled: open && !obra });
   const qc = useQueryClient();
+  const [pickedId, setPickedId] = useState<string>("");
+  const locked = !obra && !!pickedId;
   const [form, setForm] = useState<any>({
     nome: "", codigo: "", cliente: "", endereco: "", data_inicio: "", data_previsao_fim: "",
     status: "planejamento", avanco_pct: 0, descricao: "",
