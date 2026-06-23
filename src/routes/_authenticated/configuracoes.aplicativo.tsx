@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smartphone, Tablet, Monitor, RefreshCw } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Smartphone, Tablet, Monitor, RefreshCw, Apple, Download } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getMe, updateEmpresaAppLinks } from "@/lib/core.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/aplicativo")({
   component: AplicativoPage,
