@@ -197,12 +197,21 @@ export const listLogoVersions = createServerFn({ method: "GET" })
     const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
     if (!me.data) return [];
     const { data, error } = await (supabase.from("empresa_logo_versions") as any)
-      .select("id, logo_url, storage_path, mime_type, tamanho_bytes, width, height, created_at, autor:profiles!empresa_logo_versions_autor_id_fkey(id, nome)")
+      .select("id, logo_url, storage_path, mime_type, tamanho_bytes, width, height, created_at, autor_id")
       .eq("empresa_id", me.data.empresa_id)
       .order("created_at", { ascending: false })
       .limit(20);
     if (error) throw error;
-    return data ?? [];
+    const rows = (data ?? []) as any[];
+    const autorIds = Array.from(new Set(rows.map((r) => r.autor_id).filter(Boolean)));
+    let nomesById: Record<string, { id: string; nome: string | null }> = {};
+    if (autorIds.length > 0) {
+      const { data: profs } = await (supabase.from("profiles") as any)
+        .select("id, nome")
+        .in("id", autorIds);
+      nomesById = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]));
+    }
+    return rows.map((r) => ({ ...r, autor: r.autor_id ? (nomesById[r.autor_id] ?? { id: r.autor_id, nome: null }) : null }));
   });
 
 export const restoreLogoVersion = createServerFn({ method: "POST" })
