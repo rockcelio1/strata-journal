@@ -22,6 +22,11 @@ function AuthPage() {
   // Verificação de e-mail em tempo real no cadastro
   const [signupEmail, setSignupEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [signupPassword, setSignupPassword] = useState("");
+  const passwordErrors = signupPassword ? validatePasswordStrength(signupPassword).errors : [];
+  const passwordOk = signupPassword.length > 0 && passwordErrors.length === 0;
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
 
   useEffect(() => {
     const value = signupEmail.trim().toLowerCase();
