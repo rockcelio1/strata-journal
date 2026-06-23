@@ -32,16 +32,24 @@ function SistemaPage() {
 
   async function handleFile(file: File) {
     if (!empresaId) return;
-    if (!file.type.startsWith("image/")) return toast.error("Selecione um arquivo de imagem");
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    const okExt = ["jpg", "jpeg", "png", "bmp", "webp", "svg", "gif", "img"].includes(ext);
+    const okMime = file.type.startsWith("image/");
+    if (!okMime && !okExt) return toast.error("Formato inválido. Use JPG, JPEG, PNG, BMP, WEBP, SVG, GIF ou IMG.");
     if (file.size > 2 * 1024 * 1024) return toast.error("Máximo 2 MB");
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${empresaId}/logo-${Date.now()}.${ext}`;
+      const path = `${empresaId}/logo-${Date.now()}.${ext || "png"}`;
+      const mimeMap: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+        bmp: "image/bmp", webp: "image/webp", svg: "image/svg+xml",
+        gif: "image/gif", img: "application/octet-stream",
+      };
+      const contentType = file.type || mimeMap[ext] || "application/octet-stream";
       const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
         cacheControl: "3600",
         upsert: true,
-        contentType: file.type,
+        contentType,
       });
       if (error) throw error;
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
@@ -113,7 +121,7 @@ function SistemaPage() {
           <input
             ref={fileRef}
             type="file"
-            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/bmp,image/webp,image/svg+xml,image/gif,.jpg,.jpeg,.png,.bmp,.webp,.svg,.gif,.img"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
