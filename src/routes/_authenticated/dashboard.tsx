@@ -4,8 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getDashboard } from "@/lib/core.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, FileText, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Building2, FileText, AlertTriangle, CheckCircle2, ArrowRight, SlidersHorizontal } from "lucide-react";
 import { rdoStatusMeta } from "@/components/status";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -14,10 +17,39 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function DashboardPage() {
   const fn = useServerFn(getDashboard);
   const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => fn() });
+  const [fObra, setFObra] = useState("todas");
+  const [fEquip, setFEquip] = useState("todos");
+  const [fMao, setFMao] = useState("todos");
+  const [fOcor, setFOcor] = useState("todos");
+
+  const filtros = useMemo(() => {
+    if (!data) return null;
+    let rdoIds = new Set<string>((data.rdos_all as any[]).map((r) => r.id));
+    if (fObra !== "todas") {
+      rdoIds = new Set((data.rdos_all as any[]).filter((r) => r.obra_id === fObra).map((r) => r.id));
+    }
+    if (fEquip !== "todos") {
+      const ids = new Set((data.rdo_equipamentos as any[]).filter((e) => e.equipamento_id === fEquip).map((e) => e.rdo_id));
+      rdoIds = new Set([...rdoIds].filter((id) => ids.has(id)));
+    }
+    if (fMao !== "todos") {
+      const ids = new Set((data.rdo_mao_de_obra as any[]).filter((m) => m.mao_de_obra_id === fMao).map((m) => m.rdo_id));
+      rdoIds = new Set([...rdoIds].filter((id) => ids.has(id)));
+    }
+    if (fOcor !== "todos") {
+      const ids = new Set((data.ocorrencias_all as any[]).filter((o) => o.tipo_ocorrencia_id === fOcor).map((o) => o.rdo_id));
+      rdoIds = new Set([...rdoIds].filter((id) => ids.has(id)));
+    }
+    const ocorrencias = (data.ocorrencias_all as any[]).filter((o) => rdoIds.has(o.rdo_id));
+    const equipUsos = (data.rdo_equipamentos as any[]).filter((e) => rdoIds.has(e.rdo_id));
+    const maoUsos = (data.rdo_mao_de_obra as any[]).filter((e) => rdoIds.has(e.rdo_id));
+    return { rdos: rdoIds.size, ocorrencias: ocorrencias.length, equipamentos: equipUsos.length, mao_de_obra: maoUsos.length };
+  }, [data, fObra, fEquip, fMao, fOcor]);
 
   if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
 
   const obrasAtivas = data.obras.filter((o: any) => o.status === "em_andamento");
+  const filtroAtivo = fObra !== "todas" || fEquip !== "todos" || fMao !== "todos" || fOcor !== "todos";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -26,12 +58,57 @@ function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">Indicadores em tempo real da operação.</p>
       </header>
 
-      {/* Bento: empilha em mobile, vira grid 12 colunas em md+ */}
+      <Card className="p-3 sm:p-4 mb-4">
+        <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+          <SlidersHorizontal className="h-4 w-4" /> Filtro avançado
+          {filtroAtivo && filtros && (
+            <Badge variant="outline" className="ml-2">
+              {filtros.rdos} RDO · {filtros.ocorrencias} ocor. · {filtros.equipamentos} equip. · {filtros.mao_de_obra} m.o.
+            </Badge>
+          )}
+          {filtroAtivo && (
+            <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setFObra("todas"); setFEquip("todos"); setFMao("todos"); setFOcor("todos"); }}>
+              Limpar
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Select value={fObra} onValueChange={setFObra}>
+            <SelectTrigger><SelectValue placeholder="Obra" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as obras</SelectItem>
+              {(data.obras as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fEquip} onValueChange={setFEquip}>
+            <SelectTrigger><SelectValue placeholder="Equipamento" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos equipamentos</SelectItem>
+              {(data.equipamentos as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fMao} onValueChange={setFMao}>
+            <SelectTrigger><SelectValue placeholder="Mão de obra" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Toda mão de obra</SelectItem>
+              {(data.mao_de_obra as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={fOcor} onValueChange={setFOcor}>
+            <SelectTrigger><SelectValue placeholder="Tipo de ocorrência" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todas ocorrências</SelectItem>
+              {(data.tipos_ocorrencia as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 md:auto-rows-[120px]">
         <StatCard className="col-span-1 md:col-span-3" icon={Building2} label="Obras ativas" value={data.obras_ativas} sub={`${data.obras_total} no total`} />
-        <StatCard className="col-span-1 md:col-span-3" icon={FileText} label="RDOs pendentes" value={data.rdos_pendentes} sub="aguardando aprovação" tone="warning" />
+        <StatCard className="col-span-1 md:col-span-3" icon={FileText} label={filtroAtivo ? "RDOs filtrados" : "RDOs pendentes"} value={filtroAtivo && filtros ? filtros.rdos : data.rdos_pendentes} sub={filtroAtivo ? "no filtro atual" : "aguardando aprovação"} tone="warning" />
         <StatCard className="col-span-1 md:col-span-3" icon={CheckCircle2} label="RDOs aprovados" value={data.rdos_aprovados} sub={`${data.rdos_total} emitidos`} tone="success" />
-        <StatCard className="col-span-1 md:col-span-3" icon={AlertTriangle} label="Ocorrências (7d)" value={data.ocorrencias_semana} sub={`${data.ocorrencias_total} no histórico`} tone="destructive" />
+        <StatCard className="col-span-1 md:col-span-3" icon={AlertTriangle} label={filtroAtivo ? "Ocorrências filtradas" : "Ocorrências (7d)"} value={filtroAtivo && filtros ? filtros.ocorrencias : data.ocorrencias_semana} sub={filtroAtivo ? "no filtro atual" : `${data.ocorrencias_total} no histórico`} tone="destructive" />
 
         {/* Avanço por obra */}
         <Card className="col-span-2 md:col-span-8 md:row-span-3 p-4 sm:p-6">
