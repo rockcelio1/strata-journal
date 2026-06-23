@@ -368,21 +368,66 @@ function NovoRdoPage() {
         {stepIdx === 1 && (
           <Card className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-serif text-lg">Clima do dia</h3>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif text-lg">Clima do dia</h3>
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className={cn(
+                    "text-[11px] px-2 py-0.5 rounded-full border",
+                    climaStatus === "loading" && "bg-muted text-muted-foreground border-border animate-pulse",
+                    climaStatus === "success" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+                    climaStatus === "error" && "bg-destructive/10 text-destructive border-destructive/30",
+                    climaStatus === "idle" && "bg-muted/40 text-muted-foreground border-border",
+                  )}
+                >
+                  {climaStatus === "loading" && "Carregando previsão…"}
+                  {climaStatus === "success" && "Previsão atualizada"}
+                  {climaStatus === "error" && "Falha ao obter previsão"}
+                  {climaStatus === "idle" && "Sem previsão"}
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={importarClimaPorObra}>
                   <CloudSun size={16} className="mr-1" /> Pelo endereço da obra
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={atualizarPrevisao}>
+                  <CloudSun size={16} className="mr-1" /> {climaLoading ? "Atualizando…" : "Atualizar previsão"}
                 </Button>
                 <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
                   <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Minha localização"}
                 </Button>
               </div>
             </div>
+            {climaErro && (
+              <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
+                {climaErro}
+              </div>
+            )}
             {climaInfo && (
               <div className="text-xs text-muted-foreground border border-border rounded-md p-2 bg-muted/30">
                 {climaInfo.descricao} · {climaInfo.temperatura_c}°C · vento {climaInfo.vento_kmh} km/h · chuva {climaInfo.precipitacao_mm} mm
-                <span className="block">📍 {(climaInfo as any).local ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
+                <span className="block">📍 {(climaInfo as any).local ?? previsaoLocal ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
                 <span className="block">🕒 {new Date(climaInfo.timestamp).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (Brasília)</span>
+                {previsaoAt && (
+                  <span className="block">💾 Cache salvo em {new Date(previsaoAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+                )}
+              </div>
+            )}
+            {previsao5 && previsao5.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-1.5">Previsão da semana (seg–sex)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {previsao5.map((d) => (
+                    <div key={d.data} className="border border-border rounded-md p-2 text-xs bg-muted/20">
+                      <div className="font-medium">{d.dia_semana}</div>
+                      <div className="text-muted-foreground">{new Date(`${d.data}T12:00:00-03:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</div>
+                      <div>{d.descricao}</div>
+                      <div className="text-muted-foreground">{Math.round(d.t_min_c)}° / {Math.round(d.t_max_c)}°C</div>
+                      <div className="text-muted-foreground">💧 {d.prob_chuva_pct}% · {d.precipitacao_mm} mm</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <div className="grid grid-cols-1 gap-3">
