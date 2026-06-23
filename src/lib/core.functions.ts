@@ -216,6 +216,10 @@ export const restoreLogoVersion = createServerFn({ method: "POST" })
     if (!v.data || v.data.empresa_id !== empresa_id) throw new Error("Versão não encontrada");
     const { error } = await (supabase.from("empresas") as any).update({ logo_url: v.data.logo_url }).eq("id", empresa_id);
     if (error) throw error;
+    await (supabase.from("audit_logs_usuarios") as any).insert({
+      empresa_id, autor_id: userId, acao: "logo_restaurado",
+      detalhes: { version_id: data.version_id },
+    });
     return { ok: true, logo_url: v.data.logo_url };
   });
 
