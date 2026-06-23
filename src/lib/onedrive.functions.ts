@@ -112,7 +112,7 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
 
 export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { rdo_id: string; nome: string; mime_type: string; tamanho_bytes: number; base64: string; legenda?: string }) =>
+  .inputValidator((d: { rdo_id: string; nome: string; mime_type: string; tamanho_bytes: number; base64: string; legenda?: string; root_folder?: string }) =>
     z.object({
       rdo_id: z.string().uuid(),
       nome: z.string().min(1).max(200),
@@ -120,12 +120,11 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
       tamanho_bytes: z.number().int().min(0).max(50 * 1024 * 1024),
       base64: z.string().min(1),
       legenda: z.string().max(500).optional(),
+      root_folder: z.string().max(200).optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
-    if (!apiKey || !connKey) throw new Error("OneDrive não está conectado. Conecte o conector OneDrive no projeto.");
+    getKeys();
 
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data?.empresa_id) throw new Error("Sem empresa");
@@ -146,26 +145,23 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
 
     const safeName = slugSegment(data.nome.replace(/\.[^.]+$/, "")) + (data.nome.match(/\.[^.]+$/)?.[0] ?? "");
     const filename = `${Date.now()}-${safeName}`;
-    const folder = `DiarioDeObra/${slugSegment(empresaNome)}/${slugSegment(obraNome)}/${ano}/${mes}/${dia}`;
+    const root = (data.root_folder ?? "DiarioDeObra").replace(/^\/+|\/+$/g, "").split("/").map(slugSegment).join("/") || "DiarioDeObra";
+    const folder = `${root}/${slugSegment(empresaNome)}/${slugSegment(obraNome)}/${ano}/${mes}/${dia}`;
     const fullPath = `${folder}/${filename}`;
 
-    // Decode base64 → Uint8Array
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
 
-    const url = `${GATEWAY_URL}/me/drive/root:/${encodePath(fullPath)}:/content`;
-    const res = await fetch(url, {
+    const res = await gatewayFetch(`/me/drive/root:/${encodePath(fullPath)}:/content`, {
       method: "PUT",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "X-Connection-Api-Key": connKey,
-        "Content-Type": data.mime_type,
-      },
+      headers: { "Content-Type": data.mime_type },
       body: binary,
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
+      console.error("[onedrive] upload falhou", res.status, fullPath, body);
       throw new Error(`OneDrive upload falhou (${res.status}): ${body.slice(0, 300)}`);
     }
+
     const item = await res.json() as {
       id: string; name: string; webUrl?: string; size?: number;
       "@microsoft.graph.downloadUrl"?: string;
