@@ -19,6 +19,11 @@ import {
   aprovarUsuario,
   listAuditLogs,
   exportAuditLogsCsv,
+  bulkAtualizarPapel,
+  bulkSetPassword,
+  bulkDeleteUsuarios,
+  bulkSendPasswordReset,
+  bulkAtualizarPerfil,
 } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +38,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
   component: UsuariosPage,
@@ -69,8 +76,23 @@ function UsuariosPage() {
 
   const exportCsvFn = useServerFn(exportAuditLogsCsv);
 
+  const bulkPapelFn = useServerFn(bulkAtualizarPapel);
+  const bulkPwdFn = useServerFn(bulkSetPassword);
+  const bulkDeleteFn = useServerFn(bulkDeleteUsuarios);
+  const bulkResetFn = useServerFn(bulkSendPasswordReset);
+  const bulkPerfilFn = useServerFn(bulkAtualizarPerfil);
+
   const membros = useQuery({ queryKey: ["membros"], queryFn: () => membrosFn() });
   const convites = useQuery({ queryKey: ["convites"], queryFn: () => convitesFn() });
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleOne = (id: string, on: boolean) => setSelected((s) => {
+    const n = new Set(s); on ? n.add(id) : n.delete(id); return n;
+  });
+  const toggleAll = (ids: string[], on: boolean) => setSelected((s) => {
+    const n = new Set(s); for (const id of ids) on ? n.add(id) : n.delete(id); return n;
+  });
+  const clearSel = () => setSelected(new Set());
 
   // Audit filters + pagination
   const [auditFilters, setAuditFilters] = useState({ user_id: "", acao: "", from: "", to: "" });
@@ -219,20 +241,67 @@ function UsuariosPage() {
       )}
 
       {/* MEMBROS */}
+      <TooltipProvider delayDuration={150}>
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Membros</h3>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Membros</h3>
+          <div className="text-xs text-muted-foreground">
+            {selected.size > 0
+              ? <span><b>{selected.size}</b> selecionado(s) · <button onClick={clearSel} className="underline">limpar</button></span>
+              : <span>Selecione usuários para ações em massa</span>}
+          </div>
+        </div>
+
+        {selected.size > 0 && (
+          <BulkBar
+            count={selected.size}
+            onSetRole={async (role) => {
+              try { const r = await bulkPapelFn({ data: { user_ids: Array.from(selected), role } });
+                toast.success(`Papel aplicado a ${r.count} usuário(s)`); clearSel(); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onSetPassword={async (password) => {
+              try { const r = await bulkPwdFn({ data: { user_ids: Array.from(selected), password } });
+                toast.success(`Senha aplicada a ${r.count} usuário(s)${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onResetEmail={async () => {
+              try { const r = await bulkResetFn({ data: { user_ids: Array.from(selected) } });
+                toast.success(`E-mail de redefinição: ${r.count} enviado(s)`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onEditCargo={async (cargo) => {
+              try { const r = await bulkPerfilFn({ data: { user_ids: Array.from(selected), cargo } });
+                toast.success(`Cargo atualizado em ${r.count} usuário(s)`); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onDelete={async () => {
+              try { const r = await bulkDeleteFn({ data: { user_ids: Array.from(selected) } });
+                toast.success(`Excluídos: ${r.count}${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`); clearSel(); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+          />
+        )}
 
         {/* Mobile cards */}
         <div className="grid gap-3 md:hidden">
           {(membros.data ?? []).map((m: any) => (
             <Card key={m.id} className="p-4 space-y-3">
-              <div>
-                <div className="font-medium flex items-center gap-2">
-                  {m.nome}
-                  {m.aprovado === false && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  className="mt-1 hover-ring"
+                  checked={selected.has(m.id)}
+                  onCheckedChange={(v) => toggleOne(m.id, !!v)}
+                  aria-label={`Selecionar ${m.nome}`}
+                />
+                <div className="flex-1">
+                  <div className="font-medium flex items-center gap-2">
+                    {m.nome}
+                    {m.aprovado === false && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{m.email}</div>
+                  {m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}
                 </div>
-                <div className="text-xs text-muted-foreground">{m.email}</div>
-                {m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}
               </div>
               <div className="flex flex-wrap gap-1">
                 {(m.user_roles ?? []).map((r: any) => (
@@ -260,6 +329,17 @@ function UsuariosPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left">
+                <th className="px-3 py-2 w-10">
+                  <Checkbox
+                    className="hover-ring"
+                    aria-label="Selecionar todos"
+                    checked={
+                      (membros.data ?? []).length > 0 &&
+                      (membros.data ?? []).every((m: any) => selected.has(m.id))
+                    }
+                    onCheckedChange={(v) => toggleAll((membros.data ?? []).map((m: any) => m.id), !!v)}
+                  />
+                </th>
                 <th className="px-3 py-2">Nome</th>
                 <th className="px-3 py-2">E-mail</th>
                 <th className="px-3 py-2">Papel</th>
@@ -269,7 +349,15 @@ function UsuariosPage() {
             </thead>
             <tbody>
               {(membros.data ?? []).map((m: any) => (
-                <tr key={m.id} className="border-t">
+                <tr key={m.id} className={"border-t " + (selected.has(m.id) ? "bg-accent/20" : "")}>
+                  <td className="px-3 py-2">
+                    <Checkbox
+                      className="hover-ring"
+                      aria-label={`Selecionar ${m.nome}`}
+                      checked={selected.has(m.id)}
+                      onCheckedChange={(v) => toggleOne(m.id, !!v)}
+                    />
+                  </td>
                   <td className="px-3 py-2">{m.nome}{m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}</td>
                   <td className="px-3 py-2">{m.email}</td>
                   <td className="px-3 py-2">
@@ -296,12 +384,13 @@ function UsuariosPage() {
                 </tr>
               ))}
               {membros.data?.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+      </TooltipProvider>
 
       {/* CONVITES */}
       <div className="space-y-3">
@@ -480,22 +569,36 @@ function MembroActions({
   const currentRole = m.user_roles?.[0]?.role ?? "visualizador";
   return (
     <div className="flex flex-wrap items-center gap-2 justify-end">
-      <Select defaultValue={currentRole} onValueChange={onChangePapel}>
-        <SelectTrigger className="h-10 w-[150px] focus-visible:ring-2 focus-visible:ring-ring" aria-label="Alterar papel">
-          <ShieldCheck className="h-4 w-4 mr-1" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ROLES.map((r) => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}
-        </SelectContent>
-      </Select>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Select defaultValue={currentRole} onValueChange={onChangePapel}>
+            <SelectTrigger className="h-10 w-[150px] focus-visible:ring-2 focus-visible:ring-ring hover-ring" aria-label="Alterar papel">
+              <ShieldCheck className="h-4 w-4 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLES.map((r) => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}
+            </SelectContent>
+          </Select>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          Define o papel deste usuário: Master e Admin gerenciam tudo, Engenheiro cria e aprova RDOs, Encarregado executa registros, Visualizador apenas consulta.
+        </TooltipContent>
+      </Tooltip>
 
       <EditMembroDialog m={m} onSave={onEdit} />
       <SetPasswordDialog onSave={onSetPwd} />
 
-      <Button size="sm" variant="ghost" onClick={onReset} aria-label="Enviar e-mail de redefinição" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
-        <Mail className="h-4 w-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="ghost" onClick={onReset} aria-label="Enviar e-mail de redefinição" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring hover-ring">
+            <Mail className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          Envia um e-mail com link seguro para o próprio usuário cadastrar uma nova senha. Não altera a senha imediatamente.
+        </TooltipContent>
+      </Tooltip>
 
       <ConfirmAction
         title="Desabilitar usuário"
@@ -503,9 +606,16 @@ function MembroActions({
         confirmLabel="Desabilitar"
         onConfirm={() => onToggle(true)}
         trigger={
-          <Button size="sm" variant="ghost" aria-label="Desabilitar usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
-            <Ban className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" aria-label="Desabilitar usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring hover-ring">
+                <Ban className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Bloqueia o login deste usuário mantendo o histórico. Pode ser reativado depois.
+            </TooltipContent>
+          </Tooltip>
         }
       />
 
@@ -516,12 +626,129 @@ function MembroActions({
         destructive
         onConfirm={onDelete}
         trigger={
-          <Button size="sm" variant="ghost" aria-label="Excluir usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" aria-label="Excluir usuário" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring text-destructive hover-ring">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              Exclui o usuário permanentemente do sistema (login, perfil e papéis). Não pode ser desfeito.
+            </TooltipContent>
+          </Tooltip>
         }
       />
     </div>
+  );
+}
+
+function BulkBar({
+  count, onSetRole, onSetPassword, onResetEmail, onEditCargo, onDelete,
+}: {
+  count: number;
+  onSetRole: (role: string) => Promise<void>;
+  onSetPassword: (password: string) => Promise<void>;
+  onResetEmail: () => Promise<void>;
+  onEditCargo: (cargo: string | null) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [pwd, setPwd] = useState("");
+  const [cargo, setCargo] = useState("");
+  return (
+    <Card className="p-3 border-brand/40 bg-brand/5 flex flex-wrap items-center gap-2 animate-fade-in">
+      <Users className="h-4 w-4 text-brand" />
+      <span className="text-sm font-medium">{count} selecionado(s)</span>
+      <span className="mx-1 text-muted-foreground">·</span>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <Select onValueChange={(v) => onSetRole(v)}>
+              <SelectTrigger className="h-9 w-[170px] hover-ring"><ShieldCheck className="h-4 w-4 mr-1" /><SelectValue placeholder="Aplicar papel" /></SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Aplica o mesmo papel a todos os usuários selecionados.</TooltipContent>
+      </Tooltip>
+
+      <Dialog>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="hover-ring"><KeyRound className="h-4 w-4 mr-1" />Trocar senha</Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Define a mesma senha para todos os usuários selecionados.</TooltipContent>
+        </Tooltip>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Definir senha em massa</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Nova senha (mín. 8 caracteres) — será aplicada a {count} usuário(s)</Label>
+            <Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <DialogTrigger asChild><Button variant="outline">Cancelar</Button></DialogTrigger>
+            <DialogTrigger asChild>
+              <Button onClick={() => { if (pwd.length < 8) { toast.error("Senha muito curta"); return; } onSetPassword(pwd); setPwd(""); }}>Aplicar</Button>
+            </DialogTrigger>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" className="hover-ring"><Pencil className="h-4 w-4 mr-1" />Editar cargo</Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Atualiza o campo "Cargo" no perfil de todos os usuários selecionados.</TooltipContent>
+        </Tooltip>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar cargo em massa</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Novo cargo (vazio para limpar)</Label>
+            <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <DialogTrigger asChild><Button variant="outline">Cancelar</Button></DialogTrigger>
+            <DialogTrigger asChild>
+              <Button onClick={() => onEditCargo(cargo.trim() || null)}>Aplicar</Button>
+            </DialogTrigger>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button size="sm" variant="outline" className="hover-ring" onClick={onResetEmail}>
+            <Mail className="h-4 w-4 mr-1" />Reset por e-mail
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Envia um e-mail de redefinição de senha para cada usuário selecionado.</TooltipContent>
+      </Tooltip>
+
+      <ConfirmAction
+        title={`Excluir ${count} usuário(s)?`}
+        description="Esta ação é permanente. Remove logins, perfis e papéis dos usuários selecionados. Você mesmo é ignorado automaticamente."
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={() => { onDelete(); }}
+        trigger={
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" className="text-destructive border-destructive hover-ring">
+                <Trash2 className="h-4 w-4 mr-1" />Excluir
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Exclui permanentemente todos os usuários selecionados.</TooltipContent>
+          </Tooltip>
+        }
+      />
+    </Card>
   );
 }
 
