@@ -304,7 +304,34 @@ function RdoDetailPage() {
 
       {/* Auditoria por usuário */}
       <Card className="p-4 mb-4">
-        <h3 className="font-serif text-lg flex items-center gap-2 mb-3"><History className="h-4 w-4" /> Auditoria por usuário</h3>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Auditoria por usuário</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+              value={logFilters.autor_id}
+              onChange={(e) => setLogFilters({ ...logFilters, autor_id: e.target.value })}
+              aria-label="Filtrar por usuário"
+            >
+              <option value="">Todos os usuários</option>
+              {(audit?.rows ?? []).map((r: any) => (
+                <option key={r.user_id} value={r.user_id}>{r.nome ?? r.email ?? r.user_id.slice(0, 8)}</option>
+              ))}
+            </select>
+            <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+              value={logFilters.from} onChange={(e) => setLogFilters({ ...logFilters, from: e.target.value })} aria-label="De" />
+            <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+              value={logFilters.to} onChange={(e) => setLogFilters({ ...logFilters, to: e.target.value })} aria-label="Até" />
+            <Button size="sm" variant="outline" onClick={() => {
+              auditViewFn({ data: { rdo_id: rdoId } }).catch(() => {});
+              exportSummaryCsv(audit?.rows ?? [], logFilters);
+            }}>CSV</Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              auditViewFn({ data: { rdo_id: rdoId } }).catch(() => {});
+              exportSummaryPdf(audit?.rows ?? [], data?.rdo?.numero ?? rdoId, logFilters);
+            }}>PDF</Button>
+          </div>
+        </div>
         {!audit || audit.rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sem registros ainda.</p>
         ) : (
@@ -325,22 +352,25 @@ function RdoDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {audit.rows.map((r: any) => (
-                    <tr key={r.user_id} className="border-b border-border last:border-0">
-                      <td className="p-2">{r.nome ?? r.email ?? <span className="text-muted-foreground italic">desconhecido</span>}</td>
-                      <td className="p-2 text-right tabular-nums">{r.criou}</td>
-                      <td className="p-2 text-right tabular-nums">{r.visualizou}</td>
-                      <td className="p-2 text-right tabular-nums">{r.editou}</td>
-                      <td className="p-2 text-right tabular-nums">{r.alterou}</td>
-                      <td className="p-2 text-xs text-muted-foreground">{r.ultima ? new Date(r.ultima).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}</td>
-                    </tr>
-                  ))}
+                  {audit.rows
+                    .filter((r: any) => !logFilters.autor_id || r.user_id === logFilters.autor_id)
+                    .map((r: any) => (
+                      <tr key={r.user_id} className="border-b border-border last:border-0">
+                        <td className="p-2">{r.nome ?? r.email ?? <span className="text-muted-foreground italic">desconhecido</span>}</td>
+                        <td className="p-2 text-right tabular-nums">{r.criou}</td>
+                        <td className="p-2 text-right tabular-nums">{r.visualizou}</td>
+                        <td className="p-2 text-right tabular-nums">{r.editou}</td>
+                        <td className="p-2 text-right tabular-nums">{r.alterou}</td>
+                        <td className="p-2 text-xs text-muted-foreground">{r.ultima ? new Date(r.ultima).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
           </>
         )}
       </Card>
+
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
