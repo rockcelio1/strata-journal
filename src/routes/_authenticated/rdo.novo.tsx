@@ -616,7 +616,58 @@ function NovoRdoPage() {
                   ))}
                 </div>
               )}
+
+              {uploadProgress.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-xs font-medium">Upload de anexos</p>
+                  {uploadProgress.map((u, i) => {
+                    const pct =
+                      u.status === "pending" ? 0
+                      : u.status === "enviando" ? 35
+                      : u.status === "processando" ? 70
+                      : u.status === "feito" || u.status === "fallback" ? 100
+                      : 100;
+                    const color =
+                      u.status === "erro" ? "bg-destructive"
+                      : u.status === "fallback" ? "bg-amber-500"
+                      : u.status === "feito" ? "bg-emerald-500"
+                      : "bg-brand";
+                    return (
+                      <div key={i} className="text-[11px]">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate flex-1">{u.name}</span>
+                          <span className="text-muted-foreground">{u.status}{u.provider ? ` · ${u.provider}` : ""}</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className={cn("h-full transition-all", color)} style={{ width: `${pct}%` }} />
+                        </div>
+                        {u.error && <p className="text-destructive text-[10px] mt-0.5 truncate">{u.error}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {uploadHistory.length > 0 && (
+                <details className="mt-3">
+                  <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">
+                    Histórico de tentativas ({uploadHistory.length})
+                  </summary>
+                  <ul className="mt-2 text-[11px] space-y-1 max-h-40 overflow-auto">
+                    {uploadHistory.map((h, i) => (
+                      <li key={i} className="flex justify-between gap-2 border-b border-border/50 pb-1">
+                        <span className="text-muted-foreground">{new Date(h.at).toLocaleTimeString()}</span>
+                        <span className="truncate flex-1">{h.name}</span>
+                        <span className={cn(h.status === "erro" ? "text-destructive" : h.status === "fallback" ? "text-amber-600" : "text-emerald-600")}>
+                          {h.status}{h.provider ? ` · ${h.provider}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </Card>
+
 
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">
