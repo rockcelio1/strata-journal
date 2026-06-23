@@ -12,6 +12,7 @@ import {
   Truck,
   AlertTriangle,
   Images,
+  Settings,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
+const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
   { to: "/rdo", label: "Diário (RDO)", icon: FileText },
@@ -31,6 +32,9 @@ const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> =
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
 ];
+
+const masterNavItem = { to: "/configuracoes", label: "Configurações", icon: Settings, match: "/configuracoes" };
+
 
 const cadastrosNav = [
   { to: "/cadastros/mao-de-obra", label: "Mão de obra", icon: HardHat },
@@ -45,9 +49,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => getMeFn() });
   const [empresaName, setEmpresaName] = useState("");
 
+  const isMaster = (me?.roles ?? []).includes("master");
+  const mainNav = isMaster ? [...baseNav, masterNavItem] : baseNav;
+
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
+
 
   const isCadastros = pathname.startsWith("/cadastros");
   const initials = (me?.profile?.nome ?? "U").split(" ").map((s: string) => s[0]).slice(0, 2).join("").toUpperCase();
@@ -151,7 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom tab bar — mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid grid-cols-6">
+        <ul className="grid" style={{ gridTemplateColumns: `repeat(${mainNav.length}, minmax(0, 1fr))` }}>
           {mainNav.map((item) => {
             const active = item.match
               ? pathname.startsWith(item.match)
