@@ -243,7 +243,46 @@ function NovoRdoPage() {
         ))}
       </div>
 
+      {!formValid && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-4 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm"
+        >
+          <p className="font-medium text-destructive">
+            {equipInvalidIdx.length + ocInvalidIdx.length + maoInvalidIdx.length} item(ns) inválido(s):
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {equipInvalidIdx.map((i: number) => (
+              <li key={`e-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("equipamentos", i, 4)}>
+                  Equipamento linha {i + 1} — selecione um equipamento
+                </button>
+              </li>
+            ))}
+            {ocInvalidIdx.map((i: number) => (
+              <li key={`o-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("ocorrencias", i, 5)}>
+                  Ocorrência linha {i + 1} — descrição obrigatória
+                </button>
+              </li>
+            ))}
+            {maoInvalidIdx.map((i: number) => (
+              <li key={`m-${i}`}>
+                <button type="button" className="underline text-destructive hover:opacity-80"
+                  onClick={() => scrollToRow("mao_de_obra", i, 3)}>
+                  Mão de obra linha {i + 1} — selecione uma pessoa
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="space-y-4">
+
         {stepIdx === 0 && (
           <Card className="p-5 space-y-4">
             <div>
