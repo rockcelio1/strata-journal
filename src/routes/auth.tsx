@@ -55,33 +55,34 @@ function AuthPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")).trim().toLowerCase();
+    const password = String(fd.get("password"));
+    const nome = String(fd.get("nome"));
+    const empresa_nome = String(fd.get("empresa"));
+
+    // Anti race-condition: bloqueia envio enquanto a verificação está pendente/inválida
+    if (emailStatus === "checking") { toast.error("Aguarde a verificação do e-mail."); return; }
+    if (emailStatus === "invalid") { toast.error("E-mail inválido."); return; }
+    if (emailStatus === "taken") { toast.error("Este e-mail já está cadastrado."); return; }
+
     setLoading(true);
     try {
-      // Verifica se o e-mail já está cadastrado antes de tentar criar
-      const check = await checkEmailRegistered({ data: { email } });
-      if (check.exists) {
-        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
+      // Backend é a fonte da verdade — sempre verifica novamente, ignorando o estado do form
+      await registerUser({ data: { email, password, nome, empresa_nome } });
+      // Faz login após cadastro bem-sucedido
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) {
+        toast.success("Conta criada. Faça login para continuar.");
         return;
       }
-      const { data: result, error } = await supabase.auth.signUp({
-        email,
-        password: String(fd.get("password")),
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            nome: String(fd.get("nome")),
-            empresa_nome: String(fd.get("empresa")),
-          },
-        },
-      });
-      if (error) return toast.error(error.message);
-      // Supabase devolve identities=[] quando o e-mail já existe e a confirmação está ativa
-      if (result.user && (result.user.identities?.length ?? 0) === 0) {
-        toast.error("Este e-mail já está cadastrado.");
-        return;
-      }
-      toast.success("Conta criada! Aguarde a aprovação do administrador.");
+      toast.success("Conta criada!");
       navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      if (err?.message === "EMAIL_TAKEN") {
+        setEmailStatus("taken");
+        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
+      } else {
+        toast.error(err?.message ?? "Falha ao criar conta");
+      }
     } finally {
       setLoading(false);
     }
