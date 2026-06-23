@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getRdo, submitRdo, approveRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
+  logRdoView, getRdoAuditSummary,
 } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,11 +40,18 @@ function RdoDetailPage() {
   const anexosFn = useServerFn(listRdoAnexos);
   const registrarFn = useServerFn(registrarAnexo);
   const removerFn = useServerFn(removerAnexo);
+  const viewFn = useServerFn(logRdoView);
+  const auditFn = useServerFn(getRdoAuditSummary);
 
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const { data: logs = [] } = useQuery({ queryKey: ["rdo-logs", rdoId], queryFn: () => logsFn({ data: { rdo_id: rdoId } }) });
   const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
+  const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }) });
+  useEffect(() => {
+    viewFn({ data: { rdo_id: rdoId } }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rdoId]);
 
   const [motivo, setMotivo] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -263,6 +271,46 @@ function RdoDetailPage() {
               );
             })}
           </ul>
+        )}
+      </Card>
+
+      {/* Auditoria por usuário */}
+      <Card className="p-4 mb-4">
+        <h3 className="font-serif text-lg flex items-center gap-2 mb-3"><History className="h-4 w-4" /> Auditoria por usuário</h3>
+        {!audit || audit.rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem registros ainda.</p>
+        ) : (
+          <>
+            <div className="text-xs text-muted-foreground mb-2">
+              Totais: <b>{audit.totais.criou}</b> criação · <b>{audit.totais.visualizou}</b> visualizações · <b>{audit.totais.editou}</b> edições · <b>{audit.totais.alterou}</b> alterações de status
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="p-2 font-medium">Usuário</th>
+                    <th className="p-2 font-medium text-right">Criou</th>
+                    <th className="p-2 font-medium text-right">Visualizou</th>
+                    <th className="p-2 font-medium text-right">Editou</th>
+                    <th className="p-2 font-medium text-right">Alterou</th>
+                    <th className="p-2 font-medium">Último evento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {audit.rows.map((r: any) => (
+                    <tr key={r.user_id} className="border-b border-border last:border-0">
+                      <td className="p-2">{r.nome ?? r.email ?? <span className="text-muted-foreground italic">desconhecido</span>}</td>
+                      <td className="p-2 text-right tabular-nums">{r.criou}</td>
+                      <td className="p-2 text-right tabular-nums">{r.visualizou}</td>
+                      <td className="p-2 text-right tabular-nums">{r.editou}</td>
+                      <td className="p-2 text-right tabular-nums">{r.alterou}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{r.ultima ? new Date(r.ultima).toLocaleString("pt-BR") : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 

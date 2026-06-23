@@ -140,8 +140,15 @@ export const updateEmpresa = createServerFn({ method: "POST" })
 
 export const updateEmpresaLogo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { logo_url: string | null }) =>
-    z.object({ logo_url: z.string().url().nullable() }).parse(d),
+  .inputValidator((d: { logo_url: string | null; storage_path?: string | null; mime_type?: string | null; tamanho_bytes?: number | null; width?: number | null; height?: number | null }) =>
+    z.object({
+      logo_url: z.string().url().nullable(),
+      storage_path: z.string().nullable().optional(),
+      mime_type: z.string().nullable().optional(),
+      tamanho_bytes: z.number().int().nullable().optional(),
+      width: z.number().int().nullable().optional(),
+      height: z.number().int().nullable().optional(),
+    }).parse(d),
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
@@ -151,7 +158,48 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
       .update({ logo_url: data.logo_url })
       .eq("id", me.data.empresa_id);
     if (error) throw error;
+    if (data.logo_url) {
+      await (supabase.from("empresa_logo_versions") as any).insert({
+        empresa_id: me.data.empresa_id,
+        autor_id: userId,
+        logo_url: data.logo_url,
+        storage_path: data.storage_path ?? null,
+        mime_type: data.mime_type ?? null,
+        tamanho_bytes: data.tamanho_bytes ?? null,
+        width: data.width ?? null,
+        height: data.height ?? null,
+      });
+    }
     return { ok: true };
+  });
+
+export const listLogoVersions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
+    if (!me.data) return [];
+    const { data, error } = await (supabase.from("empresa_logo_versions") as any)
+      .select("id, logo_url, storage_path, mime_type, tamanho_bytes, width, height, created_at, autor:profiles!empresa_logo_versions_autor_id_fkey(id, nome)")
+      .eq("empresa_id", me.data.empresa_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) throw error;
+    return data ?? [];
+  });
+
+export const restoreLogoVersion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { version_id: string }) => z.object({ version_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    await assertAdminOrMaster(supabase, userId);
+    const empresa_id = await getMyEmpresaId(supabase, userId);
+    const v = await (supabase.from("empresa_logo_versions") as any).select("logo_url, empresa_id").eq("id", data.version_id).maybeSingle();
+    if (!v.data || v.data.empresa_id !== empresa_id) throw new Error("Versão não encontrada");
+    const { error } = await (supabase.from("empresas") as any).update({ logo_url: v.data.logo_url }).eq("id", empresa_id);
+    if (error) throw error;
+    return { ok: true, logo_url: v.data.logo_url };
   });
 
 export const listMembros = createServerFn({ method: "GET" })
