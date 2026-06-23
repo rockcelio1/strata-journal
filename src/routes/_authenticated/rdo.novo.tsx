@@ -22,7 +22,8 @@ import {
   ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
-import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, type ClimaSnapshot } from "@/lib/weather";
+import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
+import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
@@ -63,6 +64,8 @@ function NovoRdoPage() {
   const meFn = useServerFn(getMe);
   const registrarFn = useServerFn(registrarAnexo);
   const uploadOneDriveFn = useServerFn(uploadOneDriveAnexo);
+  const getClimaCacheFn = useServerFn(getObraClimaCache);
+  const saveClimaCacheFn = useServerFn(saveObraClimaCache);
 
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
@@ -86,40 +89,84 @@ function NovoRdoPage() {
   const [legendas, setLegendas] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [climaInfo, setClimaInfo] = useState<ClimaSnapshot | null>(null);
-  const [climaLoading, setClimaLoading] = useState(false);
+  const [climaStatus, setClimaStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [climaErro, setClimaErro] = useState<string | null>(null);
+  const [previsao5, setPrevisao5] = useState<DiaPrevisao[] | null>(null);
+  const [previsaoLocal, setPrevisaoLocal] = useState<string | null>(null);
+  const [previsaoAt, setPrevisaoAt] = useState<string | null>(null);
+  const climaLoading = climaStatus === "loading";
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
   useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
 
+  function applyTurnoClima(codigo: number) {
+    const turno = new Date().getHours();
+    const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
+    setForm((f: any) => ({ ...f, [key]: classificaClima(codigo) }));
+  }
+
   async function importarClima() {
-    setClimaLoading(true);
+    setClimaStatus("loading"); setClimaErro(null);
     try {
       const pos = await fetchPosicao();
       const snap = await fetchClima(pos.latitude, pos.longitude);
-      setClimaInfo(snap);
-      const turno = new Date().getHours();
-      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
-      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setClimaStatus("success");
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
-    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
-    finally { setClimaLoading(false); }
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
   }
 
-  async function importarClimaPorObra() {
+  // Cache válido por 30 min (mesma janela do cache em memória da previsão).
+  const CACHE_TTL_MS = 30 * 60 * 1000;
+
+  async function carregarPrevisaoDaObra(opts: { forcar?: boolean } = {}) {
     const obra = (obras as any[]).find((o) => o.id === form.obra_id);
     if (!obra?.endereco) { toast.error("Selecione uma obra com endereço cadastrado"); return; }
-    setClimaLoading(true);
+    setClimaStatus("loading"); setClimaErro(null);
     try {
+      // 1) Tenta cache no banco
+      if (!opts.forcar) {
+        try {
+          const c = await getClimaCacheFn({ data: { obra_id: obra.id } });
+          const at = c?.cache_at ? new Date(c.cache_at).getTime() : 0;
+          if (c?.cache && Date.now() - at < CACHE_TTL_MS) {
+            const cache = c.cache as { snapshot: ClimaSnapshot & { local: string }; dias: DiaPrevisao[] };
+            setClimaInfo(cache.snapshot); applyTurnoClima(cache.snapshot.codigo);
+            setPrevisao5(cache.dias); setPrevisaoLocal(cache.snapshot.local);
+            setPrevisaoAt(c.cache_at); setClimaStatus("success");
+            return;
+          }
+        } catch { /* segue para API */ }
+      }
+      // 2) Open-Meteo (current + 5 dias)
       const snap = await fetchClimaPorEndereco(obra.endereco);
-      setClimaInfo(snap);
-      const turno = new Date().getHours();
-      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
-      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      const prev = await fetchPrevisao5DiasPorEndereco(obra.endereco);
+      const mudou = diffPrevisoes(previsao5, prev.dias);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+      // 3) Persiste no banco
+      try {
+        await saveClimaCacheFn({ data: { obra_id: obra.id, cache: { snapshot: snap, dias: prev.dias } } });
+        setPrevisaoAt(new Date().toISOString());
+      } catch { /* não bloqueia UX */ }
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
-    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
-    finally { setClimaLoading(false); }
+      if (mudou.length > 0) {
+        toast.warning(`Previsão alterada para ${mudou.length} dia(s): ${mudou.map((d) => d.dia_semana).join(", ")}`,
+          { duration: 8000 });
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
   }
+
+  const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
+  const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
   async function onAddFotos(files: FileList) {
     setCompressing(true);
@@ -321,21 +368,66 @@ function NovoRdoPage() {
         {stepIdx === 1 && (
           <Card className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="font-serif text-lg">Clima do dia</h3>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif text-lg">Clima do dia</h3>
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className={cn(
+                    "text-[11px] px-2 py-0.5 rounded-full border",
+                    climaStatus === "loading" && "bg-muted text-muted-foreground border-border animate-pulse",
+                    climaStatus === "success" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+                    climaStatus === "error" && "bg-destructive/10 text-destructive border-destructive/30",
+                    climaStatus === "idle" && "bg-muted/40 text-muted-foreground border-border",
+                  )}
+                >
+                  {climaStatus === "loading" && "Carregando previsão…"}
+                  {climaStatus === "success" && "Previsão atualizada"}
+                  {climaStatus === "error" && "Falha ao obter previsão"}
+                  {climaStatus === "idle" && "Sem previsão"}
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={importarClimaPorObra}>
                   <CloudSun size={16} className="mr-1" /> Pelo endereço da obra
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={atualizarPrevisao}>
+                  <CloudSun size={16} className="mr-1" /> {climaLoading ? "Atualizando…" : "Atualizar previsão"}
                 </Button>
                 <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
                   <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Minha localização"}
                 </Button>
               </div>
             </div>
+            {climaErro && (
+              <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
+                {climaErro}
+              </div>
+            )}
             {climaInfo && (
               <div className="text-xs text-muted-foreground border border-border rounded-md p-2 bg-muted/30">
                 {climaInfo.descricao} · {climaInfo.temperatura_c}°C · vento {climaInfo.vento_kmh} km/h · chuva {climaInfo.precipitacao_mm} mm
-                <span className="block">📍 {(climaInfo as any).local ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
+                <span className="block">📍 {(climaInfo as any).local ?? previsaoLocal ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
                 <span className="block">🕒 {new Date(climaInfo.timestamp).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (Brasília)</span>
+                {previsaoAt && (
+                  <span className="block">💾 Cache salvo em {new Date(previsaoAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>
+                )}
+              </div>
+            )}
+            {previsao5 && previsao5.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-1.5">Previsão da semana (seg–sex)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {previsao5.map((d) => (
+                    <div key={d.data} className="border border-border rounded-md p-2 text-xs bg-muted/20">
+                      <div className="font-medium">{d.dia_semana}</div>
+                      <div className="text-muted-foreground">{new Date(`${d.data}T12:00:00-03:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</div>
+                      <div>{d.descricao}</div>
+                      <div className="text-muted-foreground">{Math.round(d.t_min_c)}° / {Math.round(d.t_max_c)}°C</div>
+                      <div className="text-muted-foreground">💧 {d.prob_chuva_pct}% · {d.precipitacao_mm} mm</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <div className="grid grid-cols-1 gap-3">

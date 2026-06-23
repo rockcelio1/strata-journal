@@ -105,8 +105,11 @@ export async function geocodeEndereco(endereco: string): Promise<{ latitude: num
   const termo = endereco.trim();
   if (!termo) return null;
   const key = `geo:${termo.toLowerCase()}`;
-  const cached = cacheGet<{ latitude: number; longitude: number; nome: string } | null>(key);
-  if (cached !== null) return cached;
+  const hit = cache.get(key);
+  if (hit && Date.now() <= hit.expiresAt) {
+    return hit.value as { latitude: number; longitude: number; nome: string } | null;
+  }
+  if (hit) cache.delete(key);
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(termo)}&count=1&language=pt&format=json`;
   try {
     const r = await fetchComRetry(url);
@@ -148,3 +151,83 @@ export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnap
   const snap = await fetchClima(g.latitude, g.longitude);
   return { ...snap, local: g.nome };
 }
+
+// ----------------- Previsão diária (5 dias úteis: seg-sex) -----------------
+export interface DiaPrevisao {
+  data: string;          // YYYY-MM-DD
+  dia_semana: string;    // "Segunda", ...
+  t_min_c: number;
+  t_max_c: number;
+  precipitacao_mm: number;
+  prob_chuva_pct: number;
+  codigo: number;
+  descricao: string;
+}
+
+const SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+function isDiaUtil(yyyyMmDd: string): boolean {
+  // Interpreta como meio-dia em Brasília para evitar drift de fuso
+  const d = new Date(`${yyyyMmDd}T12:00:00-03:00`);
+  const dow = d.getDay();
+  return dow >= 1 && dow <= 5;
+}
+
+export async function fetchPrevisao5Dias(lat: number, lon: number): Promise<DiaPrevisao[]> {
+  const key = `prev5:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const cached = cacheGet<DiaPrevisao[]>(key);
+  if (cached) return cached;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=10`;
+  const r = await fetchComRetry(url);
+  const j = await r.json();
+  const d = j.daily;
+  const out: DiaPrevisao[] = [];
+  for (let i = 0; i < d.time.length && out.length < 5; i++) {
+    const dia = d.time[i] as string;
+    if (!isDiaUtil(dia)) continue;
+    const dow = new Date(`${dia}T12:00:00-03:00`).getDay();
+    const codigo = d.weather_code[i];
+    out.push({
+      data: dia,
+      dia_semana: SEMANA[dow],
+      t_min_c: d.temperature_2m_min[i],
+      t_max_c: d.temperature_2m_max[i],
+      precipitacao_mm: d.precipitation_sum[i],
+      prob_chuva_pct: d.precipitation_probability_max?.[i] ?? 0,
+      codigo,
+      descricao: codes[codigo] ?? `Código ${codigo}`,
+    });
+  }
+  cacheSet(key, out, 30 * 60 * 1000); // 30 min
+  return out;
+}
+
+export async function fetchPrevisao5DiasPorEndereco(endereco: string): Promise<{ local: string; dias: DiaPrevisao[] }> {
+  const v = validarEnderecoParaGeocoding(endereco);
+  if (!v.ok) throw new Error(v.mensagem);
+  let g = await geocodeEndereco(endereco);
+  if (!g) {
+    const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+    if (cep) g = await geocodeEndereco(cep);
+  }
+  if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+  const dias = await fetchPrevisao5Dias(g.latitude, g.longitude);
+  return { local: g.nome, dias };
+}
+
+// Compara duas previsões e retorna os dias cuja descrição/categoria mudou.
+export function diffPrevisoes(antes: DiaPrevisao[] | null | undefined, depois: DiaPrevisao[]): DiaPrevisao[] {
+  if (!antes || antes.length === 0) return [];
+  const idx = new Map(antes.map((d) => [d.data, d]));
+  const mudou: DiaPrevisao[] = [];
+  for (const d of depois) {
+    const a = idx.get(d.data);
+    if (!a) continue;
+    if (classificaClima(a.codigo) !== classificaClima(d.codigo)) mudou.push(d);
+  }
+  return mudou;
+}
+
+// Exposto para tests
+export const __testing = { cache, fetchComRetry };
+
