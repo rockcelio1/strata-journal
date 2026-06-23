@@ -174,6 +174,19 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
         height: data.height ?? null,
       });
     }
+    // Auditoria
+    await (supabase.from("audit_logs_usuarios") as any).insert({
+      empresa_id: me.data.empresa_id,
+      autor_id: userId,
+      acao: data.logo_url === null ? "logo_removido" : "logo_atualizado",
+      detalhes: {
+        storage_path: data.storage_path ?? null,
+        mime_type: data.mime_type ?? null,
+        tamanho_bytes: data.tamanho_bytes ?? null,
+        width: data.width ?? null,
+        height: data.height ?? null,
+      },
+    });
     return { ok: true };
   });
 
@@ -203,6 +216,10 @@ export const restoreLogoVersion = createServerFn({ method: "POST" })
     if (!v.data || v.data.empresa_id !== empresa_id) throw new Error("Versão não encontrada");
     const { error } = await (supabase.from("empresas") as any).update({ logo_url: v.data.logo_url }).eq("id", empresa_id);
     if (error) throw error;
+    await (supabase.from("audit_logs_usuarios") as any).insert({
+      empresa_id, autor_id: userId, acao: "logo_restaurado",
+      detalhes: { version_id: data.version_id },
+    });
     return { ok: true, logo_url: v.data.logo_url };
   });
 

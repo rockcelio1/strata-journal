@@ -215,19 +215,38 @@ function SistemaPage() {
         )}
 
         {preview && (
-          <div className="border border-border rounded-md p-3 bg-muted/30 flex items-center gap-4 flex-wrap">
-            <img src={preview.url} alt="Pré-visualização" className="h-20 w-20 object-contain bg-white rounded border border-border" />
-            <div className="text-xs text-muted-foreground space-y-0.5">
-              <div><b>{preview.file.name}</b></div>
-              <div>{preview.sizeKb} KB {preview.isSvg ? "· SVG (vetor)" : `· ${preview.width}×${preview.height}px`}</div>
-              {!preview.isSvg && <div>Será convertido para WebP otimizado.</div>}
+          <div className="border border-border rounded-md p-3 bg-muted/30 space-y-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <img src={preview.url} alt="Pré-visualização" className="h-20 w-20 object-contain bg-white rounded border border-border" />
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <div><b>{preview.file.name}</b></div>
+                <div>{preview.sizeKb} KB {preview.isSvg ? "· SVG (vetor)" : `· ${preview.width}×${preview.height}px`}</div>
+                {!preview.isSvg && <div>Será convertido para WebP otimizado.</div>}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button variant="ghost" onClick={() => { URL.revokeObjectURL(preview.url); setPreview(null); }} disabled={uploading}>Cancelar</Button>
+                <Button onClick={confirmUpload} disabled={uploading}>
+                  {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                  Confirmar e salvar
+                </Button>
+              </div>
             </div>
-            <div className="ml-auto flex gap-2">
-              <Button variant="ghost" onClick={() => { URL.revokeObjectURL(preview.url); setPreview(null); }} disabled={uploading}>Cancelar</Button>
-              <Button onClick={confirmUpload} disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                Confirmar e salvar
-              </Button>
+            <div className="grid sm:grid-cols-2 gap-3 pt-2 border-t border-border">
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Como ficará no cabeçalho</div>
+                <div className="h-14 px-4 rounded-md bg-brand text-brand-foreground flex items-center gap-2">
+                  <img src={preview.url} alt="" className="h-8 w-8 object-contain" />
+                  <span className="font-serif text-base truncate">{me?.empresa?.nome ?? "Sua empresa"}</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Como ficará na tela de login</div>
+                <div className="h-32 rounded-md bg-background border border-border flex flex-col items-center justify-center gap-2 p-3">
+                  <img src={preview.url} alt="" className="h-12 w-12 object-contain" />
+                  <div className="font-serif text-sm">{me?.empresa?.nome ?? "Sua empresa"}</div>
+                  <div className="h-2 w-24 bg-muted rounded" />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -300,45 +319,80 @@ function SistemaPage() {
 }
 
 export function LogoMark({ url, className }: { url: string | null; className?: string }) {
-  const resolved = useResolvedLogoUrl(url);
-  if (resolved) {
+  const { src, failed, onError } = useResolvedLogoUrl(url);
+  if (src && !failed) {
     return (
       <img
-        src={resolved}
+        src={src}
         alt="Logo"
         loading="eager"
         decoding="async"
+        onError={onError}
         className={`${className ?? "h-8 w-8"} object-contain`}
         style={{ imageRendering: "auto" }}
       />
     );
   }
+  // Placeholder padrão caso não exista logo, falhe ao carregar ou retorne 403.
   return (
-    <div className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}>
+    <div
+      className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}
+      aria-label="Logotipo padrão"
+      title={failed ? "Logotipo indisponível" : undefined}
+    >
       <Building2 className="h-1/2 w-1/2" />
     </div>
   );
 }
 
-// Resolve URLs antigas (`/object/public/empresa-logos/...`) gerando uma URL assinada
-// em tempo de execução. Bucket é privado por política do workspace.
-function useResolvedLogoUrl(url: string | null): string | null {
-  const [resolved, setResolved] = useState<string | null>(url);
-  const lastRef = useRef<string | null>(null);
-  if (lastRef.current !== url) {
-    lastRef.current = url;
-    if (!url) {
-      if (resolved !== null) setResolved(null);
-    } else if (url.includes(`/object/public/${BUCKET}/`)) {
-      const path = url.split(`/object/public/${BUCKET}/`)[1]?.split("?")[0];
-      if (path) {
-        supabase.storage.from(BUCKET).createSignedUrl(decodeURIComponent(path), 60 * 60 * 24 * 7).then(({ data }) => {
-          if (data?.signedUrl) setResolved(data.signedUrl);
-        });
-      } else if (resolved !== url) setResolved(url);
-    } else if (resolved !== url) {
-      setResolved(url);
+// Extrai o caminho do arquivo a partir de URLs pública, assinada ou autenticada do bucket.
+function extractStoragePath(url: string): string | null {
+  for (const seg of [`/object/sign/${BUCKET}/`, `/object/public/${BUCKET}/`, `/object/authenticated/${BUCKET}/`]) {
+    const idx = url.indexOf(seg);
+    if (idx >= 0) {
+      const tail = url.slice(idx + seg.length).split("?")[0];
+      try { return decodeURIComponent(tail); } catch { return tail; }
     }
   }
-  return resolved;
+  return null;
+}
+
+// Resolve o logotipo:
+// - re-assina URLs legadas `/object/public/...` (bucket é privado)
+// - renova automaticamente a URL assinada quando expira / retorna 403
+function useResolvedLogoUrl(url: string | null) {
+  const [src, setSrc] = useState<string | null>(url);
+  const [failed, setFailed] = useState(false);
+  const lastRef = useRef<string | null>(null);
+  const retriedRef = useRef(false);
+
+  async function sign(path: string) {
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (data?.signedUrl) { setSrc(data.signedUrl); setFailed(false); }
+    else { setFailed(true); }
+  }
+
+  if (lastRef.current !== url) {
+    lastRef.current = url;
+    retriedRef.current = false;
+    setFailed(false);
+    if (!url) {
+      setSrc(null);
+    } else if (url.includes(`/object/public/${BUCKET}/`)) {
+      const path = extractStoragePath(url);
+      setSrc(url);
+      if (path) void sign(path);
+    } else {
+      setSrc(url);
+    }
+  }
+
+  const onError = () => {
+    if (retriedRef.current || !src) { setFailed(true); return; }
+    retriedRef.current = true;
+    const path = extractStoragePath(src);
+    if (path) void sign(path); else setFailed(true);
+  };
+
+  return { src, failed, onError };
 }
