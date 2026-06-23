@@ -24,7 +24,7 @@ function ConfiguracoesLayout() {
   const isIndex = pathname === "/configuracoes";
 
   return (
-    <div className="px-4 md:px-6 py-6 max-w-6xl mx-auto">
+    <div className="px-4 md:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
       <header className="mb-6 flex items-center gap-3">
         <div className="h-10 w-10 rounded-md bg-brand/10 text-brand grid place-items-center">
           <Settings className="h-5 w-5" />
