@@ -62,12 +62,21 @@ function UsuariosPage() {
   const adminDeleteFn = useServerFn(adminDeleteUser);
   const adminToggleFn = useServerFn(adminToggleUserDisabled);
 
+  const reenviarFn = useServerFn(reenviarConvite);
+  const aprovarFn = useServerFn(aprovarUsuario);
+  const auditFn = useServerFn(listAuditLogs);
+
   const membros = useQuery({ queryKey: ["membros"], queryFn: () => membrosFn() });
   const convites = useQuery({ queryKey: ["convites"], queryFn: () => convitesFn() });
+  const audit = useQuery({ queryKey: ["audit-logs"], queryFn: () => auditFn() });
+
+  const membrosById = new Map<string, any>((membros.data ?? []).map((m: any) => [m.id, m]));
+  const pendentes = (membros.data ?? []).filter((m: any) => m.aprovado === false);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["membros"] });
     qc.invalidateQueries({ queryKey: ["convites"] });
+    qc.invalidateQueries({ queryKey: ["audit-logs"] });
   };
 
   const mUpdatePapel = useMutation({
