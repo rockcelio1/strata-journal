@@ -233,16 +233,60 @@ function AuthPage() {
                   </div>
                   <div>
                     <Label htmlFor="password2">Senha</Label>
-                    <Input id="password2" name="password" type="password" required minLength={6} autoComplete="new-password" />
+                    <Input
+                      id="password2" name="password" type="password" required minLength={8} autoComplete="new-password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      aria-invalid={signupPassword.length > 0 && !passwordOk}
+                      aria-describedby="password2-feedback"
+                      className={
+                        signupPassword.length === 0
+                          ? ""
+                          : passwordOk
+                          ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-500/5"
+                          : "border-destructive focus-visible:ring-destructive bg-destructive/5"
+                      }
+                    />
+                    <ul
+                      id="password2-feedback"
+                      role="status"
+                      aria-live="polite"
+                      className="text-xs mt-1 space-y-0.5"
+                    >
+                      {signupPassword.length === 0 && (
+                        <li className="text-muted-foreground">Mín. 8 caracteres, maiúscula, minúscula, número e símbolo.</li>
+                      )}
+                      {signupPassword.length > 0 && passwordOk && (
+                        <li className="text-emerald-600">Senha forte.</li>
+                      )}
+                      {signupPassword.length > 0 && !passwordOk && passwordErrors.map((m) => (
+                        <li key={m} className="text-destructive">• {m}</li>
+                      ))}
+                    </ul>
                   </div>
                   <Button
                     type="submit"
                     className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
-                    disabled={loading || emailStatus === "taken" || emailStatus === "invalid" || emailStatus === "checking"}
+                    disabled={loading || emailStatus === "taken" || emailStatus === "invalid" || emailStatus === "checking" || !passwordOk}
                   >
                     Criar empresa
                   </Button>
                 </form>
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Não recebeu o e-mail de confirmação?</p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value)}
+                      aria-label="E-mail para reenviar verificação"
+                    />
+                    <Button type="button" variant="outline" onClick={handleResend} disabled={resendLoading} aria-busy={resendLoading}>
+                      {resendLoading ? "Enviando..." : "Reenviar"}
+                    </Button>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
 
