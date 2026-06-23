@@ -406,10 +406,16 @@ function SectionList({ title, empty, children }: { title: string; empty: string;
   );
 }
 
+const TZ_BR = "America/Sao_Paulo";
+function fmtBR(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", { timeZone: TZ_BR, hour12: false });
+}
+
 function exportAuditCsv(logs: any[]) {
-  const head = ["data_hora", "acao", "usuario", "email", "status_anterior", "status_novo", "motivo"];
-  const body = logs.map((l) => [
-    new Date(l.created_at).toLocaleString("pt-BR"),
+  const sorted = [...logs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const head = ["data_hora_brasilia", "acao", "usuario", "email", "status_anterior", "status_novo", "motivo"];
+  const body = sorted.map((l) => [
+    fmtBR(l.created_at),
     l.acao,
     l.autor?.nome ?? "",
     l.autor?.email ?? "",
@@ -428,20 +434,24 @@ function exportAuditCsv(logs: any[]) {
 async function exportAuditPdf(logs: any[], numero: string | number) {
   const { jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
+  const sorted = [...logs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   const doc = new jsPDF();
   doc.setFontSize(14);
   doc.text(`Auditoria RDO ${numero}`, 14, 16);
+  doc.setFontSize(9);
+  doc.text(`Gerado em ${fmtBR(new Date().toISOString())} (Brasília) — ${sorted.length} eventos`, 14, 22);
   autoTable(doc, {
-    startY: 22,
-    head: [["Data/Hora", "Ação", "Usuário", "Status", "Motivo"]],
-    body: logs.map((l) => [
-      new Date(l.created_at).toLocaleString("pt-BR"),
+    startY: 26,
+    head: [["Data/Hora (BR)", "Ação", "Usuário", "Status", "Motivo"]],
+    body: sorted.map((l) => [
+      fmtBR(l.created_at),
       l.acao,
       l.autor?.nome ?? l.autor?.email ?? "—",
       [l.status_anterior, l.status_novo].filter(Boolean).join(" → "),
       l.motivo ?? "",
     ]),
     styles: { fontSize: 8 },
+    headStyles: { fillColor: [30, 41, 59] },
   });
   doc.save(`auditoria-rdo-${numero}.pdf`);
 }
