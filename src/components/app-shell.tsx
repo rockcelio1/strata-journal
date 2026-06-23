@@ -222,10 +222,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
       </div>
 
-      {/* Bottom tab bar — mobile */}
+      {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
-        <ul className="grid" style={{ gridTemplateColumns: `repeat(${mainNav.length}, minmax(0, 1fr))` }}>
-          {mainNav.map((item) => {
+        <ul className="grid grid-cols-5">
+          {bottomNav.map((item) => {
             const active = item.match
               ? pathname.startsWith(item.match)
               : pathname === item.to || pathname.startsWith(item.to + "/");
@@ -234,16 +234,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   to={item.to as any}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px]",
+                    "flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] active:bg-muted/60",
                     active ? "text-brand" : "text-muted-foreground",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="leading-none">{item.label.split(" ")[0]}</span>
+                  <span className="leading-none truncate max-w-full px-1">{item.label.split(" ")[0]}</span>
                 </Link>
               </li>
             );
           })}
+          <li>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Mais opções"
+              className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] min-h-[44px] min-w-[44px] w-full text-muted-foreground active:bg-muted/60"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="leading-none">Mais</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </div>
