@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { InstallAppButton } from "@/components/install-app-button";
 
-const LOGO_URL = "/__l5e/assets-v1/9c48395b-ad13-4a2c-a575-611ad9184713/icone-rdo.png";
+const LOGO_URL = "/icone-rdo.png";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
