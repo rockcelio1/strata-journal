@@ -87,6 +87,10 @@ function NovoRdoPage() {
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [legendas, setLegendas] = useState<string[]>([]);
+  type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback";
+  const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase" }>>([]);
+  const [uploadHistory, setUploadHistory] = useState<Array<{ at: string; name: string; status: UpStatus; provider?: string; error?: string }>>([]);
+
   const [compressing, setCompressing] = useState(false);
   const [climaInfo, setClimaInfo] = useState<ClimaSnapshot | null>(null);
   const [climaStatus, setClimaStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -200,9 +204,16 @@ function NovoRdoPage() {
       all.push({ file: json, name: "assinatura.json", mime: "application/json" });
     }
     const rootFolder = (typeof window !== "undefined" ? localStorage.getItem("onedrive.root_folder") : null) ?? undefined;
-    for (const a of all) {
+    setUploadProgress(all.map((a) => ({ name: a.name, status: "pending" as UpStatus })));
+    const pushHist = (entry: { name: string; status: UpStatus; provider?: string; error?: string }) =>
+      setUploadHistory((h) => [{ at: new Date().toISOString(), ...entry }, ...h].slice(0, 50));
+
+    for (let idx = 0; idx < all.length; idx++) {
+      const a = all[idx];
       const size = (a.file as any).size ?? 0;
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "enviando" } : x));
       const base64 = await blobToBase64(a.file);
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "processando" } : x));
       let uploaded = false;
       let lastErr: any;
       for (let attempt = 0; attempt < 2 && !uploaded; attempt++) {
@@ -215,22 +226,35 @@ function NovoRdoPage() {
         } catch (e: any) {
           lastErr = e;
           console.warn(`[rdo] OneDrive tentativa ${attempt + 1} falhou:`, e?.message);
+          pushHist({ name: a.name, status: "erro", provider: "onedrive", error: `tentativa ${attempt + 1}: ${e?.message ?? "erro"}` });
         }
       }
-      if (!uploaded) {
+      if (uploaded) {
+        setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "feito", provider: "onedrive" } : x));
+        pushHist({ name: a.name, status: "feito", provider: "onedrive" });
+      } else {
         console.error("[rdo] OneDrive falhou após retentativas, usando Supabase Storage:", lastErr?.message);
         toast.warning("OneDrive indisponível, usando armazenamento alternativo", { description: lastErr?.message?.slice(0, 200) });
-        const safe = a.name.replace(/[^\w.\-]+/g, "_");
-        const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
-        const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
-        if (up.error) throw up.error;
-        await registrarFn({ data: {
-          rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
-          storage_path: path, mime_type: a.mime, tamanho_bytes: size,
-        }});
+        try {
+          const safe = a.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
+          const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
+          if (up.error) throw up.error;
+          await registrarFn({ data: {
+            rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+            storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+          }});
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
+          pushHist({ name: a.name, status: "fallback", provider: "supabase" });
+        } catch (e: any) {
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: e?.message } : x));
+          pushHist({ name: a.name, status: "erro", provider: "supabase", error: e?.message });
+          throw e;
+        }
       }
     }
   }
+
 
 
 
@@ -592,7 +616,58 @@ function NovoRdoPage() {
                   ))}
                 </div>
               )}
+
+              {uploadProgress.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-xs font-medium">Upload de anexos</p>
+                  {uploadProgress.map((u, i) => {
+                    const pct =
+                      u.status === "pending" ? 0
+                      : u.status === "enviando" ? 35
+                      : u.status === "processando" ? 70
+                      : u.status === "feito" || u.status === "fallback" ? 100
+                      : 100;
+                    const color =
+                      u.status === "erro" ? "bg-destructive"
+                      : u.status === "fallback" ? "bg-amber-500"
+                      : u.status === "feito" ? "bg-emerald-500"
+                      : "bg-brand";
+                    return (
+                      <div key={i} className="text-[11px]">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate flex-1">{u.name}</span>
+                          <span className="text-muted-foreground">{u.status}{u.provider ? ` · ${u.provider}` : ""}</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className={cn("h-full transition-all", color)} style={{ width: `${pct}%` }} />
+                        </div>
+                        {u.error && <p className="text-destructive text-[10px] mt-0.5 truncate">{u.error}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {uploadHistory.length > 0 && (
+                <details className="mt-3">
+                  <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">
+                    Histórico de tentativas ({uploadHistory.length})
+                  </summary>
+                  <ul className="mt-2 text-[11px] space-y-1 max-h-40 overflow-auto">
+                    {uploadHistory.map((h, i) => (
+                      <li key={i} className="flex justify-between gap-2 border-b border-border/50 pb-1">
+                        <span className="text-muted-foreground">{new Date(h.at).toLocaleTimeString()}</span>
+                        <span className="truncate flex-1">{h.name}</span>
+                        <span className={cn(h.status === "erro" ? "text-destructive" : h.status === "fallback" ? "text-amber-600" : "text-emerald-600")}>
+                          {h.status}{h.provider ? ` · ${h.provider}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </Card>
+
 
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">

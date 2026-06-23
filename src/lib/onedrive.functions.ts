@@ -108,6 +108,74 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
     return { path, folders };
   });
 
+export const ensureOneDriveFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string().min(1).max(400) }).parse(d))
+  .handler(async ({ data }) => {
+    const clean = data.path.replace(/^\/+|\/+$/g, "");
+    if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
+    const res = await gatewayFetch(`/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`);
+    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive` };
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false as const, status: res.status, error: body.slice(0, 200) || `HTTP ${res.status}` };
+    }
+    const item = await res.json() as { id: string; name: string; folder?: unknown };
+    if (!item.folder) return { ok: false as const, status: 409, error: `"${clean}" existe mas não é uma pasta` };
+    return { ok: true as const, id: item.id, name: item.name, path: clean };
+  });
+
+export const testOneDrivePermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string().min(1).max(400) }).parse(d))
+  .handler(async ({ data }) => {
+    const path = data.path.replace(/^\/+|\/+$/g, "");
+    const log: Array<{ step: string; ok: boolean; detail?: string }> = [];
+
+    // 1) Existência
+    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`);
+    if (exists.status === 404) {
+      log.push({ step: "Pasta existe", ok: false, detail: "Não encontrada (404)" });
+      return { ok: false as const, log };
+    }
+    if (!exists.ok) {
+      const b = await exists.text().catch(() => "");
+      log.push({ step: "Pasta existe", ok: false, detail: `HTTP ${exists.status} ${b.slice(0,120)}` });
+      return { ok: false as const, log };
+    }
+    log.push({ step: "Pasta existe", ok: true });
+
+    // 2) Leitura/listagem
+    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`);
+    log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status}` });
+
+    // 3) Escrita (arquivo de teste)
+    const testName = `.lovable-test-${Date.now()}.txt`;
+    const testPath = `${path}/${testName}`;
+    const put = await gatewayFetch(`/me/drive/root:/${encodePath(testPath)}:/content`, {
+      method: "PUT", headers: { "Content-Type": "text/plain" }, body: "ok",
+    });
+    log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status}` });
+
+    let itemId: string | null = null;
+    if (put.ok) {
+      const created = await put.json().catch(() => null) as { id?: string } | null;
+      itemId = created?.id ?? null;
+    }
+
+    // 4) Remoção
+    if (itemId) {
+      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+      log.push({ step: "Remover arquivo de teste", ok: del.ok || del.status === 204, detail: del.ok ? undefined : `HTTP ${del.status}` });
+    }
+
+    const ok = log.every((l) => l.ok);
+    return { ok, log };
+
+  });
+
+
+
 
 
 export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
@@ -149,7 +217,18 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     const folder = `${root}/${slugSegment(empresaNome)}/${slugSegment(obraNome)}/${ano}/${mes}/${dia}`;
     const fullPath = `${folder}/${filename}`;
 
+    // Valida que a pasta raiz existe antes de enviar (erro claro em vez de criar pasta nova silenciosamente)
+    const rootCheck = await gatewayFetch(`/me/drive/root:/${encodePath(root)}?$select=id,folder`);
+    if (rootCheck.status === 404) {
+      throw new Error(`Pasta raiz "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive.`);
+    }
+    if (!rootCheck.ok) {
+      const b = await rootCheck.text().catch(() => "");
+      throw new Error(`Falha ao validar pasta raiz "${root}" (${rootCheck.status}): ${b.slice(0, 200)}`);
+    }
+
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
+
 
     const res = await gatewayFetch(`/me/drive/root:/${encodePath(fullPath)}:/content`, {
       method: "PUT",

@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { verifyOneDrive, listOneDriveFolders } from "@/lib/onedrive.functions";
+import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder } from "@/lib/onedrive.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/onedrive")({
   component: OneDriveSettings,
@@ -15,6 +15,9 @@ const ROOT_KEY = "onedrive.root_folder";
 function OneDriveSettings() {
   const verifyFn = useServerFn(verifyOneDrive);
   const listFn = useServerFn(listOneDriveFolders);
+  const testFn = useServerFn(testOneDrivePermissions);
+  const ensureFn = useServerFn(ensureOneDriveFolder);
+
   const [path, setPath] = useState<string>("");
   const [rootFolder, setRootFolder] = useState<string>(() =>
     typeof window !== "undefined" ? localStorage.getItem(ROOT_KEY) ?? "DiarioDeObra" : "DiarioDeObra",
@@ -39,12 +42,28 @@ function OneDriveSettings() {
     }
   }, [folders.error]);
 
-  function saveRoot(name: string) {
+  async function saveRoot(name: string) {
     const clean = name.trim().replace(/^\/+|\/+$/g, "") || "DiarioDeObra";
+    try {
+      const r = await ensureFn({ data: { path: clean } });
+      if (!r.ok) {
+        toast.error("Pasta raiz inválida", { description: r.error });
+        return;
+      }
+    } catch (e: any) {
+      toast.error("Falha ao validar pasta", { description: e?.message });
+      return;
+    }
     setRootFolder(clean);
     localStorage.setItem(ROOT_KEY, clean);
-    toast.success("Pasta raiz salva", { description: clean });
+    toast.success("Pasta raiz salva e validada", { description: clean });
   }
+
+  const test = useMutation({
+    mutationFn: () => testFn({ data: { path: rootFolder } }),
+    onError: (e: any) => toast.error("Falha no teste", { description: e?.message }),
+  });
+
 
   const ok = verify.data?.ok === true;
   const acc = ok ? verify.data!.account : null;
@@ -165,6 +184,40 @@ function OneDriveSettings() {
           )}
         </section>
       )}
+
+      {ok && (
+        <section className="border border-border rounded-lg p-4 bg-card">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h3 className="font-medium text-sm">Teste de permissões</h3>
+            <button
+              onClick={() => test.mutate()}
+              disabled={test.isPending}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground disabled:opacity-50"
+            >
+              {test.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+              Executar teste
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Verifica existência, listagem, escrita e remoção em <strong>/{rootFolder}</strong>.
+          </p>
+          {test.data && (
+            <ul className="text-sm space-y-1">
+              {test.data.log.map((l, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  {l.ok
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
+                    : <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />}
+                  <span className="flex-1">{l.step}</span>
+                  {l.detail && <span className="text-xs text-muted-foreground break-all">{l.detail}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+
 
       <section className="border border-border rounded-lg p-4 bg-card">
         <h3 className="font-medium text-sm mb-2">Desconectar / reconectar</h3>
