@@ -170,7 +170,8 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
     }
 
     const ok = log.every((l) => l.ok);
-    return { ok: ok as const, log };
+    return { ok, log };
+
   });
 
 
