@@ -30,22 +30,63 @@ export function classificaClima(codigo: number): "ensolarado" | "nublado" | "chu
 
 export async function fetchPosicao(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocalização indisponível"));
+    if (!navigator.geolocation) return reject(new Error("Geolocalização indisponível neste dispositivo"));
     navigator.geolocation.getCurrentPosition(
       (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
-      (e) => reject(new Error(e.message)),
+      (e) => reject(new Error(`Não foi possível obter sua localização: ${e.message}`)),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   });
 }
 
+// ----------------- Cache + retentativa -----------------
+type CacheEntry<T> = { value: T; expiresAt: number };
+const cache = new Map<string, CacheEntry<unknown>>();
+
+function cacheGet<T>(key: string): T | null {
+  const hit = cache.get(key);
+  if (!hit) return null;
+  if (Date.now() > hit.expiresAt) { cache.delete(key); return null; }
+  return hit.value as T;
+}
+function cacheSet<T>(key: string, value: T, ttlMs: number) {
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
+async function fetchComRetry(url: string, tentativas = 3, baseDelayMs = 400): Promise<Response> {
+  let ultimaErro: unknown = null;
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (r.ok) return r;
+      // 4xx (exceto 429) não vale tentar de novo
+      if (r.status >= 400 && r.status < 500 && r.status !== 429) {
+        throw new Error(`Requisição rejeitada (${r.status})`);
+      }
+      ultimaErro = new Error(`Falha de rede (${r.status})`);
+    } catch (e) {
+      ultimaErro = e;
+    }
+    if (i < tentativas - 1) {
+      await new Promise((res) => setTimeout(res, baseDelayMs * Math.pow(2, i)));
+    }
+  }
+  throw ultimaErro instanceof Error ? ultimaErro : new Error("Falha ao consultar serviço externo");
+}
+
+// ----------------- Clima -----------------
 export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapshot> {
+  const key = `clima:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const cached = cacheGet<ClimaSnapshot>(key);
+  if (cached) return cached;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("Falha ao consultar clima");
+  const r = await fetchComRetry(url);
   const j = await r.json();
   const c = j.current;
-  return {
+  const snap: ClimaSnapshot = {
     temperatura_c: c.temperature_2m,
     vento_kmh: c.wind_speed_10m,
     precipitacao_mm: c.precipitation,
@@ -55,25 +96,55 @@ export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapsho
     longitude: lon,
     timestamp: c.time,
   };
+  cacheSet(key, snap, 10 * 60 * 1000); // 10 min
+  return snap;
 }
 
-// Geocodifica um endereço usando o serviço gratuito do Open-Meteo.
+// ----------------- Geocoding -----------------
 export async function geocodeEndereco(endereco: string): Promise<{ latitude: number; longitude: number; nome: string } | null> {
-  const q = encodeURIComponent(endereco.trim());
-  if (!q) return null;
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1&language=pt&format=json`;
-  const r = await fetch(url);
-  if (!r.ok) return null;
-  const j = await r.json();
-  const hit = j?.results?.[0];
-  if (!hit) return null;
-  return { latitude: hit.latitude, longitude: hit.longitude, nome: [hit.name, hit.admin1, hit.country].filter(Boolean).join(", ") };
+  const termo = endereco.trim();
+  if (!termo) return null;
+  const key = `geo:${termo.toLowerCase()}`;
+  const cached = cacheGet<{ latitude: number; longitude: number; nome: string } | null>(key);
+  if (cached !== null) return cached;
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(termo)}&count=1&language=pt&format=json`;
+  try {
+    const r = await fetchComRetry(url);
+    const j = await r.json();
+    const hit = j?.results?.[0];
+    if (!hit) { cacheSet(key, null, 60 * 60 * 1000); return null; }
+    const value = { latitude: hit.latitude, longitude: hit.longitude, nome: [hit.name, hit.admin1, hit.country].filter(Boolean).join(", ") };
+    cacheSet(key, value, 24 * 60 * 60 * 1000); // 24h
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+// Valida formato mínimo do endereço (precisa ter número OU CEP).
+export function validarEnderecoParaGeocoding(endereco: string): { ok: true } | { ok: false; mensagem: string } {
+  const e = (endereco ?? "").trim();
+  if (e.length < 6) return { ok: false, mensagem: "Endereço muito curto. Informe rua, número e cidade." };
+  const temCep = /\b\d{5}-?\d{3}\b/.test(e);
+  const temNumero = /\b\d{1,6}\b/.test(e);
+  const temCidade = /,/.test(e) || /\b[A-Za-zÀ-ÿ]{3,}\b\s*[-/]\s*[A-Z]{2}\b/.test(e);
+  if (!temCep && !temNumero) return { ok: false, mensagem: "Informe o número do imóvel ou o CEP no endereço." };
+  if (!temCidade && !temCep) return { ok: false, mensagem: "Inclua a cidade (ex.: \"Rua X, 123, São Paulo - SP\") ou o CEP." };
+  return { ok: true };
 }
 
 export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnapshot & { local: string }> {
-  const g = await geocodeEndereco(endereco);
-  if (!g) throw new Error("Endereço não localizado");
+  const v = validarEnderecoParaGeocoding(endereco);
+  if (!v.ok) throw new Error(v.mensagem);
+  let g = await geocodeEndereco(endereco);
+  if (!g) {
+    // Fallback: tenta apenas pelo CEP, se presente
+    const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+    if (cep) g = await geocodeEndereco(cep);
+  }
+  if (!g) {
+    throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+  }
   const snap = await fetchClima(g.latitude, g.longitude);
   return { ...snap, local: g.nome };
 }
-
