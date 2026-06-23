@@ -215,19 +215,38 @@ function SistemaPage() {
         )}
 
         {preview && (
-          <div className="border border-border rounded-md p-3 bg-muted/30 flex items-center gap-4 flex-wrap">
-            <img src={preview.url} alt="Pré-visualização" className="h-20 w-20 object-contain bg-white rounded border border-border" />
-            <div className="text-xs text-muted-foreground space-y-0.5">
-              <div><b>{preview.file.name}</b></div>
-              <div>{preview.sizeKb} KB {preview.isSvg ? "· SVG (vetor)" : `· ${preview.width}×${preview.height}px`}</div>
-              {!preview.isSvg && <div>Será convertido para WebP otimizado.</div>}
+          <div className="border border-border rounded-md p-3 bg-muted/30 space-y-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <img src={preview.url} alt="Pré-visualização" className="h-20 w-20 object-contain bg-white rounded border border-border" />
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                <div><b>{preview.file.name}</b></div>
+                <div>{preview.sizeKb} KB {preview.isSvg ? "· SVG (vetor)" : `· ${preview.width}×${preview.height}px`}</div>
+                {!preview.isSvg && <div>Será convertido para WebP otimizado.</div>}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button variant="ghost" onClick={() => { URL.revokeObjectURL(preview.url); setPreview(null); }} disabled={uploading}>Cancelar</Button>
+                <Button onClick={confirmUpload} disabled={uploading}>
+                  {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                  Confirmar e salvar
+                </Button>
+              </div>
             </div>
-            <div className="ml-auto flex gap-2">
-              <Button variant="ghost" onClick={() => { URL.revokeObjectURL(preview.url); setPreview(null); }} disabled={uploading}>Cancelar</Button>
-              <Button onClick={confirmUpload} disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                Confirmar e salvar
-              </Button>
+            <div className="grid sm:grid-cols-2 gap-3 pt-2 border-t border-border">
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Como ficará no cabeçalho</div>
+                <div className="h-14 px-4 rounded-md bg-brand text-brand-foreground flex items-center gap-2">
+                  <img src={preview.url} alt="" className="h-8 w-8 object-contain" />
+                  <span className="font-serif text-base truncate">{me?.empresa?.nome ?? "Sua empresa"}</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Como ficará na tela de login</div>
+                <div className="h-32 rounded-md bg-background border border-border flex flex-col items-center justify-center gap-2 p-3">
+                  <img src={preview.url} alt="" className="h-12 w-12 object-contain" />
+                  <div className="font-serif text-sm">{me?.empresa?.nome ?? "Sua empresa"}</div>
+                  <div className="h-2 w-24 bg-muted rounded" />
+                </div>
+              </div>
             </div>
           </div>
         )}
