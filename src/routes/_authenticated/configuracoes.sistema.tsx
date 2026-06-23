@@ -121,7 +121,7 @@ function SistemaPage() {
           <input
             ref={fileRef}
             type="file"
-            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/bmp,image/webp,image/svg+xml,image/gif,.jpg,.jpeg,.png,.bmp,.webp,.svg,.gif,.img"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
