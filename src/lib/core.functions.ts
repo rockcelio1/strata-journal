@@ -98,7 +98,11 @@ export const resendVerification = createServerFn({ method: "POST" })
     }
     if (!found) throw new Error("EMAIL_NOT_FOUND");
     if (alreadyConfirmed) return { ok: true, alreadyConfirmed: true };
-    const { error } = await supabaseAdmin.auth.admin.generateLink({ type: "signup", email });
+    const { createClient } = await import("@supabase/supabase-js");
+    const pub = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await pub.auth.resend({ type: "signup", email });
     if (error) throw error;
     return { ok: true, alreadyConfirmed: false };
   });
