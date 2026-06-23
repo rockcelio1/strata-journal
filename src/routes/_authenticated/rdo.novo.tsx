@@ -667,8 +667,11 @@ function NovoRdoPage() {
                 </details>
               )}
             </Card>
+          </>
+        )}
 
-
+        {stepIdx === 7 && (
+          <>
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Assinatura digital</h3>
