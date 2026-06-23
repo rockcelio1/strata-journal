@@ -74,8 +74,19 @@ function RdoDetailPage() {
 
   const [motivo, setMotivo] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadDest, setUploadDest] = useState<"onedrive" | "supabase">(
+    (typeof window !== "undefined" && (localStorage.getItem("rdo.upload_dest") as any)) || "onedrive",
+  );
+  const [filterProv, setFilterProv] = useState<"all" | "onedrive" | "supabase">("all");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "name" | "size_desc">("date_desc");
   const fileRef = useRef<HTMLInputElement>(null);
+  const uploadOdFn = useServerFn(uploadOneDriveAnexo);
   const [climaState, setClimaState] = useState<{ local?: string; dias?: DiaRegistro[] }>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("rdo.upload_dest", uploadDest);
+  }, [uploadDest]);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["rdo", rdoId] });
@@ -97,25 +108,54 @@ function RdoDetailPage() {
   const removerAnx = useMutation({
     mutationFn: (id: string) => removerFn({ data: { id } }),
     onSuccess: () => { toast.success("Anexo removido"); qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(`Falha ao remover anexo: ${e.message}. Verifique permissões no OneDrive/Storage.`),
+  });
+
+  const fileToBase64 = (f: File) => new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const s = String(r.result || "");
+      resolve(s.includes(",") ? s.split(",")[1] : s);
+    };
+    r.onerror = () => reject(new Error("Falha ao ler arquivo"));
+    r.readAsDataURL(f);
   });
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length || !me?.profile?.empresa_id) return;
     setUploading(true);
+    const rootFolder = (typeof window !== "undefined" && localStorage.getItem("onedrive.root_folder")) || "DiarioDeObra";
     try {
       for (const file of Array.from(files)) {
-        const safe = file.name.replace(/[^\w.\-]+/g, "_");
-        const path = `${me.profile.empresa_id}/${rdoId}/${Date.now()}-${safe}`;
-        const up = await supabase.storage.from("rdo-anexos").upload(path, file, { upsert: false });
-        if (up.error) throw up.error;
-        await registrarFn({ data: {
-          rdo_id: rdoId, nome: file.name, storage_path: path,
-          mime_type: file.type || undefined, tamanho_bytes: file.size,
-        }});
+        if (uploadDest === "onedrive") {
+          try {
+            const base64 = await fileToBase64(file);
+            await uploadOdFn({ data: {
+              rdo_id: rdoId, nome: file.name,
+              mime_type: file.type || "application/octet-stream",
+              tamanho_bytes: file.size, base64, root_folder: rootFolder,
+            }});
+          } catch (err: any) {
+            const msg = String(err?.message ?? err);
+            let step = "envio ao OneDrive";
+            if (/raiz/i.test(msg)) step = "validar pasta raiz";
+            else if (/listar/i.test(msg)) step = "listar pastas";
+            else if (/upload|PUT|escrever/i.test(msg)) step = "escrever arquivo";
+            throw new Error(`OneDrive — etapa "${step}": ${msg}. Verifique conexão e pasta raiz em Configurações → OneDrive.`);
+          }
+        } else {
+          const safe = file.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${me.profile.empresa_id}/${rdoId}/${Date.now()}-${safe}`;
+          const up = await supabase.storage.from("rdo-anexos").upload(path, file, { upsert: false });
+          if (up.error) throw new Error(`Supabase Storage — etapa "escrever arquivo": ${up.error.message}`);
+          await registrarFn({ data: {
+            rdo_id: rdoId, nome: file.name, storage_path: path,
+            mime_type: file.type || undefined, tamanho_bytes: file.size,
+          }});
+        }
       }
-      toast.success("Anexos enviados");
+      toast.success(`Anexos enviados via ${uploadDest === "onedrive" ? "OneDrive" : "Supabase Storage"}`);
       qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] });
     } catch (err: any) {
       toast.error(err.message ?? "Falha no upload");
@@ -124,6 +164,7 @@ function RdoDetailPage() {
       if (fileRef.current) fileRef.current.value = "";
     }
   };
+
 
   const baixarPdf = () => {
     if (!data) return;
