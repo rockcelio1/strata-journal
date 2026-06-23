@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { InstallAppButton } from "@/components/install-app-button";
+import logoAsset from "@/assets/icone-rdo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -129,29 +129,30 @@ function AuthPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       {/* Lado esquerdo: branding */}
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-brand text-brand-foreground relative overflow-hidden">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-md bg-brand-foreground/15 grid place-items-center">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <span className="font-serif text-xl">Diário de Obra</span>
-        </div>
-        <div className="max-w-md">
-          <h1 className="font-serif text-4xl leading-tight">Gestão de canteiros.</h1>
+      <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-brand text-brand-foreground relative overflow-hidden">
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md">
+          <img
+            src={logoAsset.url}
+            alt="Diário de Obra"
+            className="h-40 w-40 rounded-3xl shadow-2xl object-cover mb-8 ring-4 ring-white/20"
+          />
+          <h1 className="font-serif text-4xl leading-tight">Diário de Obra</h1>
           <p className="mt-4 text-brand-foreground/75 text-sm leading-relaxed">
             Centralize obras, equipes, equipamentos e RDOs com fluxo de aprovação. Cada empresa em seu próprio espaço seguro.
           </p>
         </div>
-        <div className="text-xs text-brand-foreground/60">© {new Date().getFullYear()} Diário de Obra</div>
+        <div className="absolute bottom-6 text-xs text-brand-foreground/60">© {new Date().getFullYear()} Diário de Obra</div>
       </div>
 
       {/* Form */}
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="h-9 w-9 rounded-md bg-brand grid place-items-center">
-              <Building2 className="h-5 w-5 text-brand-foreground" />
-            </div>
+          <div className="lg:hidden flex flex-col items-center mb-8">
+            <img
+              src={logoAsset.url}
+              alt="Diário de Obra"
+              className="h-20 w-20 rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
+            />
             <span className="font-serif text-xl">Diário de Obra</span>
           </div>
 
