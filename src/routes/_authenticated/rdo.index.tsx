@@ -10,6 +10,7 @@ import { Plus, FileText, CloudArrowUp, WifiSlash, CheckCircle, WarningCircle, Ar
 import { rdoStatusMeta } from "@/components/status";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
+import { sanitizeRdoPayload } from "@/lib/rdo-validate";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/rdo/")({
