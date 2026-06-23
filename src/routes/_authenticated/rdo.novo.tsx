@@ -217,6 +217,11 @@ function NovoRdoPage() {
     setForm({ ...form, [key]: form[key].map((it: any, i: number) => i === idx ? { ...it, [field]: value } : it) });
   }
 
+  const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  const equipInvalidIdx = form.equipamentos.map((e: any, i: number) => isUuid(e.equipamento_id) ? -1 : i).filter((i: number) => i >= 0);
+  const ocInvalidIdx = form.ocorrencias.map((o: any, i: number) => o.descricao?.trim() ? -1 : i).filter((i: number) => i >= 0);
+  const maoInvalidIdx = form.mao_de_obra.map((m: any, i: number) => isUuid(m.mao_de_obra_id) ? -1 : i).filter((i: number) => i >= 0);
+  const formValid = equipInvalidIdx.length === 0 && ocInvalidIdx.length === 0 && maoInvalidIdx.length === 0;
   const canNext = stepIdx === 0 ? !!form.obra_id : true;
   const isLast = stepIdx === steps.length - 1;
 
@@ -325,15 +330,18 @@ function NovoRdoPage() {
 
         {stepIdx === 4 && (
           <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 0, status_uso: "" })}>
-            {form.equipamentos.map((it: any, i: number) => (
-              <Card key={i} className="p-3 space-y-2">
+            {form.equipamentos.map((it: any, i: number) => {
+              const invalid = !isUuid(it.equipamento_id);
+              return (
+              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Equipamento</Label>
                   <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger aria-invalid={invalid}><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {(equipOpts as any[]).map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {invalid && <p className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Observação</Label><Input value={it.status_uso ?? ""} onChange={(e) => upd("equipamentos", i, "status_uso", e.target.value)} /></div>
@@ -341,14 +349,17 @@ function NovoRdoPage() {
                 </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("equipamentos", i)} /></div>
               </Card>
-            ))}
+              );
+            })}
           </Section>
         )}
 
         {stepIdx === 5 && (
           <Section title="Ocorrências" onAdd={() => add("ocorrencias", { tipo_ocorrencia_id: null, descricao: "" })}>
-            {form.ocorrencias.map((it: any, i: number) => (
-              <Card key={i} className="p-3 space-y-2">
+            {form.ocorrencias.map((it: any, i: number) => {
+              const invalid = !it.descricao?.trim();
+              return (
+              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Tipo</Label>
                   <Select value={it.tipo_ocorrencia_id ?? ""} onValueChange={(v) => upd("ocorrencias", i, "tipo_ocorrencia_id", v || null)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -357,10 +368,15 @@ function NovoRdoPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label className="text-xs">Descrição</Label><Input value={it.descricao} onChange={(e) => upd("ocorrencias", i, "descricao", e.target.value)} /></div>
+                <div>
+                  <Label className="text-xs">Descrição</Label>
+                  <Input aria-invalid={invalid} value={it.descricao} onChange={(e) => upd("ocorrencias", i, "descricao", e.target.value)} />
+                  {invalid && <p className="text-xs text-destructive mt-1">Descrição é obrigatória.</p>}
+                </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("ocorrencias", i)} /></div>
               </Card>
-            ))}
+              );
+            })}
           </Section>
         )}
 
@@ -426,11 +442,22 @@ function NovoRdoPage() {
             Próximo <ArrowRight size={16} className="ml-1" />
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
-            <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(true)}>
-              <Check size={16} className="mr-1" /> Enviar
-            </Button>
+          <div className="flex flex-col items-end gap-1">
+            {!formValid && (
+              <p className="text-xs text-destructive" role="alert">
+                Corrija {equipInvalidIdx.length > 0 ? `${equipInvalidIdx.length} equipamento(s) sem seleção` : ""}
+                {equipInvalidIdx.length > 0 && (ocInvalidIdx.length > 0 || maoInvalidIdx.length > 0) ? " · " : ""}
+                {ocInvalidIdx.length > 0 ? `${ocInvalidIdx.length} ocorrência(s) sem descrição` : ""}
+                {ocInvalidIdx.length > 0 && maoInvalidIdx.length > 0 ? " · " : ""}
+                {maoInvalidIdx.length > 0 ? `${maoInvalidIdx.length} mão de obra sem pessoa` : ""}.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
+              <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || !formValid || save.isPending} onClick={() => save.mutate(true)}>
+                <Check size={16} className="mr-1" /> Concluir
+              </Button>
+            </div>
           </div>
         )}
       </div>
