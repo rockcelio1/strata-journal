@@ -342,9 +342,3 @@ function useResolvedLogoUrl(url: string | null): string | null {
   }
   return resolved;
 }
-  return (
-    <div className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}>
-      <Building2 className="h-1/2 w-1/2" />
-    </div>
-  );
-}
