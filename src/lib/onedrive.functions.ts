@@ -18,6 +18,98 @@ function encodePath(path: string): string {
 
 const MESES_PT = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
+function getKeys() {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
+  if (!apiKey || !connKey) {
+    throw new Error("OneDrive não está conectado. Conecte o conector OneDrive nas configurações.");
+  }
+  return { apiKey, connKey };
+}
+
+async function gatewayFetch(path: string, init?: RequestInit, retries = 2): Promise<Response> {
+  const { apiKey, connKey } = getKeys();
+  const url = `${GATEWAY_URL}${path}`;
+  let lastErr: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "X-Connection-Api-Key": connKey,
+          ...(init?.headers ?? {}),
+        },
+      });
+      if (res.status >= 500 || res.status === 429) {
+        if (attempt < retries) {
+          const wait = 300 * Math.pow(2, attempt);
+          console.warn(`[onedrive] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
+          await new Promise((r) => setTimeout(r, wait));
+          continue;
+        }
+      }
+      return res;
+    } catch (e) {
+      lastErr = e;
+      console.error(`[onedrive] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 300 * Math.pow(2, attempt)));
+        continue;
+      }
+    }
+  }
+  throw lastErr ?? new Error("OneDrive: falha de rede após retentativas");
+}
+
+export const verifyOneDrive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    try {
+      const res = await gatewayFetch("/me");
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error("[onedrive] verify falhou", res.status, body);
+        return { ok: false as const, status: res.status, error: body.slice(0, 300) || `HTTP ${res.status}` };
+      }
+      const me = await res.json() as { id?: string; displayName?: string; userPrincipalName?: string; mail?: string };
+      return {
+        ok: true as const,
+        account: {
+          id: me.id ?? null,
+          displayName: me.displayName ?? null,
+          email: me.userPrincipalName ?? me.mail ?? null,
+        },
+      };
+    } catch (e: any) {
+      console.error("[onedrive] verify exception", e);
+      return { ok: false as const, status: 0, error: e?.message ?? "Erro desconhecido" };
+    }
+  });
+
+export const listOneDriveFolders = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path?: string } | undefined) => z.object({ path: z.string().max(400).optional() }).parse(d ?? {}))
+  .handler(async ({ data }) => {
+    const path = (data.path ?? "").replace(/^\/+|\/+$/g, "");
+    const url = path
+      ? `/me/drive/root:/${encodePath(path)}:/children?$select=id,name,folder,parentReference&$top=200`
+      : `/me/drive/root/children?$select=id,name,folder,parentReference&$top=200`;
+    const res = await gatewayFetch(url);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error("[onedrive] listFolders falhou", res.status, body);
+      throw new Error(`OneDrive: falha ao listar pastas (${res.status}) ${body.slice(0,200)}`);
+    }
+    const json = await res.json() as { value: Array<{ id: string; name: string; folder?: { childCount: number } }> };
+    const folders = (json.value ?? []).filter((it) => it.folder).map((it) => ({
+      id: it.id, name: it.name, childCount: it.folder?.childCount ?? 0,
+    }));
+    return { path, folders };
+  });
+
+
+
 export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string; nome: string; mime_type: string; tamanho_bytes: number; base64: string; legenda?: string }) =>
