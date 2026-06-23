@@ -3,16 +3,51 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 // ============== PUBLIC: CHECK EMAIL ==============
+async function emailExistsAdmin(email: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const target = email.toLowerCase();
+  // Paginar pois listUsers retorna no máximo 200 por página
+  for (let page = 1; page <= 25; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    if (users.some((u) => (u.email ?? "").toLowerCase() === target)) return true;
+    if (users.length < 200) break;
+  }
+  return false;
+}
+
 export const checkEmailRegistered = createServerFn({ method: "POST" })
   .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }) => ({ exists: await emailExistsAdmin(data.email) }));
+
+// Backend hard-block: cadastra somente se o e-mail ainda não existir.
+export const registerUser = createServerFn({ method: "POST" })
+  .inputValidator((d: { email: string; password: string; nome: string; empresa_nome: string }) =>
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(6).max(72),
+      nome: z.string().trim().min(1).max(120),
+      empresa_nome: z.string().trim().min(1).max(120),
+    }).parse(d),
+  )
   .handler(async ({ data }) => {
     const email = data.email.toLowerCase();
+    if (await emailExistsAdmin(email)) {
+      throw new Error("EMAIL_TAKEN");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Check existing auth user
-    const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    if (error) throw error;
-    const exists = (list?.users ?? []).some((u) => (u.email ?? "").toLowerCase() === email);
-    return { exists };
+    const { error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { nome: data.nome, empresa_nome: data.empresa_nome },
+    });
+    if (error) {
+      if (/already (registered|exists)/i.test(error.message)) throw new Error("EMAIL_TAKEN");
+      throw error;
+    }
+    return { ok: true };
   });
 
 // ============== ME / EMPRESA ==============
