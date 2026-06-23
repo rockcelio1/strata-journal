@@ -204,9 +204,16 @@ function NovoRdoPage() {
       all.push({ file: json, name: "assinatura.json", mime: "application/json" });
     }
     const rootFolder = (typeof window !== "undefined" ? localStorage.getItem("onedrive.root_folder") : null) ?? undefined;
-    for (const a of all) {
+    setUploadProgress(all.map((a) => ({ name: a.name, status: "pending" as UpStatus })));
+    const pushHist = (entry: { name: string; status: UpStatus; provider?: string; error?: string }) =>
+      setUploadHistory((h) => [{ at: new Date().toISOString(), ...entry }, ...h].slice(0, 50));
+
+    for (let idx = 0; idx < all.length; idx++) {
+      const a = all[idx];
       const size = (a.file as any).size ?? 0;
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "enviando" } : x));
       const base64 = await blobToBase64(a.file);
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "processando" } : x));
       let uploaded = false;
       let lastErr: any;
       for (let attempt = 0; attempt < 2 && !uploaded; attempt++) {
@@ -219,22 +226,35 @@ function NovoRdoPage() {
         } catch (e: any) {
           lastErr = e;
           console.warn(`[rdo] OneDrive tentativa ${attempt + 1} falhou:`, e?.message);
+          pushHist({ name: a.name, status: "erro", provider: "onedrive", error: `tentativa ${attempt + 1}: ${e?.message ?? "erro"}` });
         }
       }
-      if (!uploaded) {
+      if (uploaded) {
+        setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "feito", provider: "onedrive" } : x));
+        pushHist({ name: a.name, status: "feito", provider: "onedrive" });
+      } else {
         console.error("[rdo] OneDrive falhou após retentativas, usando Supabase Storage:", lastErr?.message);
         toast.warning("OneDrive indisponível, usando armazenamento alternativo", { description: lastErr?.message?.slice(0, 200) });
-        const safe = a.name.replace(/[^\w.\-]+/g, "_");
-        const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
-        const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
-        if (up.error) throw up.error;
-        await registrarFn({ data: {
-          rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
-          storage_path: path, mime_type: a.mime, tamanho_bytes: size,
-        }});
+        try {
+          const safe = a.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
+          const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
+          if (up.error) throw up.error;
+          await registrarFn({ data: {
+            rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+            storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+          }});
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
+          pushHist({ name: a.name, status: "fallback", provider: "supabase" });
+        } catch (e: any) {
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: e?.message } : x));
+          pushHist({ name: a.name, status: "erro", provider: "supabase", error: e?.message });
+          throw e;
+        }
       }
     }
   }
+
 
 
 
