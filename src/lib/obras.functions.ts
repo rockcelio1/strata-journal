@@ -112,3 +112,31 @@ export const deleteObra = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// --- Cache de previsão por obra (Open-Meteo) ---
+export const getObraClimaCache = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { obra_id: string }) => z.object({ obra_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await context.supabase
+      .from("obras")
+      .select("clima_cache, clima_cache_at")
+      .eq("id", data.obra_id)
+      .maybeSingle();
+    if (error) throw error;
+    return { cache: (row as any)?.clima_cache ?? null, cache_at: (row as any)?.clima_cache_at ?? null };
+  });
+
+export const saveObraClimaCache = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ obra_id: z.string().uuid(), cache: z.any() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("obras")
+      .update({ clima_cache: data.cache, clima_cache_at: new Date().toISOString() } as any)
+      .eq("id", data.obra_id);
+    if (error) throw error;
+    return { ok: true };
+  });
