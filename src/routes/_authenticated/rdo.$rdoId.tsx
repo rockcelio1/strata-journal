@@ -42,6 +42,7 @@ function RdoDetailPage() {
   const registrarFn = useServerFn(registrarAnexo);
   const removerFn = useServerFn(removerAnexo);
   const viewFn = useServerFn(logRdoView);
+  const auditViewFn = useServerFn(logRdoAuditView);
   const auditFn = useServerFn(getRdoAuditSummary);
 
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
