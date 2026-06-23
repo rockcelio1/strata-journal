@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   getRdo, submitRdo, approveRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
-  logRdoView, getRdoAuditSummary, logRdoClimaUpdate,
+  logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
 } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
