@@ -53,7 +53,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const roles = me?.roles ?? [];
   const showConfig = roles.includes("master") || roles.includes("admin") || roles.includes("gestor_acessos");
-  const isMaster = roles.includes("master");
   const mainNav = showConfig ? [...baseNav, masterNavItem] : baseNav;
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Bottom bar: 4 primários + botão "Mais"
