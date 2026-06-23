@@ -152,6 +152,10 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase, userId } = context;
+    // Apenas administradores podem REMOVER o logotipo
+    if (data.logo_url === null) {
+      await assertAdminOrMaster(supabase, userId);
+    }
     const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
     const { error } = await (supabase.from("empresas") as any)
