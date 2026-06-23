@@ -199,16 +199,27 @@ function NovoRdoPage() {
       const json = new Blob([JSON.stringify(sigManifest, null, 2)], { type: "application/json" });
       all.push({ file: json, name: "assinatura.json", mime: "application/json" });
     }
+    const rootFolder = (typeof window !== "undefined" ? localStorage.getItem("onedrive.root_folder") : null) ?? undefined;
     for (const a of all) {
       const size = (a.file as any).size ?? 0;
-      try {
-        const base64 = await blobToBase64(a.file);
-        await uploadOneDriveFn({ data: {
-          rdo_id: rdoId, nome: a.name, mime_type: a.mime, tamanho_bytes: size,
-          base64, legenda: a.legenda,
-        }});
-      } catch (e: any) {
-        console.warn("OneDrive falhou, usando Supabase Storage:", e?.message);
+      const base64 = await blobToBase64(a.file);
+      let uploaded = false;
+      let lastErr: any;
+      for (let attempt = 0; attempt < 2 && !uploaded; attempt++) {
+        try {
+          await uploadOneDriveFn({ data: {
+            rdo_id: rdoId, nome: a.name, mime_type: a.mime, tamanho_bytes: size,
+            base64, legenda: a.legenda, root_folder: rootFolder,
+          }});
+          uploaded = true;
+        } catch (e: any) {
+          lastErr = e;
+          console.warn(`[rdo] OneDrive tentativa ${attempt + 1} falhou:`, e?.message);
+        }
+      }
+      if (!uploaded) {
+        console.error("[rdo] OneDrive falhou após retentativas, usando Supabase Storage:", lastErr?.message);
+        toast.warning("OneDrive indisponível, usando armazenamento alternativo", { description: lastErr?.message?.slice(0, 200) });
         const safe = a.name.replace(/[^\w.\-]+/g, "_");
         const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
         const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
@@ -220,6 +231,7 @@ function NovoRdoPage() {
       }
     }
   }
+
 
 
   async function buildSignatureManifest(payload: any): Promise<any | null> {
