@@ -17,6 +17,8 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
   const listFn = useServerFn(listObras);
   const { data: obrasList = [] } = useQuery({ queryKey: ["obras"], queryFn: () => listFn(), enabled: open && !obra });
   const qc = useQueryClient();
+  const [pickedId, setPickedId] = useState<string>("");
+  const locked = !obra && !!pickedId;
   const [form, setForm] = useState<any>({
     nome: "", codigo: "", cliente: "", endereco: "", data_inicio: "", data_previsao_fim: "",
     status: "planejamento", avanco_pct: 0, descricao: "",
@@ -24,6 +26,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
 
   useEffect(() => {
     if (open) {
+      setPickedId("");
       setForm(obra ? {
         ...obra,
         codigo: obra.codigo ?? "", cliente: obra.cliente ?? "", endereco: obra.endereco ?? "",
@@ -73,7 +76,9 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
               <div className="sm:col-span-2">
                 <Label>Selecionar obra existente (autopreenche)</Label>
                 <Select
+                  value={pickedId}
                   onValueChange={(id) => {
+                    setPickedId(id);
                     const o = (obrasList as any[]).find((x) => x.id === id);
                     if (!o) return;
                     setForm((f: any) => ({
@@ -94,31 +99,37 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
                     ))}
                   </SelectContent>
                 </Select>
+                {locked && (
+                  <button type="button" className="text-xs text-muted-foreground hover:underline mt-1"
+                    onClick={() => { setPickedId(""); }}>
+                    Limpar seleção e editar manualmente
+                  </button>
+                )}
               </div>
             )}
             <div className="sm:col-span-2">
               <Label>Nome do Contrato</Label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
+              <Input value={form.nome} readOnly={locked} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
             </div>
             <div>
               <Label>Contrato</Label>
-              <Input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} />
+              <Input value={form.codigo} readOnly={locked} onChange={(e) => setForm({ ...form, codigo: e.target.value })} />
             </div>
             <div>
               <Label>Cliente</Label>
-              <Input value={form.cliente} onChange={(e) => setForm({ ...form, cliente: e.target.value })} />
+              <Input value={form.cliente} readOnly={locked} onChange={(e) => setForm({ ...form, cliente: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
               <Label>Endereço</Label>
-              <Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
+              <Input value={form.endereco} readOnly={locked} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
             </div>
             <div>
               <Label>Início</Label>
-              <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
+              <Input type="date" value={form.data_inicio} readOnly={locked} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
             </div>
             <div>
               <Label>Previsão fim</Label>
-              <Input type="date" value={form.data_previsao_fim} onChange={(e) => setForm({ ...form, data_previsao_fim: e.target.value })} />
+              <Input type="date" value={form.data_previsao_fim} readOnly={locked} onChange={(e) => setForm({ ...form, data_previsao_fim: e.target.value })} />
             </div>
             <div>
               <Label>Status</Label>
