@@ -47,7 +47,7 @@ function OneDriveSettings() {
   }
 
   const ok = verify.data?.ok === true;
-  const acc = ok ? verify.data.account : null;
+  const acc = ok ? verify.data!.account : null;
 
   return (
     <div className="space-y-6">
