@@ -211,75 +211,14 @@ function DashboardPage() {
               <EmptyState text="Sem dados para os filtros atuais." />
             ) : (
               <div className="grid lg:grid-cols-2 gap-6 animate-fade-in">
-                <ChartFrame title={`Barras 3D · ${dimLabel[dim]}`}>
-                  <ResponsiveContainer width="100%" height={340}>
-                    <BarChart data={chartData} margin={{ top: 24, right: 16, left: 0, bottom: 56 }}>
-                      <defs>
-                        {chartData.map((_, i) => (
-                          <linearGradient key={i} id={`bar3d-${i}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={1} />
-                            <stop offset="60%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.85} />
-                            <stop offset="100%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.55} />
-                          </linearGradient>
-                        ))}
-                        <filter id="bar-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feDropShadow dx="3" dy="6" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.35" />
-                        </filter>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={70} tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <Tooltip content={<FancyTooltip dimLabel={dimLabel[dim]} />} cursor={{ fill: "rgba(30,58,138,0.05)" }} />
-                      <Bar
-                        dataKey="value"
-                        radius={[10, 10, 0, 0]}
-                        animationDuration={900}
-                        filter="url(#bar-shadow)"
-                        onClick={(d: any) => openDrill(d.name, d.value)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {chartData.map((_, i) => <Cell key={i} fill={`url(#bar3d-${i})`} stroke={PALETTE[i % PALETTE.length]} strokeWidth={1} />)}
-                        <LabelList dataKey="value" position="top" style={{ fontSize: 11, fontWeight: 600, fill: "#0f172a" }} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <ChartFrame title={`Barras 3D · ${dimLabel[dim]}`} hint="Arraste para rotacionar · scroll para zoom">
+                  <Bars3D data={chartData as Chart3DDatum[]} onSelect={(d) => openDrill(d.name, d.value)} />
+                  <Chart3DLegend data={chartData as Chart3DDatum[]} />
                 </ChartFrame>
 
-                <ChartFrame title={`Pizza 3D · ${dimLabel[dim]}`}>
-                  <ResponsiveContainer width="100%" height={340}>
-                    <PieChart>
-                      <defs>
-                        {chartData.map((_, i) => (
-                          <radialGradient key={i} id={`pie3d-${i}`} cx="50%" cy="40%" r="65%">
-                            <stop offset="0%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={1} />
-                            <stop offset="100%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.55} />
-                          </radialGradient>
-                        ))}
-                        <filter id="pie-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feDropShadow dx="2" dy="8" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.4" />
-                        </filter>
-                      </defs>
-                      <Pie
-                        data={chartData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={110}
-                        innerRadius={45}
-                        paddingAngle={2}
-                        animationDuration={900}
-                        filter="url(#pie-shadow)"
-                        onClick={(d: any) => openDrill(d.name, d.value)}
-                        label={(e: any) => `${e.value}`}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {chartData.map((_, i) => <Cell key={i} fill={`url(#pie3d-${i})`} stroke="#fff" strokeWidth={2} />)}
-                      </Pie>
-                      <Tooltip content={<FancyTooltip dimLabel={dimLabel[dim]} />} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <ChartFrame title={`Pizza 3D · ${dimLabel[dim]}`} hint="Arraste para rotacionar · scroll para zoom">
+                  <Pie3D data={chartData as Chart3DDatum[]} onSelect={(d) => openDrill(d.name, d.value)} />
+                  <Chart3DLegend data={chartData as Chart3DDatum[]} />
                 </ChartFrame>
               </div>
             )}
