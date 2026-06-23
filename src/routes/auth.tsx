@@ -19,6 +19,25 @@ function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  // Verificação de e-mail em tempo real no cadastro
+  const [signupEmail, setSignupEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+
+  useEffect(() => {
+    const value = signupEmail.trim().toLowerCase();
+    if (!value) { setEmailStatus("idle"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { setEmailStatus("invalid"); return; }
+    setEmailStatus("checking");
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await checkEmailRegistered({ data: { email: value }, signal: ctrl.signal } as any);
+        setEmailStatus(res.exists ? "taken" : "available");
+      } catch { /* ignore */ }
+    }, 500);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [signupEmail]);
+
   async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
