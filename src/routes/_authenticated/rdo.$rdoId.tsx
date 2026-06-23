@@ -438,9 +438,7 @@ function RdoDetailPage() {
         })()}
       </Card>
 
-          </ul>
-        )}
-      </Card>
+
 
       {canManageAccess && <RdoAcessoCard rdoId={rdoId} obraId={r.obras?.id ?? r.obra_id ?? null} />}
 
