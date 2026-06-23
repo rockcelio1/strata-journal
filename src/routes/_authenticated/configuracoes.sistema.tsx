@@ -69,12 +69,12 @@ function SistemaPage() {
   const updateWallpaperFn = useServerFn(updateLogoWallpaper);
   const savedWallpaperOpacity = Number((me?.empresa as any)?.logo_wallpaper_opacity ?? 0);
   const [wallpaperOpacity, setWallpaperOpacity] = useState<number>(savedWallpaperOpacity);
-  const [savingWallpaper, setSavingWallpaper] = useState(false);
-  // Sincroniza quando o backend retorna outro valor
-  if (savedWallpaperOpacity !== (wallpaperOpacityRef.current ?? savedWallpaperOpacity)) {
-    wallpaperOpacityRef.current = savedWallpaperOpacity;
-    // noop — apenas atualiza ref para evitar reset constante
+  const lastSavedRef = useRef<number>(savedWallpaperOpacity);
+  if (lastSavedRef.current !== savedWallpaperOpacity) {
+    lastSavedRef.current = savedWallpaperOpacity;
+    setWallpaperOpacity(savedWallpaperOpacity);
   }
+  const [savingWallpaper, setSavingWallpaper] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
