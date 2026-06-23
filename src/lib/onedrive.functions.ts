@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive/v1.0";
+const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
 
 function slugSegment(s: string): string {
   return (s || "sem-nome")
