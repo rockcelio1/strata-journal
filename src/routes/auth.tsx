@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { InstallAppButton } from "@/components/install-app-button";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
