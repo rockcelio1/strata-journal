@@ -2,13 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listRdos, createRdo } from "@/lib/rdo.functions";
+import { listObras } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
-import { Plus, FileText, CloudArrowUp, WifiSlash, CheckCircle, WarningCircle, ArrowClockwise, X } from "@phosphor-icons/react";
+import {
+  Plus, FileText, CloudArrowUp, WifiSlash, CheckCircle, WarningCircle,
+  ArrowClockwise, X, MagnifyingGlass, DownloadSimple, ListBullets, CalendarBlank,
+} from "@phosphor-icons/react";
 import { rdoStatusMeta } from "@/components/status";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
 import { toast } from "sonner";
@@ -19,12 +26,45 @@ export const Route = createFileRoute("/_authenticated/rdo/")({
 
 const statusFilters = ["todos", "rascunho", "enviado", "aprovado", "reprovado"] as const;
 
+function toISODate(d: Date) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function exportCsv(rows: any[]) {
+  const head = ["numero", "obra", "data", "status"];
+  const body = rows.map((r) => [
+    r.numero,
+    (r.obras?.nome ?? "").replace(/[";\n]/g, " "),
+    r.data,
+    r.status,
+  ].map((v) => `"${String(v ?? "")}"`).join(";"));
+  const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `relatorios-rdo-${toISODate(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function RdoListPage() {
   const fn = useServerFn(listRdos);
+  const obrasFn = useServerFn(listObras);
   const createFn = useServerFn(createRdo);
   const qc = useQueryClient();
   const { data: rdos = [] } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
+  const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
+
   const [status, setStatus] = useState<string>("todos");
+  const [obraId, setObraId] = useState<string>("todas");
+  const [busca, setBusca] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [view, setView] = useState<"lista" | "calendario">("lista");
+  const [calMonth, setCalMonth] = useState<Date>(new Date());
+  const [calSelected, setCalSelected] = useState<Date | undefined>(undefined);
+
   const [queue, setQueue] = useState<QueuedRdo[]>([]);
   const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
   const [syncing, setSyncing] = useState(false);
@@ -85,23 +125,61 @@ function RdoListPage() {
   async function descartar(id: string) { await removeQueued(id); await refreshQueue(); }
   async function retry(id: string) { await retryQueued(id); await refreshQueue(); sincronizar(); }
 
-  const filtered = (rdos as any[]).filter((r) => status === "todos" || r.status === status);
+  const filtered = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return (rdos as any[]).filter((r) => {
+      if (status !== "todos" && r.status !== status) return false;
+      if (obraId !== "todas" && r.obras?.id !== obraId) return false;
+      if (from && r.data < from) return false;
+      if (to && r.data > to) return false;
+      if (q) {
+        const hay = `${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (view === "calendario" && calSelected) {
+        if (r.data !== toISODate(calSelected)) return false;
+      }
+      return true;
+    });
+  }, [rdos, status, obraId, busca, from, to, view, calSelected]);
+
+  // Pontos do calendário (datas com RDOs já considerando filtros, exceto a data selecionada)
+  const diasComRdo = useMemo(() => {
+    const set = new Set<string>();
+    const q = busca.trim().toLowerCase();
+    (rdos as any[]).forEach((r) => {
+      if (status !== "todos" && r.status !== status) return;
+      if (obraId !== "todas" && r.obras?.id !== obraId) return;
+      if (q && !`${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase().includes(q)) return;
+      set.add(r.data);
+    });
+    return set;
+  }, [rdos, status, obraId, busca]);
+
+  function limparFiltros() {
+    setStatus("todos"); setObraId("todas"); setBusca(""); setFrom(""); setTo(""); setCalSelected(undefined);
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <header className="flex items-end justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 className="font-serif text-2xl md:text-3xl">Relatório Diário de Obra</h1>
+          <h1 className="font-serif text-2xl md:text-3xl">Relatórios — RDO</h1>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-            {rdos.length} RDOs registrados
+            {filtered.length} de {rdos.length} RDOs
             <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${online ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
               {online ? <CheckCircle size={12} /> : <WifiSlash size={12} />} {online ? "Online" : "Offline"}
             </span>
           </p>
         </div>
-        <Link to="/rdo/novo">
-          <Button className="bg-brand text-brand-foreground"><Plus size={16} className="mr-1" />Novo RDO</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)} disabled={filtered.length === 0}>
+            <DownloadSimple size={16} className="mr-1" /> Exportar CSV
+          </Button>
+          <Link to="/rdo/novo">
+            <Button className="bg-brand text-brand-foreground"><Plus size={16} className="mr-1" />Novo RDO</Button>
+          </Link>
+        </div>
       </header>
 
       {(pendentes.length > 0 || syncing) && (
@@ -150,67 +228,154 @@ function RdoListPage() {
         </Card>
       )}
 
-      <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
-        {statusFilters.map((s) => (
-          <button key={s} onClick={() => setStatus(s)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors whitespace-nowrap ${status === s ? "border-brand text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-            {s === "todos" ? "Todos" : rdoStatusMeta[s as keyof typeof rdoStatusMeta].label}
+      {/* Filtros */}
+      <Card className="p-3 md:p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
+          <div className="md:col-span-4 relative">
+            <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por número ou obra…" className="pl-8" />
+          </div>
+          <div className="md:col-span-3">
+            <Select value={obraId} onValueChange={setObraId}>
+              <SelectTrigger><SelectValue placeholder="Obra" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as obras</SelectItem>
+                {(obras as any[]).map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Data inicial" />
+          </div>
+          <div className="md:col-span-2">
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Data final" />
+          </div>
+          <div className="md:col-span-1 flex md:justify-end">
+            <Button variant="ghost" size="sm" onClick={limparFiltros}>Limpar</Button>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <div className="flex gap-1 border-b border-border overflow-x-auto">
+          {statusFilters.map((s) => (
+            <button key={s} onClick={() => setStatus(s)}
+              className={`px-3 py-2 text-sm border-b-2 transition-colors whitespace-nowrap ${status === s ? "border-brand text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+              {s === "todos" ? "Todos" : rdoStatusMeta[s as keyof typeof rdoStatusMeta].label}
+            </button>
+          ))}
+        </div>
+        <div className="inline-flex rounded-md border border-border overflow-hidden">
+          <button onClick={() => setView("lista")} className={`px-3 py-1.5 text-sm inline-flex items-center gap-1 ${view === "lista" ? "bg-muted" : "hover:bg-muted/50"}`}>
+            <ListBullets size={14} /> Lista
           </button>
-        ))}
+          <button onClick={() => setView("calendario")} className={`px-3 py-1.5 text-sm inline-flex items-center gap-1 border-l border-border ${view === "calendario" ? "bg-muted" : "hover:bg-muted/50"}`}>
+            <CalendarBlank size={14} /> Calendário
+          </button>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card className="p-12 text-center">
-          <FileText size={40} className="mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">Nenhum RDO neste filtro.</p>
-        </Card>
-      ) : (
-        <>
-          {/* Mobile: cards */}
-          <div className="md:hidden flex flex-col gap-2">
-            {filtered.map((r: any) => {
-              const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
-              return (
-                <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }}>
-                  <Card className="p-3 active:bg-muted/50">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium tabular-nums">#{r.numero}</span>
-                      <Badge variant="outline" className={m.className}>{m.label}</Badge>
-                    </div>
-                    <div className="mt-1 text-sm truncate">{r.obras?.nome}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(r.data).toLocaleDateString("pt-BR")}</div>
-                  </Card>
-                </Link>
-              );
-            })}
+      {view === "calendario" && (
+        <Card className="p-3 md:p-4 mb-4">
+          <div className="grid md:grid-cols-[auto,1fr] gap-4">
+            <Calendar
+              mode="single"
+              month={calMonth}
+              onMonthChange={setCalMonth}
+              selected={calSelected}
+              onSelect={setCalSelected}
+              modifiers={{
+                hasRdo: (d) => diasComRdo.has(toISODate(d)),
+              }}
+              modifiersClassNames={{
+                hasRdo: "relative font-semibold text-brand after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-brand",
+              }}
+              className="p-3 pointer-events-auto"
+            />
+            <div className="text-sm">
+              {calSelected ? (
+                <>
+                  <div className="text-muted-foreground mb-2">RDOs em {calSelected.toLocaleDateString("pt-BR")}</div>
+                  {filtered.length === 0 ? (
+                    <div className="text-muted-foreground">Sem RDOs nessa data com os filtros atuais.</div>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {filtered.map((r: any) => {
+                        const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                        return (
+                          <li key={r.id}>
+                            <Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="flex items-center justify-between hover:bg-muted/50 px-2 py-1.5 rounded">
+                              <span><span className="font-medium tabular-nums">#{r.numero}</span> — {r.obras?.nome}</span>
+                              <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <div className="text-muted-foreground">Selecione uma data com marcador para ver os RDOs do dia.</div>
+              )}
+            </div>
           </div>
-          {/* Desktop: tabela */}
-          <Card className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="p-3 font-medium">#</th>
-                  <th className="p-3 font-medium">Obra</th>
-                  <th className="p-3 font-medium">Data</th>
-                  <th className="p-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r: any) => {
-                  const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
-                  return (
-                    <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                      <td className="p-3 tabular-nums"><Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="font-medium hover:underline">#{r.numero}</Link></td>
-                      <td className="p-3">{r.obras?.nome}</td>
-                      <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
-                      <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        </Card>
+      )}
+
+      {view === "lista" && (
+        filtered.length === 0 ? (
+          <Card className="p-12 text-center">
+            <FileText size={40} className="mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">Nenhum RDO neste filtro.</p>
           </Card>
-        </>
+        ) : (
+          <>
+            <div className="md:hidden flex flex-col gap-2">
+              {filtered.map((r: any) => {
+                const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                return (
+                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }}>
+                    <Card className="p-3 active:bg-muted/50">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium tabular-nums">#{r.numero}</span>
+                        <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                      </div>
+                      <div className="mt-1 text-sm truncate">{r.obras?.nome}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(r.data).toLocaleDateString("pt-BR")}</div>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+            <Card className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="p-3 font-medium">#</th>
+                    <th className="p-3 font-medium">Obra</th>
+                    <th className="p-3 font-medium">Data</th>
+                    <th className="p-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r: any) => {
+                    const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                    return (
+                      <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                        <td className="p-3 tabular-nums"><Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="font-medium hover:underline">#{r.numero}</Link></td>
+                        <td className="p-3">{r.obras?.nome}</td>
+                        <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
+                        <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          </>
+        )
       )}
     </div>
   );
