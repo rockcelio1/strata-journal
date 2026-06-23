@@ -40,11 +40,18 @@ function RdoDetailPage() {
   const anexosFn = useServerFn(listRdoAnexos);
   const registrarFn = useServerFn(registrarAnexo);
   const removerFn = useServerFn(removerAnexo);
+  const viewFn = useServerFn(logRdoView);
+  const auditFn = useServerFn(getRdoAuditSummary);
 
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const { data: logs = [] } = useQuery({ queryKey: ["rdo-logs", rdoId], queryFn: () => logsFn({ data: { rdo_id: rdoId } }) });
   const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
+  const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }) });
+  useEffect(() => {
+    viewFn({ data: { rdo_id: rdoId } }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rdoId]);
 
   const [motivo, setMotivo] = useState("");
   const [uploading, setUploading] = useState(false);
