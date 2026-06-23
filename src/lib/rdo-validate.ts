@@ -97,3 +97,36 @@ export function sanitizeRdoPayload<T extends RdoFormLike>(
       dropped.atividades,
   };
 }
+
+/** Validação backend: garante que cada linha tenha UUID válido / descrição
+ *  preenchida e produz uma mensagem mapeada por índice. Bloqueia tentativas
+ *  de burlar a UI mesmo se o cliente enviar JSON manualmente. */
+export function assertRowsValid(data: any): void {
+  const errors: string[] = [];
+  (data?.equipamentos ?? []).forEach((e: any, i: number) => {
+    if (!e || typeof e.equipamento_id !== "string" || !UUID_RE.test(e.equipamento_id)) {
+      errors.push(`equipamentos[${i}]: equipamento_id inválido`);
+    }
+  });
+  (data?.ocorrencias ?? []).forEach((o: any, i: number) => {
+    if (!o || typeof o.descricao !== "string" || !o.descricao.trim()) {
+      errors.push(`ocorrencias[${i}]: descrição obrigatória`);
+    }
+  });
+  (data?.mao_de_obra ?? []).forEach((m: any, i: number) => {
+    if (!m || typeof m.mao_de_obra_id !== "string" || !UUID_RE.test(m.mao_de_obra_id)) {
+      errors.push(`mao_de_obra[${i}]: mao_de_obra_id inválido`);
+    }
+  });
+  (data?.atividades ?? []).forEach((a: any, i: number) => {
+    if (!a || typeof a.descricao !== "string" || !a.descricao.trim()) {
+      errors.push(`atividades[${i}]: descrição obrigatória`);
+    }
+  });
+  if (errors.length) {
+    const err: any = new Error("RDO_INVALID_ROWS: " + errors.join("; "));
+    err.code = "RDO_INVALID_ROWS";
+    err.rows = errors;
+    throw err;
+  }
+}
