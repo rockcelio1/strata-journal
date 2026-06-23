@@ -12,6 +12,7 @@ import {
   Truck,
   AlertTriangle,
   Images,
+  Settings,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
+const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
   { to: "/rdo", label: "Diário (RDO)", icon: FileText },
@@ -31,6 +32,9 @@ const mainNav: Array<{ to: string; label: string; icon: any; match?: string }> =
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
 ];
+
+const masterNavItem = { to: "/configuracoes", label: "Configurações", icon: Settings, match: "/configuracoes" };
+
 
 const cadastrosNav = [
   { to: "/cadastros/mao-de-obra", label: "Mão de obra", icon: HardHat },

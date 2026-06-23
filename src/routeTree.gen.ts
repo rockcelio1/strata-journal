@@ -16,12 +16,17 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticated/galeria'
 import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
 import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
+import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
 import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
+import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
+import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
+import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
@@ -60,6 +65,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRdoIndexRoute = AuthenticatedRdoIndexRouteImport.update({
   id: '/rdo/',
   path: '/rdo/',
@@ -70,6 +81,12 @@ const AuthenticatedObrasIndexRoute = AuthenticatedObrasIndexRouteImport.update({
   path: '/obras/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfiguracoesIndexRoute =
+  AuthenticatedConfiguracoesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedCadastrosIndexRoute =
   AuthenticatedCadastrosIndexRouteImport.update({
     id: '/cadastros/',
@@ -91,6 +108,24 @@ const AuthenticatedObrasObraIdRoute =
     id: '/obras/$obraId',
     path: '/obras/$obraId',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiguracoesUsuariosRoute =
+  AuthenticatedConfiguracoesUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesSistemaRoute =
+  AuthenticatedConfiguracoesSistemaRouteImport.update({
+    id: '/sistema',
+    path: '/sistema',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesAplicativoRoute =
+  AuthenticatedConfiguracoesAplicativoRouteImport.update({
+    id: '/aplicativo',
+    path: '/aplicativo',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
 const AuthenticatedCadastrosOcorrenciasRoute =
   AuthenticatedCadastrosOcorrenciasRouteImport.update({
@@ -115,16 +150,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
+  '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
 }
@@ -138,10 +178,14 @@ export interface FileRoutesByTo {
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
 }
@@ -151,16 +195,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
   '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/_authenticated/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/_authenticated/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
+  '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
 }
@@ -170,16 +219,21 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/configuracoes'
     | '/dashboard'
     | '/empresa'
     | '/galeria'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
+    | '/configuracoes/aplicativo'
+    | '/configuracoes/sistema'
+    | '/configuracoes/usuarios'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/cadastros/'
+    | '/configuracoes/'
     | '/obras/'
     | '/rdo/'
   fileRoutesByTo: FileRoutesByTo
@@ -193,10 +247,14 @@ export interface FileRouteTypes {
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
+    | '/configuracoes/aplicativo'
+    | '/configuracoes/sistema'
+    | '/configuracoes/usuarios'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/cadastros'
+    | '/configuracoes'
     | '/obras'
     | '/rdo'
   id:
@@ -205,16 +263,21 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
+    | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa'
     | '/_authenticated/galeria'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
+    | '/_authenticated/configuracoes/aplicativo'
+    | '/_authenticated/configuracoes/sistema'
+    | '/_authenticated/configuracoes/usuarios'
     | '/_authenticated/obras/$obraId'
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
     | '/_authenticated/cadastros/'
+    | '/_authenticated/configuracoes/'
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
   fileRoutesById: FileRoutesById
@@ -277,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rdo/': {
       id: '/_authenticated/rdo/'
       path: '/rdo'
@@ -290,6 +360,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/obras/'
       preLoaderRoute: typeof AuthenticatedObrasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracoes/': {
+      id: '/_authenticated/configuracoes/'
+      path: '/'
+      fullPath: '/configuracoes/'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesIndexRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
     '/_authenticated/cadastros/': {
       id: '/_authenticated/cadastros/'
@@ -319,6 +396,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/configuracoes/usuarios': {
+      id: '/_authenticated/configuracoes/usuarios'
+      path: '/usuarios'
+      fullPath: '/configuracoes/usuarios'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesUsuariosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/sistema': {
+      id: '/_authenticated/configuracoes/sistema'
+      path: '/sistema'
+      fullPath: '/configuracoes/sistema'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesSistemaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/aplicativo': {
+      id: '/_authenticated/configuracoes/aplicativo'
+      path: '/aplicativo'
+      fullPath: '/configuracoes/aplicativo'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAplicativoRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/cadastros/ocorrencias': {
       id: '/_authenticated/cadastros/ocorrencias'
       path: '/cadastros/ocorrencias'
@@ -343,7 +441,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedConfiguracoesRouteChildren {
+  AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
+  AuthenticatedConfiguracoesSistemaRoute: typeof AuthenticatedConfiguracoesSistemaRoute
+  AuthenticatedConfiguracoesUsuariosRoute: typeof AuthenticatedConfiguracoesUsuariosRoute
+  AuthenticatedConfiguracoesIndexRoute: typeof AuthenticatedConfiguracoesIndexRoute
+}
+
+const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
+  {
+    AuthenticatedConfiguracoesAplicativoRoute:
+      AuthenticatedConfiguracoesAplicativoRoute,
+    AuthenticatedConfiguracoesSistemaRoute:
+      AuthenticatedConfiguracoesSistemaRoute,
+    AuthenticatedConfiguracoesUsuariosRoute:
+      AuthenticatedConfiguracoesUsuariosRoute,
+    AuthenticatedConfiguracoesIndexRoute: AuthenticatedConfiguracoesIndexRoute,
+  }
+
+const AuthenticatedConfiguracoesRouteWithChildren =
+  AuthenticatedConfiguracoesRoute._addFileChildren(
+    AuthenticatedConfiguracoesRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
   AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
@@ -359,6 +481,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
   AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
