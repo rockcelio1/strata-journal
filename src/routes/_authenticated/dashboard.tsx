@@ -302,7 +302,7 @@ function DashboardPage() {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setDrill(null)}>Fechar</Button>
-            <Button onClick={() => { setDrill(null); navigate({ to: dim === "obras" ? "/obras" : "/rdo" }); }}>Abrir relatório</Button>
+            <Button onClick={() => { setDrill(null); navigate({ to: "/relatorios/$dim", params: { dim } }); }}>Abrir relatório completo</Button>
           </div>
         </DialogContent>
       </Dialog>
