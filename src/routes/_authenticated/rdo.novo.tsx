@@ -176,14 +176,7 @@ function NovoRdoPage() {
 
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
-      const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-      const cleaned = {
-        ...form,
-        atividades: (form.atividades ?? []).filter((a: any) => a.descricao?.trim()),
-        mao_de_obra: (form.mao_de_obra ?? []).filter((m: any) => isUuid(m.mao_de_obra_id)),
-        equipamentos: (form.equipamentos ?? []).filter((e: any) => isUuid(e.equipamento_id)),
-        ocorrencias: (form.ocorrencias ?? []).filter((o: any) => o.descricao?.trim()),
-      };
+      const { sane: cleaned } = sanitizeRdoPayload(form);
       const payload = { ...cleaned, enviar };
       const sigManifest = await buildSignatureManifest(payload);
       const queued = await enqueueRdo({ ...payload, _assinatura: sigManifest });
