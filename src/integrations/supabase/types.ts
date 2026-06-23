@@ -96,6 +96,53 @@ export type Database = {
           },
         ]
       }
+      empresa_logo_versions: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          empresa_id: string
+          height: number | null
+          id: string
+          logo_url: string
+          mime_type: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
+          width: number | null
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id: string
+          height?: number | null
+          id?: string
+          logo_url: string
+          mime_type?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          width?: number | null
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id?: string
+          height?: number | null
+          id?: string
+          logo_url?: string
+          mime_type?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_logo_versions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           app_android_url: string | null
