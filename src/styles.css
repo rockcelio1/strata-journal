@@ -150,14 +150,33 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html, body { max-width: 100vw; overflow-x: hidden; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
+    /* Fluid base typography — escala suavemente de 14px (mobile) a 16px (desktop) */
+    font-size: clamp(0.875rem, 0.8rem + 0.4vw, 1rem);
+    -webkit-text-size-adjust: 100%;
   }
   h1, h2, h3, .font-serif {
     font-family: var(--font-serif);
     letter-spacing: -0.01em;
   }
+  h1 { font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2rem); line-height: 1.15; }
+  h2 { font-size: clamp(1.15rem, 0.95rem + 1vw, 1.5rem); line-height: 1.2; }
+  /* Targets touch ≥ 44px em telas finas */
+  @media (pointer: coarse) {
+    button, [role="button"], a.btn, input[type="button"], input[type="submit"] {
+      min-height: 44px;
+    }
+  }
+  /* Imagens fluidas por padrão */
+  img, video, canvas, svg { max-width: 100%; height: auto; }
+  /* Evita hover "preso" em touch */
+  @media (hover: none) {
+    .hover\:bg-accent:hover { background-color: transparent; }
+  }
 }
+
