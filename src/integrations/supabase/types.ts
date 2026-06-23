@@ -135,6 +135,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "empresa_logo_versions_autor_id_profiles_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "empresa_logo_versions_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -561,6 +568,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rdo_anexos_autor_id_profiles_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rdo_anexos_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
@@ -643,6 +657,13 @@ export type Database = {
           status_novo?: Database["public"]["Enums"]["rdo_status"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rdo_audit_logs_autor_id_profiles_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rdo_audit_logs_empresa_id_fkey"
             columns: ["empresa_id"]
@@ -844,6 +865,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rdos_aprovado_por_profiles_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdos_autor_id_profiles_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rdos_empresa_id_fkey"
             columns: ["empresa_id"]
