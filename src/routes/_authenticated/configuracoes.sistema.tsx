@@ -319,45 +319,80 @@ function SistemaPage() {
 }
 
 export function LogoMark({ url, className }: { url: string | null; className?: string }) {
-  const resolved = useResolvedLogoUrl(url);
-  if (resolved) {
+  const { src, failed, onError } = useResolvedLogoUrl(url);
+  if (src && !failed) {
     return (
       <img
-        src={resolved}
+        src={src}
         alt="Logo"
         loading="eager"
         decoding="async"
+        onError={onError}
         className={`${className ?? "h-8 w-8"} object-contain`}
         style={{ imageRendering: "auto" }}
       />
     );
   }
+  // Placeholder padrão caso não exista logo, falhe ao carregar ou retorne 403.
   return (
-    <div className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}>
+    <div
+      className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}
+      aria-label="Logotipo padrão"
+      title={failed ? "Logotipo indisponível" : undefined}
+    >
       <Building2 className="h-1/2 w-1/2" />
     </div>
   );
 }
 
-// Resolve URLs antigas (`/object/public/empresa-logos/...`) gerando uma URL assinada
-// em tempo de execução. Bucket é privado por política do workspace.
-function useResolvedLogoUrl(url: string | null): string | null {
-  const [resolved, setResolved] = useState<string | null>(url);
-  const lastRef = useRef<string | null>(null);
-  if (lastRef.current !== url) {
-    lastRef.current = url;
-    if (!url) {
-      if (resolved !== null) setResolved(null);
-    } else if (url.includes(`/object/public/${BUCKET}/`)) {
-      const path = url.split(`/object/public/${BUCKET}/`)[1]?.split("?")[0];
-      if (path) {
-        supabase.storage.from(BUCKET).createSignedUrl(decodeURIComponent(path), 60 * 60 * 24 * 7).then(({ data }) => {
-          if (data?.signedUrl) setResolved(data.signedUrl);
-        });
-      } else if (resolved !== url) setResolved(url);
-    } else if (resolved !== url) {
-      setResolved(url);
+// Extrai o caminho do arquivo a partir de URLs pública, assinada ou autenticada do bucket.
+function extractStoragePath(url: string): string | null {
+  for (const seg of [`/object/sign/${BUCKET}/`, `/object/public/${BUCKET}/`, `/object/authenticated/${BUCKET}/`]) {
+    const idx = url.indexOf(seg);
+    if (idx >= 0) {
+      const tail = url.slice(idx + seg.length).split("?")[0];
+      try { return decodeURIComponent(tail); } catch { return tail; }
     }
   }
-  return resolved;
+  return null;
+}
+
+// Resolve o logotipo:
+// - re-assina URLs legadas `/object/public/...` (bucket é privado)
+// - renova automaticamente a URL assinada quando expira / retorna 403
+function useResolvedLogoUrl(url: string | null) {
+  const [src, setSrc] = useState<string | null>(url);
+  const [failed, setFailed] = useState(false);
+  const lastRef = useRef<string | null>(null);
+  const retriedRef = useRef(false);
+
+  async function sign(path: string) {
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+    if (data?.signedUrl) { setSrc(data.signedUrl); setFailed(false); }
+    else { setFailed(true); }
+  }
+
+  if (lastRef.current !== url) {
+    lastRef.current = url;
+    retriedRef.current = false;
+    setFailed(false);
+    if (!url) {
+      setSrc(null);
+    } else if (url.includes(`/object/public/${BUCKET}/`)) {
+      const path = extractStoragePath(url);
+      setSrc(url);
+      if (path) void sign(path);
+    } else {
+      setSrc(url);
+    }
+  }
+
+  const onError = () => {
+    if (retriedRef.current || !src) { setFailed(true); return; }
+    retriedRef.current = true;
+    const path = extractStoragePath(src);
+    if (path) void sign(path); else setFailed(true);
+  };
+
+  return { src, failed, onError };
 }
