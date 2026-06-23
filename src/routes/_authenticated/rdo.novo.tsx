@@ -442,11 +442,22 @@ function NovoRdoPage() {
             Próximo <ArrowRight size={16} className="ml-1" />
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
-            <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(true)}>
-              <Check size={16} className="mr-1" /> Enviar
-            </Button>
+          <div className="flex flex-col items-end gap-1">
+            {!formValid && (
+              <p className="text-xs text-destructive" role="alert">
+                Corrija {equipInvalidIdx.length > 0 ? `${equipInvalidIdx.length} equipamento(s) sem seleção` : ""}
+                {equipInvalidIdx.length > 0 && (ocInvalidIdx.length > 0 || maoInvalidIdx.length > 0) ? " · " : ""}
+                {ocInvalidIdx.length > 0 ? `${ocInvalidIdx.length} ocorrência(s) sem descrição` : ""}
+                {ocInvalidIdx.length > 0 && maoInvalidIdx.length > 0 ? " · " : ""}
+                {maoInvalidIdx.length > 0 ? `${maoInvalidIdx.length} mão de obra sem pessoa` : ""}.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
+              <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || !formValid || save.isPending} onClick={() => save.mutate(true)}>
+                <Check size={16} className="mr-1" /> Concluir
+              </Button>
+            </div>
           </div>
         )}
       </div>
