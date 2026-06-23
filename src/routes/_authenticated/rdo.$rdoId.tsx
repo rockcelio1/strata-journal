@@ -303,46 +303,141 @@ function RdoDetailPage() {
         })}
       </SectionList>
 
-      {/* Anexos */}
+      {/* Anexos unificados (OneDrive + Supabase) */}
       <Card className="p-4 mb-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="font-serif text-lg flex items-center gap-2"><Paperclip className="h-4 w-4" /> Anexos</h3>
-          <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              className="text-xs border border-border rounded-md px-2 py-1 bg-background"
+              value={uploadDest}
+              onChange={(e) => setUploadDest(e.target.value as any)}
+              aria-label="Destino do upload"
+              disabled={uploading}
+            >
+              <option value="onedrive">Enviar para: OneDrive</option>
+              <option value="supabase">Enviar para: Supabase</option>
+            </select>
             <input ref={fileRef} type="file" multiple className="hidden" onChange={onUpload} />
             <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
               <Upload className="h-4 w-4 mr-1" />{uploading ? "Enviando…" : "Enviar arquivos"}
             </Button>
           </div>
         </div>
-        {(anexos as any[]).length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum anexo.</p>
-        ) : (
-          <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {(anexos as any[]).map((a) => {
-              const isImg = a.mime_type?.startsWith("image/");
-              return (
-                <li key={a.id} className="border border-border rounded-md overflow-hidden group">
-                  {isImg && a.url ? (
-                    <a href={a.url} target="_blank" rel="noreferrer" className="block aspect-square bg-muted overflow-hidden">
-                      <img src={a.url} alt={a.nome} className="w-full h-full object-cover" />
-                    </a>
-                  ) : (
-                    <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
-                      <Paperclip className="h-8 w-8 text-muted-foreground" />
-                    </a>
-                  )}
-                  <div className="p-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium truncate">{a.nome}</div>
-                      <div className="text-[10px] text-muted-foreground">{a.autor?.nome ?? "—"}</div>
+
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <input
+            type="search"
+            placeholder="Pesquisar por nome…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="text-xs border border-border rounded-md px-2 py-1 bg-background flex-1 min-w-[160px]"
+            aria-label="Pesquisar anexos"
+          />
+          <select
+            className="text-xs border border-border rounded-md px-2 py-1 bg-background"
+            value={filterProv}
+            onChange={(e) => setFilterProv(e.target.value as any)}
+            aria-label="Filtrar por provedor"
+          >
+            <option value="all">Todos os provedores</option>
+            <option value="onedrive">Apenas OneDrive</option>
+            <option value="supabase">Apenas Supabase</option>
+          </select>
+          <select
+            className="text-xs border border-border rounded-md px-2 py-1 bg-background"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            aria-label="Ordenar"
+          >
+            <option value="date_desc">Mais recentes</option>
+            <option value="date_asc">Mais antigos</option>
+            <option value="name">Nome (A→Z)</option>
+            <option value="size_desc">Maior tamanho</option>
+          </select>
+        </div>
+
+        {(() => {
+          const list = (anexos as any[])
+            .filter((a) => {
+              const prov = a.storage_provider ?? "supabase";
+              if (filterProv !== "all" && prov !== filterProv) return false;
+              if (search && !String(a.nome ?? "").toLowerCase().includes(search.toLowerCase())) return false;
+              return true;
+            })
+            .sort((a, b) => {
+              if (sortBy === "name") return String(a.nome).localeCompare(String(b.nome));
+              if (sortBy === "size_desc") return (b.tamanho_bytes ?? 0) - (a.tamanho_bytes ?? 0);
+              const ta = new Date(a.created_at).getTime();
+              const tb = new Date(b.created_at).getTime();
+              return sortBy === "date_asc" ? ta - tb : tb - ta;
+            });
+
+          if (list.length === 0) {
+            return <p className="text-sm text-muted-foreground">Nenhum anexo corresponde aos filtros.</p>;
+          }
+          const fmtSize = (n?: number) => {
+            if (!n) return "—";
+            if (n < 1024) return `${n} B`;
+            if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+            return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+          };
+          return (
+            <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {list.map((a) => {
+                const isImg = a.mime_type?.startsWith("image/");
+                const prov = a.storage_provider ?? "supabase";
+                const provLabel = prov === "onedrive" ? "OneDrive" : "Supabase";
+                const provColor = prov === "onedrive" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
+                return (
+                  <li key={a.id} className="border border-border rounded-md overflow-hidden group flex flex-col">
+                    {isImg && a.url ? (
+                      <a href={a.url} target="_blank" rel="noreferrer" className="block aspect-square bg-muted overflow-hidden">
+                        <img src={a.url} alt={a.nome} className="w-full h-full object-cover" />
+                      </a>
+                    ) : (
+                      <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
+                        <Paperclip className="h-8 w-8 text-muted-foreground" />
+                      </a>
+                    )}
+                    <div className="p-2 flex flex-col gap-1">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <Badge variant="outline" className={`text-[9px] px-1 py-0 ${provColor}`}>{provLabel}</Badge>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{fmtSize(a.tamanho_bytes)}</span>
+                      </div>
+                      <div className="text-xs font-medium truncate" title={a.nome}>{a.nome}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {new Date(a.created_at).toLocaleDateString("pt-BR")} · {a.autor?.nome ?? "—"}
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <a
+                          href={a.url ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={a.nome}
+                          className="text-[11px] text-brand hover:underline inline-flex items-center gap-1"
+                        >
+                          <Download className="h-3 w-3" /> Baixar
+                        </a>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Remover "${a.nome}" do ${provLabel}?`)) removerAnx.mutate(a.id);
+                          }}
+                          className="text-muted-foreground hover:text-destructive inline-flex items-center gap-1 text-[11px]"
+                          aria-label="Remover anexo"
+                        >
+                          <Trash2 className="h-3 w-3" /> Remover
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => removerAnx.mutate(a.id)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        })()}
+      </Card>
+
           </ul>
         )}
       </Card>
