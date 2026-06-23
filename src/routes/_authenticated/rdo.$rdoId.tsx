@@ -19,6 +19,7 @@ import {
   Download, Paperclip, Upload, Trash2, History,
 } from "lucide-react";
 import { rdoStatusMeta, severidadeMeta, climaLabel } from "@/components/status";
+import { fetchHistoricoEPrevisaoUteis, type DiaRegistro } from "@/lib/weather";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
