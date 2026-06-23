@@ -87,6 +87,10 @@ function NovoRdoPage() {
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [legendas, setLegendas] = useState<string[]>([]);
+  type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback";
+  const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase" }>>([]);
+  const [uploadHistory, setUploadHistory] = useState<Array<{ at: string; name: string; status: UpStatus; provider?: string; error?: string }>>([]);
+
   const [compressing, setCompressing] = useState(false);
   const [climaInfo, setClimaInfo] = useState<ClimaSnapshot | null>(null);
   const [climaStatus, setClimaStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
