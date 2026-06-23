@@ -232,6 +232,25 @@ export const restoreLogoVersion = createServerFn({ method: "POST" })
     return { ok: true, logo_url: v.data.logo_url };
   });
 
+export const updateLogoWallpaper = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { opacity: number }) =>
+    z.object({ opacity: z.number().int().min(0).max(100) }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    await assertAdminOrMaster(supabase, userId);
+    const empresa_id = await getMyEmpresaId(supabase, userId);
+    const { error } = await (supabase.from("empresas") as any)
+      .update({ logo_wallpaper_opacity: data.opacity })
+      .eq("id", empresa_id);
+    if (error) throw error;
+    await (supabase.from("audit_logs_usuarios") as any).insert({
+      empresa_id, autor_id: userId, acao: "logo_wallpaper_atualizado",
+      detalhes: { opacity: data.opacity },
+    });
+    return { ok: true };
+  });
 export const listMembros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

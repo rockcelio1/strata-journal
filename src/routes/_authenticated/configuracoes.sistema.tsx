@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
-import { getMe, updateEmpresaLogo, listLogoVersions, restoreLogoVersion } from "@/lib/core.functions";
+import { getMe, updateEmpresaLogo, listLogoVersions, restoreLogoVersion, updateLogoWallpaper } from "@/lib/core.functions";
+import { Slider } from "@/components/ui/slider";
+import { LogoWallpaper } from "@/components/logo-wallpaper";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Building2, Upload, Trash2, Loader2, History, RotateCcw } from "lucide-react";
@@ -64,6 +66,15 @@ function SistemaPage() {
   const empresaId = me?.empresa?.id as string | undefined;
   const logoUrl = (me?.empresa as any)?.logo_url as string | null | undefined;
   const isAdmin = useMemo(() => (me?.roles ?? []).some((r: string) => r === "admin" || r === "master"), [me]);
+  const updateWallpaperFn = useServerFn(updateLogoWallpaper);
+  const savedWallpaperOpacity = Number((me?.empresa as any)?.logo_wallpaper_opacity ?? 0);
+  const [wallpaperOpacity, setWallpaperOpacity] = useState<number>(savedWallpaperOpacity);
+  const lastSavedRef = useRef<number>(savedWallpaperOpacity);
+  if (lastSavedRef.current !== savedWallpaperOpacity) {
+    lastSavedRef.current = savedWallpaperOpacity;
+    setWallpaperOpacity(savedWallpaperOpacity);
+  }
+  const [savingWallpaper, setSavingWallpaper] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -308,6 +319,71 @@ function SistemaPage() {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+
+      {/* Logotipo como fundo de tela (marca d'água) */}
+      <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+        <div>
+          <h3 className="font-medium">Logotipo no fundo de tela</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Exibe o logotipo da empresa como marca d'água atrás do conteúdo do sistema, em todas as telas.
+            Ajuste o esmaecimento (opacidade) para deixar o fundo mais sutil ou mais visível. Defina 0 % para desativar.
+          </p>
+          {!logoUrl && (
+            <p className="text-xs text-warning-foreground bg-warning/30 border border-warning/40 rounded px-2 py-1 mt-2">
+              Envie um logotipo acima antes de configurar o fundo de tela.
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-sm">
+            Esmaecimento: <b>{wallpaperOpacity}%</b>
+            {wallpaperOpacity === 0 && <span className="text-muted-foreground ml-2">(desativado)</span>}
+          </div>
+          {isAdmin && (
+            <Button
+              size="sm"
+              disabled={savingWallpaper || wallpaperOpacity === savedWallpaperOpacity}
+              onClick={async () => {
+                setSavingWallpaper(true);
+                try {
+                  await updateWallpaperFn({ data: { opacity: wallpaperOpacity } });
+                  qc.invalidateQueries({ queryKey: ["me"] });
+                  toast.success("Fundo de tela atualizado");
+                } catch (e: any) { toast.error(e.message ?? "Falha ao salvar"); }
+                finally { setSavingWallpaper(false); }
+              }}
+            >
+              {savingWallpaper ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Salvar
+            </Button>
+          )}
+        </div>
+
+        <Slider
+          value={[wallpaperOpacity]}
+          onValueChange={(v) => setWallpaperOpacity(v[0] ?? 0)}
+          min={0}
+          max={100}
+          step={1}
+          disabled={!isAdmin || !logoUrl}
+        />
+
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pré-visualização</div>
+          <div className="relative h-48 rounded-md border border-border bg-background overflow-hidden">
+            <LogoWallpaper url={logoUrl ?? null} opacity={wallpaperOpacity} />
+            <div className="relative z-10 p-4 text-sm text-foreground/80">
+              <div className="font-serif text-base">Conteúdo de exemplo</div>
+              <div className="text-muted-foreground">O logotipo aparece como fundo, sem atrapalhar a leitura.</div>
+            </div>
+          </div>
+        </div>
+
+        {!isAdmin && (
+          <p className="text-xs text-muted-foreground">Apenas administradores podem alterar o fundo de tela.</p>
         )}
       </div>
 

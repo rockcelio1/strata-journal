@@ -21,6 +21,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { LogoMark } from "@/routes/_authenticated/configuracoes.sistema";
+import { LogoWallpaper } from "@/components/logo-wallpaper";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
@@ -235,7 +236,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </aside>
         )}
 
-        <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
+        <main className="flex-1 overflow-auto pb-20 md:pb-0 relative">
+          <LogoWallpaper
+            url={((me?.empresa as any)?.logo_url as string | null) ?? null}
+            opacity={(me?.empresa as any)?.logo_wallpaper_opacity ?? 0}
+          />
+          <div className="relative z-10">{children}</div>
+        </main>
       </div>
 
       {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
