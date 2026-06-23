@@ -174,17 +174,17 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
     const url = path
       ? `/me/drive/root:/${encodePath(path)}:/children?$select=id,name,folder,parentReference&$top=200`
       : `/me/drive/root/children?$select=id,name,folder,parentReference&$top=200`;
-    const res = await gatewayFetch(url);
+    const res = await gatewayFetch(url, undefined, 2, "listFolders");
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error("[onedrive] listFolders falhou", res.status, body);
-      throw new Error(`OneDrive: falha ao listar pastas (${res.status}) ${body.slice(0,200)}`);
+      const requestId = res.headers.get("request-id");
+      throw new Error(parseGraphError(res.status, body, "listFolders", `${GATEWAY_URL}${url}`, requestId));
     }
     const json = await res.json() as { value: Array<{ id: string; name: string; folder?: { childCount: number } }> };
     const folders = (json.value ?? []).filter((it) => it.folder).map((it) => ({
       id: it.id, name: it.name, childCount: it.folder?.childCount ?? 0,
     }));
-    return { path, folders };
+    return { path, folders, debug: { url: `${GATEWAY_URL}${url}` } };
   });
 
 export const ensureOneDriveFolder = createServerFn({ method: "POST" })
@@ -193,11 +193,13 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const clean = data.path.replace(/^\/+|\/+$/g, "");
     if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
-    const res = await gatewayFetch(`/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`);
-    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive` };
+    const url = `/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
+    const res = await gatewayFetch(url, undefined, 2, "ensureFolder");
+    const requestId = res.headers.get("request-id");
+    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive (request-id: ${requestId ?? "n/a"})` };
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      return { ok: false as const, status: res.status, error: body.slice(0, 200) || `HTTP ${res.status}` };
+      return { ok: false as const, status: res.status, error: parseGraphError(res.status, body, "ensureFolder", `${GATEWAY_URL}${url}`, requestId) };
     }
     const item = await res.json() as { id: string; name: string; folder?: unknown };
     if (!item.folder) return { ok: false as const, status: 409, error: `"${clean}" existe mas não é uma pasta` };
@@ -211,30 +213,27 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
     const path = data.path.replace(/^\/+|\/+$/g, "");
     const log: Array<{ step: string; ok: boolean; detail?: string }> = [];
 
-    // 1) Existência
-    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`);
+    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`, undefined, 2, "test:exists");
     if (exists.status === 404) {
-      log.push({ step: "Pasta existe", ok: false, detail: "Não encontrada (404)" });
+      log.push({ step: "Pasta existe", ok: false, detail: `Não encontrada (404, request-id: ${exists.headers.get("request-id") ?? "n/a"})` });
       return { ok: false as const, log };
     }
     if (!exists.ok) {
       const b = await exists.text().catch(() => "");
-      log.push({ step: "Pasta existe", ok: false, detail: `HTTP ${exists.status} ${b.slice(0,120)}` });
+      log.push({ step: "Pasta existe", ok: false, detail: parseGraphError(exists.status, b, "test:exists", `${GATEWAY_URL}/me/drive/root:/${encodePath(path)}`, exists.headers.get("request-id")) });
       return { ok: false as const, log };
     }
     log.push({ step: "Pasta existe", ok: true });
 
-    // 2) Leitura/listagem
-    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`);
-    log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status}` });
+    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`, undefined, 2, "test:list");
+    log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status} request-id ${list.headers.get("request-id") ?? "n/a"}` });
 
-    // 3) Escrita (arquivo de teste)
     const testName = `.lovable-test-${Date.now()}.txt`;
     const testPath = `${path}/${testName}`;
     const put = await gatewayFetch(`/me/drive/root:/${encodePath(testPath)}:/content`, {
       method: "PUT", headers: { "Content-Type": "text/plain" }, body: "ok",
-    });
-    log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status}` });
+    }, 2, "test:write");
+    log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status} request-id ${put.headers.get("request-id") ?? "n/a"}` });
 
     let itemId: string | null = null;
     if (put.ok) {
@@ -242,15 +241,13 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
       itemId = created?.id ?? null;
     }
 
-    // 4) Remoção
     if (itemId) {
-      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }, 2, "test:delete");
       log.push({ step: "Remover arquivo de teste", ok: del.ok || del.status === 204, detail: del.ok ? undefined : `HTTP ${del.status}` });
     }
 
     const ok = log.every((l) => l.ok);
     return { ok, log };
-
   });
 
 
