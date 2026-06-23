@@ -1,86 +1,55 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { emailExistsIn, registerUserCore } from "../core.functions";
 
-/**
- * Teste de integração: garante que o backend NUNCA permite cadastrar
- * o mesmo e-mail duas vezes, independentemente do estado do formulário.
- *
- * Estratégia: mockamos `@/integrations/supabase/client.server` para simular
- * uma base que já contém um usuário e validamos o comportamento do
- * server-fn `registerUser` / `checkEmailRegistered`.
- */
+const existing = "duplicado@empresa.com";
 
-const existingEmail = "duplicado@empresa.com";
-
-vi.mock("@tanstack/react-start", () => ({
-  // Stub mínimo do builder do createServerFn para chamar o handler direto
-  createServerFn: () => {
-    const builder: any = {
-      _validator: (d: any) => d,
-      middleware: () => builder,
-      inputValidator: (fn: any) => { builder._validator = fn; return builder; },
-      handler: (fn: any) => async (args: { data?: any } = {}) =>
-        fn({ data: builder._validator(args.data), context: {} }),
-    };
-    return builder;
-  },
-}));
-
-vi.mock("@/integrations/supabase/auth-middleware", () => ({
-  requireSupabaseAuth: {},
-}));
-
-const createUserMock = vi.fn(async ({ email }: { email: string }) => {
-  if (email.toLowerCase() === existingEmail) {
-    return { data: null, error: { message: "User already registered" } };
-  }
-  return { data: { user: { id: "new-id", email } }, error: null };
-});
-
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
+function makeAdmin(emails: string[] = [existing]) {
+  const createUser = vi.fn(async ({ email }: any) =>
+    emails.some((e) => e.toLowerCase() === email.toLowerCase())
+      ? { data: null, error: { message: "User already registered" } }
+      : { data: { user: { id: "new", email } }, error: null },
+  );
+  return {
     auth: {
       admin: {
-        listUsers: vi.fn(async () => ({
-          data: { users: [{ email: existingEmail }] },
-          error: null,
-        })),
-        createUser: createUserMock,
+        listUsers: vi.fn(async () => ({ data: { users: emails.map((email) => ({ email })) }, error: null })),
+        createUser,
       },
     },
-  },
-}));
+    createUser,
+  };
+}
 
-beforeEach(() => { createUserMock.mockClear(); });
+beforeEach(() => vi.clearAllMocks());
 
-describe("registerUser backend guard", () => {
-  it("checkEmailRegistered → true para e-mail existente", async () => {
-    const { checkEmailRegistered } = await import("../core.functions");
-    const res = await (checkEmailRegistered as any)({ data: { email: existingEmail } });
-    expect(res.exists).toBe(true);
+describe("registro: bloqueio de duplicidade", () => {
+  it("detecta e-mail já cadastrado", async () => {
+    const admin = makeAdmin();
+    expect(await emailExistsIn(admin, existing)).toBe(true);
+    expect(await emailExistsIn(admin, "novo@x.com")).toBe(false);
   });
 
-  it("checkEmailRegistered → false para e-mail novo", async () => {
-    const { checkEmailRegistered } = await import("../core.functions");
-    const res = await (checkEmailRegistered as any)({ data: { email: "novo@empresa.com" } });
-    expect(res.exists).toBe(false);
-  });
-
-  it("registerUser lança EMAIL_TAKEN para duplicado e NÃO chama createUser", async () => {
-    const { registerUser } = await import("../core.functions");
+  it("registerUserCore lança EMAIL_TAKEN e NÃO chama createUser quando duplicado", async () => {
+    const admin = makeAdmin();
     await expect(
-      (registerUser as any)({
-        data: { email: existingEmail, password: "12345678", nome: "X", empresa_nome: "Y" },
-      }),
+      registerUserCore(admin, { email: existing, password: "12345678", nome: "X", empresa_nome: "Y" }),
     ).rejects.toThrow("EMAIL_TAKEN");
-    expect(createUserMock).not.toHaveBeenCalled();
+    expect(admin.createUser).not.toHaveBeenCalled();
   });
 
-  it("registerUser cria usuário novo com sucesso", async () => {
-    const { registerUser } = await import("../core.functions");
-    const res = await (registerUser as any)({
-      data: { email: "novo@empresa.com", password: "12345678", nome: "X", empresa_nome: "Y" },
+  it("registerUserCore cria usuário novo com sucesso", async () => {
+    const admin = makeAdmin();
+    const res = await registerUserCore(admin, {
+      email: "novo@empresa.com", password: "12345678", nome: "X", empresa_nome: "Y",
     });
     expect(res.ok).toBe(true);
-    expect(createUserMock).toHaveBeenCalledOnce();
+    expect(admin.createUser).toHaveBeenCalledOnce();
+  });
+
+  it("é case-insensitive (não permite variações de caixa do mesmo e-mail)", async () => {
+    const admin = makeAdmin();
+    await expect(
+      registerUserCore(admin, { email: existing.toUpperCase(), password: "12345678", nome: "X", empresa_nome: "Y" }),
+    ).rejects.toThrow("EMAIL_TAKEN");
   });
 });
