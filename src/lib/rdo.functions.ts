@@ -304,6 +304,8 @@ export const logRdoView = createServerFn({ method: "POST" })
       acao: "visualizado",
     });
     return { ok: true };
+  });
+
 
 export const logRdoAuditView = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
