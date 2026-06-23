@@ -50,7 +50,8 @@ const steps = [
   { key: "mao", label: "Mão de obra" },
   { key: "equip", label: "Equipamentos" },
   { key: "oc", label: "Ocorrências" },
-  { key: "fotos", label: "Fotos & Assinatura" },
+  { key: "fotos", label: "Fotos da obra" },
+  { key: "assinatura", label: "Assinatura" },
 ] as const;
 
 function NovoRdoPage() {
