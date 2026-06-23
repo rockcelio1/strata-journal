@@ -817,8 +817,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_approve_rdo: { Args: { _user_id: string }; Returns: boolean }
-      get_user_empresa: { Args: { _user_id: string }; Returns: string }
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -827,8 +825,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      rdo_autor: { Args: { _rdo_id: string }; Returns: string }
-      rdo_empresa: { Args: { _rdo_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "engenheiro" | "mestre" | "visualizador" | "master"
