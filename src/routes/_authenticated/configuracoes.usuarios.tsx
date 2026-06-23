@@ -241,20 +241,67 @@ function UsuariosPage() {
       )}
 
       {/* MEMBROS */}
+      <TooltipProvider delayDuration={150}>
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Membros</h3>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Membros</h3>
+          <div className="text-xs text-muted-foreground">
+            {selected.size > 0
+              ? <span><b>{selected.size}</b> selecionado(s) · <button onClick={clearSel} className="underline">limpar</button></span>
+              : <span>Selecione usuários para ações em massa</span>}
+          </div>
+        </div>
+
+        {selected.size > 0 && (
+          <BulkBar
+            count={selected.size}
+            onSetRole={async (role) => {
+              try { const r = await bulkPapelFn({ data: { user_ids: Array.from(selected), role } });
+                toast.success(`Papel aplicado a ${r.count} usuário(s)`); clearSel(); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onSetPassword={async (password) => {
+              try { const r = await bulkPwdFn({ data: { user_ids: Array.from(selected), password } });
+                toast.success(`Senha aplicada a ${r.count} usuário(s)${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onResetEmail={async () => {
+              try { const r = await bulkResetFn({ data: { user_ids: Array.from(selected) } });
+                toast.success(`E-mail de redefinição: ${r.count} enviado(s)`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onEditCargo={async (cargo) => {
+              try { const r = await bulkPerfilFn({ data: { user_ids: Array.from(selected), cargo } });
+                toast.success(`Cargo atualizado em ${r.count} usuário(s)`); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+            onDelete={async () => {
+              try { const r = await bulkDeleteFn({ data: { user_ids: Array.from(selected) } });
+                toast.success(`Excluídos: ${r.count}${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`); clearSel(); invalidate();
+              } catch (e: any) { toast.error(e.message); }
+            }}
+          />
+        )}
 
         {/* Mobile cards */}
         <div className="grid gap-3 md:hidden">
           {(membros.data ?? []).map((m: any) => (
             <Card key={m.id} className="p-4 space-y-3">
-              <div>
-                <div className="font-medium flex items-center gap-2">
-                  {m.nome}
-                  {m.aprovado === false && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  className="mt-1 hover-ring"
+                  checked={selected.has(m.id)}
+                  onCheckedChange={(v) => toggleOne(m.id, !!v)}
+                  aria-label={`Selecionar ${m.nome}`}
+                />
+                <div className="flex-1">
+                  <div className="font-medium flex items-center gap-2">
+                    {m.nome}
+                    {m.aprovado === false && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{m.email}</div>
+                  {m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}
                 </div>
-                <div className="text-xs text-muted-foreground">{m.email}</div>
-                {m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}
               </div>
               <div className="flex flex-wrap gap-1">
                 {(m.user_roles ?? []).map((r: any) => (
@@ -282,6 +329,17 @@ function UsuariosPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left">
+                <th className="px-3 py-2 w-10">
+                  <Checkbox
+                    className="hover-ring"
+                    aria-label="Selecionar todos"
+                    checked={
+                      (membros.data ?? []).length > 0 &&
+                      (membros.data ?? []).every((m: any) => selected.has(m.id))
+                    }
+                    onCheckedChange={(v) => toggleAll((membros.data ?? []).map((m: any) => m.id), !!v)}
+                  />
+                </th>
                 <th className="px-3 py-2">Nome</th>
                 <th className="px-3 py-2">E-mail</th>
                 <th className="px-3 py-2">Papel</th>
@@ -291,7 +349,15 @@ function UsuariosPage() {
             </thead>
             <tbody>
               {(membros.data ?? []).map((m: any) => (
-                <tr key={m.id} className="border-t">
+                <tr key={m.id} className={"border-t " + (selected.has(m.id) ? "bg-accent/20" : "")}>
+                  <td className="px-3 py-2">
+                    <Checkbox
+                      className="hover-ring"
+                      aria-label={`Selecionar ${m.nome}`}
+                      checked={selected.has(m.id)}
+                      onCheckedChange={(v) => toggleOne(m.id, !!v)}
+                    />
+                  </td>
                   <td className="px-3 py-2">{m.nome}{m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}</td>
                   <td className="px-3 py-2">{m.email}</td>
                   <td className="px-3 py-2">
