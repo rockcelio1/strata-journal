@@ -224,6 +224,12 @@
   50%  { box-shadow: 0 0 0 6px color-mix(in oklch, var(--color-ring) 30%, transparent); }
   100% { box-shadow: 0 0 0 0 var(--color-ring); }
 }
+
+@keyframes shimmer {
+  0%   { transform: translateX(0)    skewX(-12deg); opacity: 0; }
+  20%  { opacity: 0.9; }
+  100% { transform: translateX(400%) skewX(-12deg); opacity: 0; }
+}
 .hover-ring {
   position: relative;
   border-radius: 0.5rem;

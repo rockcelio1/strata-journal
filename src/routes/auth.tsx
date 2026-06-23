@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { InstallAppButton } from "@/components/install-app-button";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -48,10 +49,13 @@ function AuthPage() {
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
+    const t0 = performance.now();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password: String(fd.get("password")),
     });
+    // eslint-disable-next-line no-console
+    console.info("[perf] login", `${Math.round(performance.now() - t0)}ms`);
     setLoading(false);
     if (error) {
       if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
@@ -300,20 +304,7 @@ function AuthPage() {
               Continuar com Google
             </Button>
           </Card>
-          <a
-            href="/instalar"
-            className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-border bg-card/60 px-4 py-3 text-sm font-medium text-foreground/90 shadow-sm transition hover:border-brand/40 hover:bg-brand/5 hover:text-brand"
-          >
-            <span>Instalar o app no celular</span>
-            <span className="flex items-center gap-2">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-label="iOS">
-                <path d="M16.365 1.43c0 1.14-.43 2.23-1.21 3.05-.84.88-2.2 1.56-3.32 1.47-.14-1.11.42-2.27 1.18-3.06.84-.87 2.27-1.52 3.35-1.46zM20.5 17.27c-.55 1.27-.81 1.84-1.52 2.96-.99 1.57-2.38 3.52-4.1 3.54-1.53.02-1.92-.99-4-1-2.07.01-2.51 1.02-4.04 1-1.72-.02-3.04-1.79-4.03-3.36-2.77-4.4-3.07-9.57-1.36-12.32 1.22-1.96 3.14-3.11 4.95-3.11 1.84 0 3 1.02 4.52 1.02 1.47 0 2.37-1.02 4.5-1.02 1.61 0 3.32.88 4.54 2.4-3.99 2.19-3.34 7.89-.46 9.89z"/>
-              </svg>
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-label="Android">
-                <path d="M17.6 9.48l1.84-3.18a.4.4 0 10-.69-.4l-1.87 3.23a11.4 11.4 0 00-9.76 0L5.25 5.9a.4.4 0 10-.69.4l1.84 3.18A10.7 10.7 0 001 18.5h22a10.7 10.7 0 00-5.4-9.02zM7 15.25a1.1 1.1 0 110-2.2 1.1 1.1 0 010 2.2zm10 0a1.1 1.1 0 110-2.2 1.1 1.1 0 010 2.2z"/>
-              </svg>
-            </span>
-          </a>
+          <InstallAppButton />
 
         </div>
       </div>
