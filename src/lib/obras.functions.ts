@@ -70,7 +70,7 @@ export const getObra = createServerFn({ method: "GET" })
     }
 
     return {
-      obra,
+      obra: { ...obra, responsavel },
       rdos: rdosRes.data ?? [],
       stats: {
         relatorios: rdoIds.length,
