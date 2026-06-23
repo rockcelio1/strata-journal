@@ -17,6 +17,13 @@ function OneDriveSettings() {
   const listFn = useServerFn(listOneDriveFolders);
   const testFn = useServerFn(testOneDrivePermissions);
   const ensureFn = useServerFn(ensureOneDriveFolder);
+  const diagFn = useServerFn(getOneDriveDiagnostics);
+
+  const diag = useQuery({
+    queryKey: ["onedrive", "diag"],
+    queryFn: () => diagFn({ data: undefined as any }),
+    refetchInterval: 5000,
+  });
 
   const [path, setPath] = useState<string>("");
   const [rootFolder, setRootFolder] = useState<string>(() =>
