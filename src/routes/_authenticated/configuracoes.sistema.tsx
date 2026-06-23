@@ -303,7 +303,10 @@ export function LogoMark({ url, className }: { url: string | null; className?: s
       <img
         src={url}
         alt="Logo"
-        className={`${className ?? "h-8 w-8"} object-contain rounded-sm bg-white/10 p-0.5`}
+        loading="eager"
+        decoding="async"
+        className={`${className ?? "h-8 w-8"} object-contain`}
+        style={{ imageRendering: "auto" }}
       />
     );
   }
