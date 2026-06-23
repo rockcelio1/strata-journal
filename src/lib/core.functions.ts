@@ -279,17 +279,75 @@ export const updateEmpresaAppLinks = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const listAuditLogs = createServerFn({ method: "GET" })
+const auditFiltersSchema = z.object({
+  user_id: z.string().uuid().nullable().optional(),
+  acao: z.string().nullable().optional(),
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(200).default(20),
+});
+
+function applyAuditFilters(q: any, f: z.infer<typeof auditFiltersSchema>) {
+  if (f.user_id) q = q.or(`autor_id.eq.${f.user_id},alvo_user_id.eq.${f.user_id}`);
+  if (f.acao) q = q.eq("acao", f.acao);
+  if (f.from) q = q.gte("created_at", f.from);
+  if (f.to) q = q.lte("created_at", f.to);
+  return q;
+}
+
+export const listAuditLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) => auditFiltersSchema.parse(d ?? {}))
+  .handler(async ({ context, data: f }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
-    const { data, error } = await context.supabase
+    const offset = (f.page - 1) * f.pageSize;
+    let q = context.supabase
       .from("audit_logs_usuarios")
-      .select("id, acao, alvo_user_id, alvo_email, detalhes, created_at, autor_id")
-      .order("created_at", { ascending: false })
-      .limit(200);
+      .select("id, acao, alvo_user_id, alvo_email, detalhes, created_at, autor_id", { count: "exact" });
+    q = applyAuditFilters(q, f).order("created_at", { ascending: false }).range(offset, offset + f.pageSize - 1);
+    const { data, error, count } = await q;
     if (error) throw error;
-    return data ?? [];
+    return { items: data ?? [], total: count ?? 0, page: f.page, pageSize: f.pageSize };
+  });
+
+export const exportAuditLogsCsv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => auditFiltersSchema.partial({ page: true, pageSize: true }).parse(d ?? {}))
+  .handler(async ({ context, data: f }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    let q = context.supabase
+      .from("audit_logs_usuarios")
+      .select("id, acao, alvo_user_id, alvo_email, detalhes, created_at, autor_id");
+    q = applyAuditFilters(q, { ...f, page: 1, pageSize: 20 } as any).order("created_at", { ascending: false }).limit(5000);
+    const { data, error } = await q;
+    if (error) throw error;
+    const rows = data ?? [];
+    const userIds = Array.from(new Set(rows.flatMap((r: any) => [r.autor_id, r.alvo_user_id]).filter(Boolean))) as string[];
+    const profilesMap = new Map<string, { nome: string; email: string }>();
+    if (userIds.length) {
+      const profs = await context.supabase.from("profiles").select("id, nome, email").in("id", userIds);
+      for (const p of (profs.data ?? []) as any[]) profilesMap.set(p.id, { nome: p.nome, email: p.email });
+    }
+    const esc = (v: any) => {
+      const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["data", "acao", "autor_nome", "autor_email", "alvo_nome", "alvo_email", "detalhes"].join(",");
+    const lines = rows.map((r: any) => {
+      const autor = r.autor_id ? profilesMap.get(r.autor_id) : null;
+      const alvo = r.alvo_user_id ? profilesMap.get(r.alvo_user_id) : null;
+      return [
+        esc(new Date(r.created_at).toISOString()),
+        esc(r.acao),
+        esc(autor?.nome ?? ""),
+        esc(autor?.email ?? ""),
+        esc(alvo?.nome ?? ""),
+        esc(alvo?.email ?? r.alvo_email ?? ""),
+        esc(r.detalhes),
+      ].join(",");
+    });
+    return { csv: [header, ...lines].join("\n"), count: rows.length };
   });
 
 export const listConvites = createServerFn({ method: "GET" })

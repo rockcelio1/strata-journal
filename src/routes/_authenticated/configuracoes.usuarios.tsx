@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
   adminToggleUserDisabled,
   aprovarUsuario,
   listAuditLogs,
+  exportAuditLogsCsv,
 } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History } from "lucide-react";
+import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
   component: UsuariosPage,
@@ -66,9 +67,30 @@ function UsuariosPage() {
   const aprovarFn = useServerFn(aprovarUsuario);
   const auditFn = useServerFn(listAuditLogs);
 
+  const exportCsvFn = useServerFn(exportAuditLogsCsv);
+
   const membros = useQuery({ queryKey: ["membros"], queryFn: () => membrosFn() });
   const convites = useQuery({ queryKey: ["convites"], queryFn: () => convitesFn() });
-  const audit = useQuery({ queryKey: ["audit-logs"], queryFn: () => auditFn() });
+
+  // Audit filters + pagination
+  const [auditFilters, setAuditFilters] = useState({ user_id: "", acao: "", from: "", to: "" });
+  const [auditPage, setAuditPage] = useState(1);
+  const pageSize = 20;
+  const auditPayload = useMemo(() => ({
+    user_id: auditFilters.user_id || null,
+    acao: auditFilters.acao || null,
+    from: auditFilters.from ? new Date(auditFilters.from).toISOString() : null,
+    to: auditFilters.to ? new Date(auditFilters.to + "T23:59:59").toISOString() : null,
+    page: auditPage,
+    pageSize,
+  }), [auditFilters, auditPage]);
+  const audit = useQuery({
+    queryKey: ["audit-logs", auditPayload],
+    queryFn: () => auditFn({ data: auditPayload }),
+  });
+  const auditItems = audit.data?.items ?? [];
+  const auditTotal = audit.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(auditTotal / pageSize));
 
   const membrosById = new Map<string, any>((membros.data ?? []).map((m: any) => [m.id, m]));
   const pendentes = (membros.data ?? []).filter((m: any) => m.aprovado === false);
@@ -150,22 +172,41 @@ function UsuariosPage() {
                     <div className="text-xs text-muted-foreground">{m.email}</div>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => mAprovar.mutate({ user_id: m.id, aprovado: true })}
-                      className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <Check className="h-4 w-4 mr-1" /> Aprovar
-                    </Button>
+                    <ConfirmAction
+                      title="Aprovar cadastro"
+                      description={`Liberar acesso para ${m.nome} (${m.email})?`}
+                      confirmLabel="Aprovar"
+                      onConfirm={() => mAprovar.mutate({ user_id: m.id, aprovado: true })}
+                      trigger={
+                        <Button
+                          size="sm"
+                          disabled={mAprovar.isPending && mAprovar.variables?.user_id === m.id}
+                          className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {mAprovar.isPending && mAprovar.variables?.user_id === m.id
+                            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            : <Check className="h-4 w-4 mr-1" />}
+                          Aprovar
+                        </Button>
+                      }
+                    />
                     <ConfirmAction
                       title="Recusar cadastro"
-                      description="O usuário será excluído permanentemente."
+                      description={`${m.nome} (${m.email}) será excluído permanentemente.`}
                       confirmLabel="Recusar"
                       destructive
                       onConfirm={() => mDelete.mutate(m.id)}
                       trigger={
-                        <Button size="sm" variant="outline" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring">
-                          <X className="h-4 w-4 mr-1" /> Recusar
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={mDelete.isPending && mDelete.variables === m.id}
+                          className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {mDelete.isPending && mDelete.variables === m.id
+                            ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            : <X className="h-4 w-4 mr-1" />}
+                          Recusar
                         </Button>
                       }
                     />
@@ -314,12 +355,59 @@ function UsuariosPage() {
 
       {/* AUDITORIA */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <History className="h-4 w-4" /> Histórico de auditoria
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <History className="h-4 w-4" /> Histórico de auditoria
+          </h3>
+          <Button
+            variant="outline" size="sm"
+            className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={async () => {
+              try {
+                const res = await exportCsvFn({ data: {
+                  user_id: auditPayload.user_id, acao: auditPayload.acao,
+                  from: auditPayload.from, to: auditPayload.to,
+                } });
+                const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `auditoria_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+                toast.success(`Exportado: ${res.count} registros`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Exportar CSV
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <Select value={auditFilters.user_id || "all"} onValueChange={(v) => { setAuditPage(1); setAuditFilters({ ...auditFilters, user_id: v === "all" ? "" : v }); }}>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Usuário" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os usuários</SelectItem>
+              {(membros.data ?? []).map((m: any) => (
+                <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={auditFilters.acao || "all"} onValueChange={(v) => { setAuditPage(1); setAuditFilters({ ...auditFilters, acao: v === "all" ? "" : v }); }}>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Ação" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as ações</SelectItem>
+              {Object.entries(ACAO_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input type="date" value={auditFilters.from} onChange={(e) => { setAuditPage(1); setAuditFilters({ ...auditFilters, from: e.target.value }); }} aria-label="De" />
+          <Input type="date" value={auditFilters.to} onChange={(e) => { setAuditPage(1); setAuditFilters({ ...auditFilters, to: e.target.value }); }} aria-label="Até" />
+        </div>
+
         <Card className="p-0 overflow-hidden">
-          <ul className="divide-y max-h-96 overflow-y-auto text-sm">
-            {(audit.data ?? []).map((log: any) => {
+          <ul className="divide-y text-sm">
+            {auditItems.map((log: any) => {
               const autor = log.autor_id ? membrosById.get(log.autor_id) : null;
               const alvo = log.alvo_user_id ? membrosById.get(log.alvo_user_id) : null;
               return (
@@ -337,11 +425,25 @@ function UsuariosPage() {
                 </li>
               );
             })}
-            {(audit.data ?? []).length === 0 && (
-              <li className="p-6 text-center text-muted-foreground">Sem registros de auditoria.</li>
+            {auditItems.length === 0 && (
+              <li className="p-6 text-center text-muted-foreground">
+                {audit.isLoading ? "Carregando..." : "Sem registros de auditoria."}
+              </li>
             )}
           </ul>
         </Card>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{auditTotal} registro(s) · página {auditPage} de {totalPages}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="min-h-11" disabled={auditPage <= 1 || audit.isFetching} onClick={() => setAuditPage((p) => Math.max(1, p - 1))}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" className="min-h-11" disabled={auditPage >= totalPages || audit.isFetching} onClick={() => setAuditPage((p) => Math.min(totalPages, p + 1))}>
+              Próxima
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   );
