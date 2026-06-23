@@ -405,3 +405,44 @@ function SectionList({ title, empty, children }: { title: string; empty: string;
     </Card>
   );
 }
+
+function exportAuditCsv(logs: any[]) {
+  const head = ["data_hora", "acao", "usuario", "email", "status_anterior", "status_novo", "motivo"];
+  const body = logs.map((l) => [
+    new Date(l.created_at).toLocaleString("pt-BR"),
+    l.acao,
+    l.autor?.nome ?? "",
+    l.autor?.email ?? "",
+    l.status_anterior ?? "",
+    l.status_novo ?? "",
+    (l.motivo ?? "").replace(/"/g, '""'),
+  ].map((v) => `"${v}"`).join(";"));
+  const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `auditoria-rdo-${Date.now()}.csv`;
+  a.click();
+}
+
+async function exportAuditPdf(logs: any[], numero: string | number) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text(`Auditoria RDO ${numero}`, 14, 16);
+  autoTable(doc, {
+    startY: 22,
+    head: [["Data/Hora", "Ação", "Usuário", "Status", "Motivo"]],
+    body: logs.map((l) => [
+      new Date(l.created_at).toLocaleString("pt-BR"),
+      l.acao,
+      l.autor?.nome ?? l.autor?.email ?? "—",
+      [l.status_anterior, l.status_novo].filter(Boolean).join(" → "),
+      l.motivo ?? "",
+    ]),
+    styles: { fontSize: 8 },
+  });
+  doc.save(`auditoria-rdo-${numero}.pdf`);
+}
+
