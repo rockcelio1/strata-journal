@@ -226,11 +226,6 @@ function NovoRdoPage() {
     }, 50);
   }
 
-  const isUuid = (v: any) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-  const equipInvalidIdx = form.equipamentos.map((e: any, i: number) => isUuid(e.equipamento_id) ? -1 : i).filter((i: number) => i >= 0);
-  const ocInvalidIdx = form.ocorrencias.map((o: any, i: number) => o.descricao?.trim() ? -1 : i).filter((i: number) => i >= 0);
-  const maoInvalidIdx = form.mao_de_obra.map((m: any, i: number) => isUuid(m.mao_de_obra_id) ? -1 : i).filter((i: number) => i >= 0);
-  const formValid = equipInvalidIdx.length === 0 && ocInvalidIdx.length === 0 && maoInvalidIdx.length === 0;
   const canNext = stepIdx === 0 ? !!form.obra_id : true;
   const isLast = stepIdx === steps.length - 1;
 
