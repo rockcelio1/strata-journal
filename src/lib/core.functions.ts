@@ -591,9 +591,13 @@ export const atualizarPapelMembro = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
     const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
-    const prev = await context.supabase.from("user_roles").select("role").eq("user_id", data.user_id).eq("empresa_id", empresa_id);
-    await context.supabase.from("user_roles").delete().eq("user_id", data.user_id).eq("empresa_id", empresa_id);
-    const { error } = await context.supabase.from("user_roles").insert({
+    // Usa service_role para escrever em user_roles, evitando colisão com RLS
+    // (autorização do chamador já foi validada acima).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const prev = await supabaseAdmin.from("user_roles").select("role").eq("user_id", data.user_id).eq("empresa_id", empresa_id);
+    const del = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id).eq("empresa_id", empresa_id);
+    if (del.error) throw del.error;
+    const { error } = await supabaseAdmin.from("user_roles").insert({
       user_id: data.user_id, empresa_id, role: data.role as any,
     });
     if (error) throw error;
@@ -611,10 +615,128 @@ export const removerMembro = createServerFn({ method: "POST" })
     await assertAdminOrMaster(context.supabase, context.userId);
     if (data.user_id === context.userId) throw new Error("Você não pode remover a si mesmo");
     const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
-    const { error } = await context.supabase.from("user_roles").delete()
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_roles").delete()
       .eq("user_id", data.user_id).eq("empresa_id", empresa_id);
     if (error) throw error;
     return { ok: true };
+  });
+
+// ============== AÇÕES EM MASSA ==============
+const bulkIdsSchema = z.object({ user_ids: z.array(z.string().uuid()).min(1).max(200) });
+
+export const bulkAtualizarPapel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_ids: string[]; role: string }) =>
+    bulkIdsSchema.extend({ role: roleEnum }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    // Garante que todos pertencem à mesma empresa
+    const profs = await context.supabase.from("profiles").select("id").eq("empresa_id", empresa_id).in("id", data.user_ids);
+    const found = new Set((profs.data ?? []).map((p: any) => p.id));
+    const validos = data.user_ids.filter((id) => found.has(id));
+    if (validos.length === 0) throw new Error("Nenhum usuário válido");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("user_roles").delete().eq("empresa_id", empresa_id).in("user_id", validos);
+    const rows = validos.map((uid) => ({ user_id: uid, empresa_id, role: data.role as any }));
+    const { error } = await supabaseAdmin.from("user_roles").insert(rows);
+    if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: "papel_alterado",
+      detalhes: { bulk: true, total: validos.length, para: data.role, alvos: validos },
+    });
+    return { ok: true, count: validos.length };
+  });
+
+export const bulkSetPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_ids: string[]; password: string }) =>
+    bulkIdsSchema.extend({ password: z.string().min(8).max(72) }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const profs = await context.supabase.from("profiles").select("id, email").eq("empresa_id", empresa_id).in("id", data.user_ids);
+    const validos = (profs.data ?? []) as any[];
+    if (validos.length === 0) throw new Error("Nenhum usuário válido");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let ok = 0; const falhas: string[] = [];
+    for (const u of validos) {
+      const r = await supabaseAdmin.auth.admin.updateUserById(u.id, { password: data.password });
+      if (r.error) falhas.push(u.email); else ok++;
+    }
+    await logAudit(context.supabase, {
+      empresa_id, acao: "senha_definida",
+      detalhes: { bulk: true, total: ok, falhas },
+    });
+    return { ok: true, count: ok, falhas };
+  });
+
+export const bulkDeleteUsuarios = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_ids: string[] }) => bulkIdsSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const alvos = data.user_ids.filter((id) => id !== context.userId);
+    if (alvos.length === 0) throw new Error("Nenhum usuário válido (não é possível remover você mesmo)");
+    const profs = await context.supabase.from("profiles").select("id, email").eq("empresa_id", empresa_id).in("id", alvos);
+    const validos = (profs.data ?? []) as any[];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let ok = 0; const falhas: string[] = [];
+    for (const u of validos) {
+      const r = await supabaseAdmin.auth.admin.deleteUser(u.id);
+      if (r.error) falhas.push(u.email); else ok++;
+    }
+    await logAudit(context.supabase, {
+      empresa_id, acao: "usuario_excluido",
+      detalhes: { bulk: true, total: ok, falhas },
+    });
+    return { ok: true, count: ok, falhas };
+  });
+
+export const bulkSendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_ids: string[] }) => bulkIdsSchema.parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const profs = await context.supabase.from("profiles").select("id, email").eq("empresa_id", empresa_id).in("id", data.user_ids);
+    const validos = (profs.data ?? []) as any[];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let ok = 0;
+    for (const u of validos) {
+      const r = await supabaseAdmin.auth.admin.generateLink({ type: "recovery", email: u.email });
+      if (!r.error) ok++;
+    }
+    await logAudit(context.supabase, {
+      empresa_id, acao: "senha_reset_enviado",
+      detalhes: { bulk: true, total: ok },
+    });
+    return { ok: true, count: ok };
+  });
+
+export const bulkAtualizarPerfil = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_ids: string[]; cargo?: string | null }) =>
+    bulkIdsSchema.extend({ cargo: z.string().max(120).nullable().optional() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error, count } = await supabaseAdmin.from("profiles")
+      .update({ cargo: data.cargo ?? null }, { count: "exact" })
+      .eq("empresa_id", empresa_id)
+      .in("id", data.user_ids);
+    if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: "usuario_editado",
+      detalhes: { bulk: true, total: count ?? data.user_ids.length, cargo: data.cargo },
+    });
+    return { ok: true, count: count ?? 0 };
   });
 
 // ============== SEED DEMO FACOM (apenas admin) ==============
