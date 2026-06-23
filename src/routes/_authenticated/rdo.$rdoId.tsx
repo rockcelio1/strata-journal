@@ -26,6 +26,8 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
+
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
 });
@@ -142,6 +144,7 @@ function RdoDetailPage() {
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
   const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
+  const canManageAccess = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master" || x === "gestor_acessos");
   const isAuthor = r.autor?.id === me?.profile?.id;
 
   return (
@@ -301,6 +304,8 @@ function RdoDetailPage() {
           </ul>
         )}
       </Card>
+
+      {canManageAccess && <RdoAcessoCard rdoId={rdoId} obraId={r.obras?.id ?? r.obra_id ?? null} />}
 
       {/* Auditoria por usuário */}
       <Card className="p-4 mb-4">

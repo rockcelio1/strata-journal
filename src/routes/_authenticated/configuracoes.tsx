@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders, ShieldCheck } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2 } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ const subNav = [
   { to: "/configuracoes/aplicativo", label: "Aplicativo", icon: Smartphone, desc: "Preferências do app" },
   { to: "/configuracoes/usuarios", label: "Usuários e permissões", icon: Users, desc: "Pessoas e papéis" },
   { to: "/configuracoes/permissoes", label: "Permissões detalhadas", icon: ShieldCheck, desc: "Matriz por papel e por usuário" },
+  { to: "/configuracoes/grupos", label: "Grupos & equipes", icon: Users2, desc: "Grupos globais e equipes por obra" },
 ];
 
 function ConfiguracoesLayout() {
