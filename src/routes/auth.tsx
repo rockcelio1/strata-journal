@@ -146,18 +146,20 @@ function AuthPage() {
       </div>
 
       {/* Form */}
-      <div className="flex items-center justify-center p-6">
+      <div className="flex items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-6 sm:mb-8">
             <img
               src={LOGO_URL}
               alt="Diário de Obra"
-              className="h-20 w-20 rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
+              width={96}
+              height={96}
+              className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
             />
-            <span className="font-serif text-xl">Diário de Obra</span>
+            <span className="font-serif text-xl sm:text-2xl">Diário de Obra</span>
           </div>
 
-          <Card className="p-6">
+          <Card className="p-5 sm:p-6">
             <Tabs defaultValue="signin">
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="signin">Entrar</TabsTrigger>
