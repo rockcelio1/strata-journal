@@ -28,11 +28,53 @@ export const getObra = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: obra, error } = await context.supabase
-      .from("obras").select("*").eq("id", data.id).maybeSingle();
+      .from("obras").select("*, responsavel:profiles!obras_responsavel_id_fkey(id, nome)").eq("id", data.id).maybeSingle();
     if (error) throw error;
     if (!obra) throw new Error("Obra não encontrada");
-    const rdos = await context.supabase.from("rdos").select("id, numero, data, status").eq("obra_id", data.id).order("data", { ascending: false }).limit(20);
-    return { obra, rdos: rdos.data ?? [] };
+
+    const [rdosRes, rdoIdsRes] = await Promise.all([
+      context.supabase.from("rdos").select("id, numero, data, status").eq("obra_id", data.id).order("data", { ascending: false }).limit(20),
+      context.supabase.from("rdos").select("id").eq("obra_id", data.id),
+    ]);
+    const rdoIds = (rdoIdsRes.data ?? []).map((r: any) => r.id);
+
+    let atividadesCount = 0, ocorrenciasCount = 0, fotosCount = 0;
+    let fotosRecentes: any[] = [];
+    if (rdoIds.length) {
+      const [ativC, ocC, fotC, fotR] = await Promise.all([
+        context.supabase.from("rdo_atividades").select("id", { count: "exact", head: true }).in("rdo_id", rdoIds),
+        context.supabase.from("rdo_ocorrencias").select("id", { count: "exact", head: true }).in("rdo_id", rdoIds),
+        context.supabase.from("rdo_anexos").select("id", { count: "exact", head: true }).in("rdo_id", rdoIds).like("mime_type", "image/%"),
+        context.supabase.from("rdo_anexos").select("id, nome, storage_path, storage_provider, onedrive_download_url, onedrive_web_url, thumbnail_url, mime_type, created_at")
+          .in("rdo_id", rdoIds).like("mime_type", "image/%").order("created_at", { ascending: false }).limit(12),
+      ]);
+      atividadesCount = ativC.count ?? 0;
+      ocorrenciasCount = ocC.count ?? 0;
+      fotosCount = fotC.count ?? 0;
+      fotosRecentes = await Promise.all((fotR.data ?? []).map(async (a: any) => {
+        let url: string | null = null;
+        if (a.storage_provider === "onedrive") {
+          url = a.thumbnail_url ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null;
+        } else {
+          const s = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+          url = s.data?.signedUrl ?? null;
+        }
+        return { id: a.id, url, nome: a.nome };
+      }));
+    }
+
+    return {
+      obra,
+      rdos: rdosRes.data ?? [],
+      stats: {
+        relatorios: rdoIds.length,
+        atividades: atividadesCount,
+        ocorrencias: ocorrenciasCount,
+        comentarios: 0,
+        fotos: fotosCount,
+      },
+      fotos_recentes: fotosRecentes,
+    };
   });
 
 export const createObra = createServerFn({ method: "POST" })
