@@ -120,9 +120,11 @@ function SistemaPage() {
         cacheControl: "3600", upsert: true, contentType,
       });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      // Bucket é privado; geramos uma URL assinada de longa duração (10 anos).
+      const { data: signed, error: signErr } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (signErr || !signed?.signedUrl) throw signErr ?? new Error("Falha ao gerar URL do logotipo");
       await updateLogoFn({ data: {
-        logo_url: data.publicUrl, storage_path: path, mime_type: contentType,
+        logo_url: signed.signedUrl, storage_path: path, mime_type: contentType,
         tamanho_bytes: blob.size, width: preview.isSvg ? null : width, height: preview.isSvg ? null : height,
       } });
       invalidate();
