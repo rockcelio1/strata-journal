@@ -330,15 +330,18 @@ function NovoRdoPage() {
 
         {stepIdx === 4 && (
           <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 0, status_uso: "" })}>
-            {form.equipamentos.map((it: any, i: number) => (
-              <Card key={i} className="p-3 space-y-2">
+            {form.equipamentos.map((it: any, i: number) => {
+              const invalid = !isUuid(it.equipamento_id);
+              return (
+              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
                 <div><Label className="text-xs">Equipamento</Label>
                   <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectTrigger aria-invalid={invalid}><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {(equipOpts as any[]).map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {invalid && <p className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Observação</Label><Input value={it.status_uso ?? ""} onChange={(e) => upd("equipamentos", i, "status_uso", e.target.value)} /></div>
@@ -346,7 +349,8 @@ function NovoRdoPage() {
                 </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("equipamentos", i)} /></div>
               </Card>
-            ))}
+              );
+            })}
           </Section>
         )}
 
