@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { LogoMark } from "@/routes/_authenticated/configuracoes.sistema";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
@@ -151,19 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Sheet>
 
           <Link to="/dashboard" className="flex items-center gap-2 shrink-0 min-h-[44px]">
-            {(me?.empresa as any)?.logo_url ? (
-              <img
-                src={(me!.empresa as any).logo_url}
-                alt="Logo"
-                loading="eager"
-                decoding="async"
-                className="h-9 w-9 object-contain"
-              />
-            ) : (
-              <div className="h-9 w-9 rounded-md bg-brand-foreground/15 grid place-items-center">
-                <Building2 className="h-5 w-5" />
-              </div>
-            )}
+            <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-9 w-9" />
             <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>
           </Link>
 

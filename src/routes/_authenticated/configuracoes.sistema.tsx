@@ -120,9 +120,11 @@ function SistemaPage() {
         cacheControl: "3600", upsert: true, contentType,
       });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      // Bucket é privado; geramos uma URL assinada de longa duração (10 anos).
+      const { data: signed, error: signErr } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (signErr || !signed?.signedUrl) throw signErr ?? new Error("Falha ao gerar URL do logotipo");
       await updateLogoFn({ data: {
-        logo_url: data.publicUrl, storage_path: path, mime_type: contentType,
+        logo_url: signed.signedUrl, storage_path: path, mime_type: contentType,
         tamanho_bytes: blob.size, width: preview.isSvg ? null : width, height: preview.isSvg ? null : height,
       } });
       invalidate();
@@ -298,10 +300,11 @@ function SistemaPage() {
 }
 
 export function LogoMark({ url, className }: { url: string | null; className?: string }) {
-  if (url) {
+  const resolved = useResolvedLogoUrl(url);
+  if (resolved) {
     return (
       <img
-        src={url}
+        src={resolved}
         alt="Logo"
         loading="eager"
         decoding="async"
@@ -315,4 +318,27 @@ export function LogoMark({ url, className }: { url: string | null; className?: s
       <Building2 className="h-1/2 w-1/2" />
     </div>
   );
+}
+
+// Resolve URLs antigas (`/object/public/empresa-logos/...`) gerando uma URL assinada
+// em tempo de execução. Bucket é privado por política do workspace.
+function useResolvedLogoUrl(url: string | null): string | null {
+  const [resolved, setResolved] = useState<string | null>(url);
+  const lastRef = useRef<string | null>(null);
+  if (lastRef.current !== url) {
+    lastRef.current = url;
+    if (!url) {
+      if (resolved !== null) setResolved(null);
+    } else if (url.includes(`/object/public/${BUCKET}/`)) {
+      const path = url.split(`/object/public/${BUCKET}/`)[1]?.split("?")[0];
+      if (path) {
+        supabase.storage.from(BUCKET).createSignedUrl(decodeURIComponent(path), 60 * 60 * 24 * 7).then(({ data }) => {
+          if (data?.signedUrl) setResolved(data.signedUrl);
+        });
+      } else if (resolved !== url) setResolved(url);
+    } else if (resolved !== url) {
+      setResolved(url);
+    }
+  }
+  return resolved;
 }
