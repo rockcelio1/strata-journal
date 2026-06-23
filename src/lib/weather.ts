@@ -105,8 +105,11 @@ export async function geocodeEndereco(endereco: string): Promise<{ latitude: num
   const termo = endereco.trim();
   if (!termo) return null;
   const key = `geo:${termo.toLowerCase()}`;
-  const cached = cacheGet<{ latitude: number; longitude: number; nome: string } | null>(key);
-  if (cached !== null) return cached;
+  const hit = cache.get(key);
+  if (hit && Date.now() <= hit.expiresAt) {
+    return hit.value as { latitude: number; longitude: number; nome: string } | null;
+  }
+  if (hit) cache.delete(key);
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(termo)}&count=1&language=pt&format=json`;
   try {
     const r = await fetchComRetry(url);
