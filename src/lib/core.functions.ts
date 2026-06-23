@@ -3,16 +3,56 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 // ============== PUBLIC: CHECK EMAIL ==============
+// Helpers puros e testáveis (sem o wrapper de createServerFn).
+export async function emailExistsIn(admin: any, email: string): Promise<boolean> {
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 25; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const users = data?.users ?? [];
+    if (users.some((u: any) => (u.email ?? "").toLowerCase() === target)) return true;
+    if (users.length < 200) break;
+  }
+  return false;
+}
+
+export async function registerUserCore(
+  admin: any,
+  input: { email: string; password: string; nome: string; empresa_nome: string },
+) {
+  const email = input.email.toLowerCase();
+  if (await emailExistsIn(admin, email)) throw new Error("EMAIL_TAKEN");
+  const { error } = await admin.auth.admin.createUser({
+    email, password: input.password, email_confirm: true,
+    user_metadata: { nome: input.nome, empresa_nome: input.empresa_nome },
+  });
+  if (error) {
+    if (/already (registered|exists)/i.test(error.message)) throw new Error("EMAIL_TAKEN");
+    throw error;
+  }
+  return { ok: true };
+}
+
 export const checkEmailRegistered = createServerFn({ method: "POST" })
   .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
   .handler(async ({ data }) => {
-    const email = data.email.toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Check existing auth user
-    const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    if (error) throw error;
-    const exists = (list?.users ?? []).some((u) => (u.email ?? "").toLowerCase() === email);
-    return { exists };
+    return { exists: await emailExistsIn(supabaseAdmin, data.email) };
+  });
+
+// Backend hard-block: cadastra somente se o e-mail ainda não existir.
+export const registerUser = createServerFn({ method: "POST" })
+  .inputValidator((d: { email: string; password: string; nome: string; empresa_nome: string }) =>
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(6).max(72),
+      nome: z.string().trim().min(1).max(120),
+      empresa_nome: z.string().trim().min(1).max(120),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return await registerUserCore(supabaseAdmin, data);
   });
 
 // ============== ME / EMPRESA ==============

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { checkEmailRegistered } from "@/lib/core.functions";
+import { checkEmailRegistered, registerUser } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,33 +55,34 @@ function AuthPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")).trim().toLowerCase();
+    const password = String(fd.get("password"));
+    const nome = String(fd.get("nome"));
+    const empresa_nome = String(fd.get("empresa"));
+
+    // Anti race-condition: bloqueia envio enquanto a verificação está pendente/inválida
+    if (emailStatus === "checking") { toast.error("Aguarde a verificação do e-mail."); return; }
+    if (emailStatus === "invalid") { toast.error("E-mail inválido."); return; }
+    if (emailStatus === "taken") { toast.error("Este e-mail já está cadastrado."); return; }
+
     setLoading(true);
     try {
-      // Verifica se o e-mail já está cadastrado antes de tentar criar
-      const check = await checkEmailRegistered({ data: { email } });
-      if (check.exists) {
-        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
+      // Backend é a fonte da verdade — sempre verifica novamente, ignorando o estado do form
+      await registerUser({ data: { email, password, nome, empresa_nome } });
+      // Faz login após cadastro bem-sucedido
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) {
+        toast.success("Conta criada. Faça login para continuar.");
         return;
       }
-      const { data: result, error } = await supabase.auth.signUp({
-        email,
-        password: String(fd.get("password")),
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            nome: String(fd.get("nome")),
-            empresa_nome: String(fd.get("empresa")),
-          },
-        },
-      });
-      if (error) return toast.error(error.message);
-      // Supabase devolve identities=[] quando o e-mail já existe e a confirmação está ativa
-      if (result.user && (result.user.identities?.length ?? 0) === 0) {
-        toast.error("Este e-mail já está cadastrado.");
-        return;
-      }
-      toast.success("Conta criada! Aguarde a aprovação do administrador.");
+      toast.success("Conta criada!");
       navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      if (err?.message === "EMAIL_TAKEN") {
+        setEmailStatus("taken");
+        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
+      } else {
+        toast.error(err?.message ?? "Falha ao criar conta");
+      }
     } finally {
       setLoading(false);
     }
@@ -170,6 +171,8 @@ function AuthPage() {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       aria-invalid={emailStatus === "taken" || emailStatus === "invalid"}
+                      aria-describedby="email2-feedback"
+                      aria-busy={emailStatus === "checking"}
                       className={
                         emailStatus === "taken" || emailStatus === "invalid"
                           ? "border-destructive focus-visible:ring-destructive bg-destructive/5"
@@ -178,10 +181,30 @@ function AuthPage() {
                           : ""
                       }
                     />
-                    {emailStatus === "checking" && <p className="text-xs text-muted-foreground mt-1">Verificando...</p>}
-                    {emailStatus === "invalid" && <p className="text-xs text-destructive mt-1">E-mail inválido.</p>}
-                    {emailStatus === "taken" && <p className="text-xs text-destructive mt-1">Este e-mail já está cadastrado. Faça login.</p>}
-                    {emailStatus === "available" && <p className="text-xs text-emerald-600 mt-1">E-mail disponível para cadastro.</p>}
+                    <p
+                      id="email2-feedback"
+                      role="status"
+                      aria-live="polite"
+                      aria-atomic="true"
+                      className={
+                        "text-xs mt-1 min-h-4 flex items-center gap-1 " +
+                        (emailStatus === "taken" || emailStatus === "invalid"
+                          ? "text-destructive"
+                          : emailStatus === "available"
+                          ? "text-emerald-600"
+                          : "text-muted-foreground")
+                      }
+                    >
+                      {emailStatus === "checking" && (
+                        <>
+                          <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent animate-spin" aria-hidden="true" />
+                          Verificando e-mail...
+                        </>
+                      )}
+                      {emailStatus === "invalid" && "E-mail inválido."}
+                      {emailStatus === "taken" && "Este e-mail já está cadastrado. Faça login."}
+                      {emailStatus === "available" && "E-mail disponível para cadastro."}
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="password2">Senha</Label>
