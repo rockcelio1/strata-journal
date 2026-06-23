@@ -67,9 +67,30 @@ function UsuariosPage() {
   const aprovarFn = useServerFn(aprovarUsuario);
   const auditFn = useServerFn(listAuditLogs);
 
+  const exportCsvFn = useServerFn(exportAuditLogsCsv);
+
   const membros = useQuery({ queryKey: ["membros"], queryFn: () => membrosFn() });
   const convites = useQuery({ queryKey: ["convites"], queryFn: () => convitesFn() });
-  const audit = useQuery({ queryKey: ["audit-logs"], queryFn: () => auditFn() });
+
+  // Audit filters + pagination
+  const [auditFilters, setAuditFilters] = useState({ user_id: "", acao: "", from: "", to: "" });
+  const [auditPage, setAuditPage] = useState(1);
+  const pageSize = 20;
+  const auditPayload = useMemo(() => ({
+    user_id: auditFilters.user_id || null,
+    acao: auditFilters.acao || null,
+    from: auditFilters.from ? new Date(auditFilters.from).toISOString() : null,
+    to: auditFilters.to ? new Date(auditFilters.to + "T23:59:59").toISOString() : null,
+    page: auditPage,
+    pageSize,
+  }), [auditFilters, auditPage]);
+  const audit = useQuery({
+    queryKey: ["audit-logs", auditPayload],
+    queryFn: () => auditFn({ data: auditPayload }),
+  });
+  const auditItems = audit.data?.items ?? [];
+  const auditTotal = audit.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(auditTotal / pageSize));
 
   const membrosById = new Map<string, any>((membros.data ?? []).map((m: any) => [m.id, m]));
   const pendentes = (membros.data ?? []).filter((m: any) => m.aprovado === false);
