@@ -50,7 +50,8 @@ const steps = [
   { key: "mao", label: "Mão de obra" },
   { key: "equip", label: "Equipamentos" },
   { key: "oc", label: "Ocorrências" },
-  { key: "fotos", label: "Fotos & Assinatura" },
+  { key: "fotos", label: "Fotos da obra" },
+  { key: "assinatura", label: "Assinatura" },
 ] as const;
 
 function NovoRdoPage() {
@@ -584,7 +585,6 @@ function NovoRdoPage() {
 
 
 
-
         {stepIdx === 6 && (
           <>
             <Card className="p-5 space-y-3">
@@ -667,8 +667,11 @@ function NovoRdoPage() {
                 </details>
               )}
             </Card>
+          </>
+        )}
 
-
+        {stepIdx === 7 && (
+          <>
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Assinatura digital</h3>
