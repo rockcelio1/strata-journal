@@ -718,7 +718,7 @@ export type Database = {
       rdo_empresa: { Args: { _rdo_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "engenheiro" | "mestre" | "visualizador"
+      app_role: "admin" | "engenheiro" | "mestre" | "visualizador" | "master"
       clima:
         | "ensolarado"
         | "nublado"
@@ -856,7 +856,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "engenheiro", "mestre", "visualizador"],
+      app_role: ["admin", "engenheiro", "mestre", "visualizador", "master"],
       clima: [
         "ensolarado",
         "nublado",
