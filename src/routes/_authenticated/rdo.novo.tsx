@@ -437,57 +437,6 @@ function NovoRdoPage() {
 
 
 
-        {stepIdx === 4 && (
-          <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 0, status_uso: "" })}>
-            {form.equipamentos.map((it: any, i: number) => {
-              const invalid = !isUuid(it.equipamento_id);
-              return (
-              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
-                <div><Label className="text-xs">Equipamento</Label>
-                  <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
-                    <SelectTrigger aria-invalid={invalid}><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {(equipOpts as any[]).map((e) => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {invalid && <p className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label className="text-xs">Observação</Label><Input value={it.status_uso ?? ""} onChange={(e) => upd("equipamentos", i, "status_uso", e.target.value)} /></div>
-                  <div><Label className="text-xs">Horas</Label><Input type="number" step={0.5} value={it.horas_uso} onChange={(e) => upd("equipamentos", i, "horas_uso", Number(e.target.value))} /></div>
-                </div>
-                <div className="flex justify-end"><RmBtn onClick={() => rm("equipamentos", i)} /></div>
-              </Card>
-              );
-            })}
-          </Section>
-        )}
-
-        {stepIdx === 5 && (
-          <Section title="Ocorrências" onAdd={() => add("ocorrencias", { tipo_ocorrencia_id: null, descricao: "" })}>
-            {form.ocorrencias.map((it: any, i: number) => {
-              const invalid = !it.descricao?.trim();
-              return (
-              <Card key={i} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
-                <div><Label className="text-xs">Tipo</Label>
-                  <Select value={it.tipo_ocorrencia_id ?? ""} onValueChange={(v) => upd("ocorrencias", i, "tipo_ocorrencia_id", v || null)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {(tiposOpts as any[]).map((t) => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Descrição</Label>
-                  <Input aria-invalid={invalid} value={it.descricao} onChange={(e) => upd("ocorrencias", i, "descricao", e.target.value)} />
-                  {invalid && <p className="text-xs text-destructive mt-1">Descrição é obrigatória.</p>}
-                </div>
-                <div className="flex justify-end"><RmBtn onClick={() => rm("ocorrencias", i)} /></div>
-              </Card>
-              );
-            })}
-          </Section>
-        )}
 
         {stepIdx === 6 && (
           <>
