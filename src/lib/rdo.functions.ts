@@ -39,7 +39,7 @@ export const getRdo = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const [rdo, ativ, mao, equip, oc] = await Promise.all([
-      context.supabase.from("rdos").select("*, obras(id, nome, endereco), autor:profiles!rdos_autor_id_fkey(id, nome), aprovador:profiles!rdos_aprovado_por_fkey(id, nome)").eq("id", data.id).maybeSingle(),
+      context.supabase.from("rdos").select("*, obras(id, nome, endereco), autor:profiles!rdos_autor_id_profiles_fkey(id, nome), aprovador:profiles!rdos_aprovado_por_profiles_fkey(id, nome)").eq("id", data.id).maybeSingle(),
       context.supabase.from("rdo_atividades").select("*").eq("rdo_id", data.id),
       context.supabase.from("rdo_mao_de_obra").select("*, mao_de_obra(nome, funcao)").eq("rdo_id", data.id),
       context.supabase.from("rdo_equipamentos").select("*, equipamentos(nome, tipo)").eq("rdo_id", data.id),
@@ -159,7 +159,7 @@ export const listRdoLogs = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     let q = context.supabase
       .from("rdo_audit_logs")
-      .select("*, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome, email)", { count: "exact" })
+      .select("*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email)", { count: "exact" })
       .eq("rdo_id", data.rdo_id);
     if (data.autor_id) q = q.eq("autor_id", data.autor_id);
     if (data.acao) q = q.eq("acao", data.acao);
@@ -179,7 +179,7 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
-      .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
       .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
     if (error) throw error;
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
@@ -257,7 +257,7 @@ export const listGaleria = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     let q = context.supabase
       .from("rdo_anexos")
-      .select("id, nome, legenda, storage_path, storage_provider, onedrive_web_url, onedrive_download_url, thumbnail_url, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_fkey(id, nome)")
+      .select("id, nome, legenda, storage_path, storage_provider, onedrive_web_url, onedrive_download_url, thumbnail_url, mime_type, tamanho_bytes, created_at, rdo_id, rdos!inner(id, numero, data, obra_id, obras(id, nome)), autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
       .order("created_at", { ascending: false })
       .limit(300);
     if (data.rdo_id) q = q.eq("rdo_id", data.rdo_id);
@@ -378,7 +378,7 @@ export const getRdoAuditSummary = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const logs = await context.supabase
       .from("rdo_audit_logs")
-      .select("acao, autor_id, created_at, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome, email)")
+      .select("acao, autor_id, created_at, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email)")
       .eq("rdo_id", data.rdo_id);
     if (logs.error) throw logs.error;
 
