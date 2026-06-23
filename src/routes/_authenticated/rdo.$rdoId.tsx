@@ -460,3 +460,79 @@ async function exportAuditPdf(logs: any[], numero: string | number) {
   doc.save(`auditoria-rdo-${numero}.pdf`);
 }
 
+
+function ClimaRelatorio({ endereco, data }: { endereco?: string | null; data: string }) {
+  const [state, setState] = useState<{ status: "idle" | "loading" | "success" | "error"; erro?: string; local?: string; dias?: DiaRegistro[] }>({ status: "idle" });
+
+  async function carregar() {
+    if (!endereco) { setState({ status: "error", erro: "Obra sem endereço cadastrado." }); return; }
+    setState({ status: "loading" });
+    try {
+      const r = await fetchHistoricoEPrevisaoUteis(endereco, data, 2, 2);
+      setState({ status: "success", local: r.local, dias: r.dias });
+    } catch (e: any) {
+      setState({ status: "error", erro: e?.message ?? "Falha ao consultar previsão" });
+    }
+  }
+
+  useEffect(() => { carregar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [endereco, data]);
+
+  return (
+    <Card className="p-4 mb-4">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Cloud className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-serif text-base">Evidências meteorológicas</h3>
+          <span
+            role="status"
+            aria-live="polite"
+            className={
+              "text-[11px] px-2 py-0.5 rounded-full border " +
+              (state.status === "loading" ? "bg-muted text-muted-foreground border-border animate-pulse" :
+               state.status === "success" ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" :
+               state.status === "error"   ? "bg-destructive/10 text-destructive border-destructive/30" :
+                                            "bg-muted/40 text-muted-foreground border-border")
+            }
+          >
+            {state.status === "loading" && "Consultando Open-Meteo…"}
+            {state.status === "success" && (state.local ?? "Atualizado")}
+            {state.status === "error" && "Falha"}
+            {state.status === "idle" && "Sem dados"}
+          </span>
+        </div>
+        <Button size="sm" variant="outline" onClick={carregar} disabled={state.status === "loading"}>
+          {state.status === "loading" ? "Atualizando…" : "Atualizar"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-2">
+        Previsão/observação para o dia do RDO e 2 dias úteis antes/depois — endereço da obra como referência, horário de Brasília.
+      </p>
+      {state.status === "error" && (
+        <p className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">{state.erro}</p>
+      )}
+      {state.dias && state.dias.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {state.dias.map((d) => {
+            const destaque = d.data === data;
+            const tag = d.origem === "historico" ? "Histórico" : d.origem === "atual" ? "Hoje" : "Previsão";
+            return (
+              <div key={d.data} className={"border rounded-md p-2 text-xs " + (destaque ? "border-brand bg-brand/5" : "border-border bg-muted/20")}>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{d.dia_semana}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{tag}</span>
+                </div>
+                <div className="text-muted-foreground">{new Date(`${d.data}T12:00:00-03:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</div>
+                <div>{d.descricao}</div>
+                <div className="text-muted-foreground">{Math.round(d.t_min_c)}° / {Math.round(d.t_max_c)}°C</div>
+                <div className="text-muted-foreground">💧 {d.prob_chuva_pct}% · {d.precipitacao_mm} mm</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {state.status === "success" && (!state.dias || state.dias.length === 0) && (
+        <p className="text-xs text-muted-foreground">Sem dados meteorológicos disponíveis para o período.</p>
+      )}
+    </Card>
+  );
+}
