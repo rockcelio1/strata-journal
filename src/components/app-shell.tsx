@@ -53,6 +53,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isMaster = (me?.roles ?? []).includes("master");
   const mainNav = isMaster ? [...baseNav, masterNavItem] : baseNav;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Bottom bar: 4 primários + botão "Mais"
+  const bottomNav = mainNav.slice(0, 4);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
