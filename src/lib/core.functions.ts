@@ -54,7 +54,7 @@ export const listMembros = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const [profilesRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("id, nome, email, cargo"),
+      (supabase.from("profiles") as any).select("id, nome, email, cargo, aprovado, aprovado_em, created_at"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     if (profilesRes.error) throw profilesRes.error;
