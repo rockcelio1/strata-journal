@@ -100,34 +100,73 @@ function NovoRdoPage() {
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
   useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
 
+  function applyTurnoClima(codigo: number) {
+    const turno = new Date().getHours();
+    const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
+    setForm((f: any) => ({ ...f, [key]: classificaClima(codigo) }));
+  }
+
   async function importarClima() {
-    setClimaLoading(true);
+    setClimaStatus("loading"); setClimaErro(null);
     try {
       const pos = await fetchPosicao();
       const snap = await fetchClima(pos.latitude, pos.longitude);
-      setClimaInfo(snap);
-      const turno = new Date().getHours();
-      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
-      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setClimaStatus("success");
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
-    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
-    finally { setClimaLoading(false); }
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
   }
 
-  async function importarClimaPorObra() {
+  // Cache válido por 30 min (mesma janela do cache em memória da previsão).
+  const CACHE_TTL_MS = 30 * 60 * 1000;
+
+  async function carregarPrevisaoDaObra(opts: { forcar?: boolean } = {}) {
     const obra = (obras as any[]).find((o) => o.id === form.obra_id);
     if (!obra?.endereco) { toast.error("Selecione uma obra com endereço cadastrado"); return; }
-    setClimaLoading(true);
+    setClimaStatus("loading"); setClimaErro(null);
     try {
+      // 1) Tenta cache no banco
+      if (!opts.forcar) {
+        try {
+          const c = await getClimaCacheFn({ data: { obra_id: obra.id } });
+          const at = c?.cache_at ? new Date(c.cache_at).getTime() : 0;
+          if (c?.cache && Date.now() - at < CACHE_TTL_MS) {
+            const cache = c.cache as { snapshot: ClimaSnapshot & { local: string }; dias: DiaPrevisao[] };
+            setClimaInfo(cache.snapshot); applyTurnoClima(cache.snapshot.codigo);
+            setPrevisao5(cache.dias); setPrevisaoLocal(cache.snapshot.local);
+            setPrevisaoAt(c.cache_at); setClimaStatus("success");
+            return;
+          }
+        } catch { /* segue para API */ }
+      }
+      // 2) Open-Meteo (current + 5 dias)
       const snap = await fetchClimaPorEndereco(obra.endereco);
-      setClimaInfo(snap);
-      const turno = new Date().getHours();
-      const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
-      setForm((f: any) => ({ ...f, [key]: classificaClima(snap.codigo) }));
+      const prev = await fetchPrevisao5DiasPorEndereco(obra.endereco);
+      const mudou = diffPrevisoes(previsao5, prev.dias);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+      // 3) Persiste no banco
+      try {
+        await saveClimaCacheFn({ data: { obra_id: obra.id, cache: { snapshot: snap, dias: prev.dias } } });
+        setPrevisaoAt(new Date().toISOString());
+      } catch { /* não bloqueia UX */ }
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
-    } catch (e: any) { toast.error(e.message ?? "Não foi possível obter o clima"); }
-    finally { setClimaLoading(false); }
+      if (mudou.length > 0) {
+        toast.warning(`Previsão alterada para ${mudou.length} dia(s): ${mudou.map((d) => d.dia_semana).join(", ")}`,
+          { duration: 8000 });
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
   }
+
+  const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
+  const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
   async function onAddFotos(files: FileList) {
     setCompressing(true);
