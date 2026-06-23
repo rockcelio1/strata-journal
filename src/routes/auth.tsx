@@ -35,22 +35,37 @@ function AuthPage() {
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: String(fd.get("email")),
-      password: String(fd.get("password")),
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          nome: String(fd.get("nome")),
-          empresa_nome: String(fd.get("empresa")),
+    try {
+      // Verifica se o e-mail já está cadastrado antes de tentar criar
+      const check = await checkEmailRegistered({ data: { email } });
+      if (check.exists) {
+        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
+        return;
+      }
+      const { data: result, error } = await supabase.auth.signUp({
+        email,
+        password: String(fd.get("password")),
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            nome: String(fd.get("nome")),
+            empresa_nome: String(fd.get("empresa")),
+          },
         },
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Conta criada! Verifique o email se necessário.");
-    navigate({ to: "/dashboard" });
+      });
+      if (error) return toast.error(error.message);
+      // Supabase devolve identities=[] quando o e-mail já existe e a confirmação está ativa
+      if (result.user && (result.user.identities?.length ?? 0) === 0) {
+        toast.error("Este e-mail já está cadastrado.");
+        return;
+      }
+      toast.success("Conta criada! Aguarde a aprovação do administrador.");
+      navigate({ to: "/dashboard" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleGoogle() {
