@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders, ShieldCheck, UsersThree } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2 } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
