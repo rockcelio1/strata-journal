@@ -223,6 +223,83 @@ export type Database = {
           },
         ]
       }
+      grupo_membros: {
+        Row: {
+          created_at: string
+          grupo_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grupo_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grupo_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_membros_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          empresa_id: string
+          id: string
+          nome: string
+          obra_id: string | null
+          tipo: Database["public"]["Enums"]["grupo_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          nome: string
+          obra_id?: string | null
+          tipo: Database["public"]["Enums"]["grupo_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          nome?: string
+          obra_id?: string | null
+          tipo?: Database["public"]["Enums"]["grupo_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grupos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mao_de_obra: {
         Row: {
           ativo: boolean
@@ -375,6 +452,54 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_acessos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          id: string
+          nivel: Database["public"]["Enums"]["rdo_acesso_nivel"]
+          rdo_id: string
+          sujeito_id: string
+          sujeito_tipo: Database["public"]["Enums"]["rdo_acesso_sujeito"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["rdo_acesso_nivel"]
+          rdo_id: string
+          sujeito_id: string
+          sujeito_tipo: Database["public"]["Enums"]["rdo_acesso_sujeito"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["rdo_acesso_nivel"]
+          rdo_id?: string
+          sujeito_id?: string
+          sujeito_tipo?: Database["public"]["Enums"]["rdo_acesso_sujeito"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_acessos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_acessos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
             referencedColumns: ["id"]
           },
         ]
@@ -899,6 +1024,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_rdo: {
+        Args: {
+          _nivel: Database["public"]["Enums"]["rdo_acesso_nivel"]
+          _rdo: string
+          _user: string
+        }
+        Returns: boolean
+      }
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: {
@@ -949,7 +1082,10 @@ export type Database = {
         | "chuva_forte"
         | "impraticavel"
       equipamento_status: "disponivel" | "em_uso" | "manutencao"
+      grupo_tipo: "global" | "equipe_obra"
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
+      rdo_acesso_nivel: "ver" | "editar" | "aprovar"
+      rdo_acesso_sujeito: "user" | "grupo"
       rdo_status: "rascunho" | "enviado" | "aprovado" | "reprovado"
       severidade: "baixa" | "media" | "alta" | "critica"
     }
@@ -1108,7 +1244,10 @@ export const Constants = {
         "impraticavel",
       ],
       equipamento_status: ["disponivel", "em_uso", "manutencao"],
+      grupo_tipo: ["global", "equipe_obra"],
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
+      rdo_acesso_nivel: ["ver", "editar", "aprovar"],
+      rdo_acesso_sujeito: ["user", "grupo"],
       rdo_status: ["rascunho", "enviado", "aprovado", "reprovado"],
       severidade: ["baixa", "media", "alta", "critica"],
     },
