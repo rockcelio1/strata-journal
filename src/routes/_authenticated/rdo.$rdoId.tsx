@@ -334,7 +334,7 @@ function RdoDetailPage() {
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => exportAuditCsv(logs)}>CSV</Button>
-            <Button size="sm" variant="outline" onClick={() => exportAuditPdf(logs, data?.numero ?? rdoId)}>PDF</Button>
+            <Button size="sm" variant="outline" onClick={() => exportAuditPdf(logs, data?.rdo?.numero ?? rdoId)}>PDF</Button>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
