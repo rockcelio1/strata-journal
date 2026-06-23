@@ -228,6 +228,116 @@ export function diffPrevisoes(antes: DiaPrevisao[] | null | undefined, depois: D
   return mudou;
 }
 
+// ----------------- Histórico + previsão em torno de uma data -----------------
+export interface DiaRegistro extends DiaPrevisao {
+  origem: "historico" | "atual" | "previsao";
+}
+
+function ymd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+// Retorna a data útil mais próxima caminhando `step` (-1 ou +1) dias.
+function proximoUtil(base: Date, step: -1 | 1): Date {
+  const d = new Date(base.getTime());
+  do { d.setDate(d.getDate() + step); } while (d.getDay() === 0 || d.getDay() === 6);
+  return d;
+}
+
+// Lista N dias úteis anteriores e posteriores à data alvo (inclusive a data).
+export function diasUteisAoRedor(dataISO: string, antes = 2, depois = 2): string[] {
+  const alvo = new Date(`${dataISO}T12:00:00-03:00`);
+  const out: Date[] = [];
+  let cur = new Date(alvo.getTime());
+  for (let i = 0; i < antes; i++) { cur = proximoUtil(cur, -1); out.unshift(new Date(cur.getTime())); }
+  if (alvo.getDay() >= 1 && alvo.getDay() <= 5) out.push(alvo);
+  cur = new Date(alvo.getTime());
+  for (let i = 0; i < depois; i++) { cur = proximoUtil(cur, 1); out.push(new Date(cur.getTime())); }
+  return out.map(ymd);
+}
+
+async function fetchArchive(lat: number, lon: number, start: string, end: string) {
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=America%2FSao_Paulo`;
+  const r = await fetchComRetry(url);
+  return r.json();
+}
+async function fetchForecastRange(lat: number, lon: number, start: string, end: string) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=America%2FSao_Paulo`;
+  const r = await fetchComRetry(url);
+  return r.json();
+}
+
+function toRegistro(j: any, i: number, origem: DiaRegistro["origem"]): DiaRegistro {
+  const dia = j.daily.time[i] as string;
+  const dow = new Date(`${dia}T12:00:00-03:00`).getDay();
+  const codigo = j.daily.weather_code[i];
+  return {
+    data: dia,
+    dia_semana: SEMANA[dow],
+    t_min_c: j.daily.temperature_2m_min[i],
+    t_max_c: j.daily.temperature_2m_max[i],
+    precipitacao_mm: j.daily.precipitation_sum[i],
+    prob_chuva_pct: j.daily.precipitation_probability_max?.[i] ?? 0,
+    codigo,
+    descricao: codes[codigo] ?? `Código ${codigo}`,
+    origem,
+  };
+}
+
+export async function fetchHistoricoEPrevisaoUteis(
+  endereco: string,
+  dataISO: string,
+  antes = 2,
+  depois = 2,
+): Promise<{ local: string; dias: DiaRegistro[] }> {
+  const v = validarEnderecoParaGeocoding(endereco);
+  if (!v.ok) throw new Error(v.mensagem);
+  let g = await geocodeEndereco(endereco);
+  if (!g) {
+    const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+    if (cep) g = await geocodeEndereco(cep);
+  }
+  if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+
+  const datas = diasUteisAoRedor(dataISO, antes, depois);
+  if (datas.length === 0) return { local: g.nome, dias: [] };
+
+  const hojeStr = ymd(new Date());
+  const passados = datas.filter((d) => d < hojeStr);
+  const futuros = datas.filter((d) => d >= hojeStr);
+
+  const key = `hist:${g.latitude.toFixed(3)},${g.longitude.toFixed(3)}:${datas[0]}:${datas[datas.length - 1]}`;
+  const cached = cacheGet<DiaRegistro[]>(key);
+  if (cached) return { local: g.nome, dias: cached };
+
+  const out: DiaRegistro[] = [];
+  if (passados.length) {
+    try {
+      const j = await fetchArchive(g.latitude, g.longitude, passados[0], passados[passados.length - 1]);
+      for (let i = 0; i < j.daily.time.length; i++) {
+        if (passados.includes(j.daily.time[i])) out.push(toRegistro(j, i, "historico"));
+      }
+    } catch { /* ignora falha histórica */ }
+  }
+  if (futuros.length) {
+    try {
+      const j = await fetchForecastRange(g.latitude, g.longitude, futuros[0], futuros[futuros.length - 1]);
+      for (let i = 0; i < j.daily.time.length; i++) {
+        if (futuros.includes(j.daily.time[i])) {
+          out.push(toRegistro(j, i, j.daily.time[i] === hojeStr ? "atual" : "previsao"));
+        }
+      }
+    } catch { /* ignora falha futura */ }
+  }
+  out.sort((a, b) => a.data.localeCompare(b.data));
+  cacheSet(key, out, 60 * 60 * 1000); // 1 h
+  return { local: g.nome, dias: out };
+}
+
 // Exposto para tests
 export const __testing = { cache, fetchComRetry };
+
 
