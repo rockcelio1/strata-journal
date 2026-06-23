@@ -32,7 +32,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck } from "lucide-react";
+import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
   component: UsuariosPage,
