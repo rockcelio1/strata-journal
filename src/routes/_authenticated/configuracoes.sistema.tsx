@@ -300,10 +300,11 @@ function SistemaPage() {
 }
 
 export function LogoMark({ url, className }: { url: string | null; className?: string }) {
-  if (url) {
+  const resolved = useResolvedLogoUrl(url);
+  if (resolved) {
     return (
       <img
-        src={url}
+        src={resolved}
         alt="Logo"
         loading="eager"
         decoding="async"
@@ -312,6 +313,35 @@ export function LogoMark({ url, className }: { url: string | null; className?: s
       />
     );
   }
+  return (
+    <div className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}>
+      <Building2 className="h-1/2 w-1/2" />
+    </div>
+  );
+}
+
+// Resolve URLs antigas (`/object/public/empresa-logos/...`) gerando uma URL assinada
+// em tempo de execução. Bucket é privado por política do workspace.
+function useResolvedLogoUrl(url: string | null): string | null {
+  const [resolved, setResolved] = useState<string | null>(url);
+  const lastRef = useRef<string | null>(null);
+  if (lastRef.current !== url) {
+    lastRef.current = url;
+    if (!url) {
+      if (resolved !== null) setResolved(null);
+    } else if (url.includes(`/object/public/${BUCKET}/`)) {
+      const path = url.split(`/object/public/${BUCKET}/`)[1]?.split("?")[0];
+      if (path) {
+        supabase.storage.from(BUCKET).createSignedUrl(decodeURIComponent(path), 60 * 60 * 24 * 7).then(({ data }) => {
+          if (data?.signedUrl) setResolved(data.signedUrl);
+        });
+      } else if (resolved !== url) setResolved(url);
+    } else if (resolved !== url) {
+      setResolved(url);
+    }
+  }
+  return resolved;
+}
   return (
     <div className={`${className ?? "h-8 w-8"} rounded-md bg-brand-foreground/15 grid place-items-center`}>
       <Building2 className="h-1/2 w-1/2" />
