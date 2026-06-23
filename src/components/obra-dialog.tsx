@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createObra, updateObra } from "@/lib/obras.functions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createObra, updateObra, listObras } from "@/lib/obras.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpenChange: (v: boolean) => void; obra: any | null }) {
   const createFn = useServerFn(createObra);
   const updateFn = useServerFn(updateObra);
+  const listFn = useServerFn(listObras);
+  const { data: obrasList = [] } = useQuery({ queryKey: ["obras"], queryFn: () => listFn(), enabled: open && !obra });
   const qc = useQueryClient();
   const [form, setForm] = useState<any>({
     nome: "", codigo: "", cliente: "", endereco: "", data_inicio: "", data_previsao_fim: "",
@@ -67,12 +69,39 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {!obra && (obrasList as any[]).length > 0 && (
+              <div className="sm:col-span-2">
+                <Label>Selecionar obra existente (autopreenche)</Label>
+                <Select
+                  onValueChange={(id) => {
+                    const o = (obrasList as any[]).find((x) => x.id === id);
+                    if (!o) return;
+                    setForm((f: any) => ({
+                      ...f,
+                      nome: o.nome ?? "",
+                      codigo: o.codigo ?? "",
+                      cliente: o.cliente ?? "",
+                      endereco: o.endereco ?? "",
+                      data_inicio: o.data_inicio ?? "",
+                      data_previsao_fim: o.data_previsao_fim ?? "",
+                    }));
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Escolha uma obra para preencher os campos" /></SelectTrigger>
+                  <SelectContent>
+                    {(obrasList as any[]).map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="sm:col-span-2">
-              <Label>Nome</Label>
+              <Label>Nome do Contrato</Label>
               <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
             </div>
             <div>
-              <Label>Código</Label>
+              <Label>Contrato</Label>
               <Input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} />
             </div>
             <div>
