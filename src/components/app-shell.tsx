@@ -151,8 +151,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          <Link to="/dashboard" className="flex items-center gap-2 shrink-0 min-h-[44px]">
-            <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-9 w-9" />
+          <Link to="/dashboard" className="flex items-center gap-3 shrink-0 min-h-[44px]">
+            <div className="h-12 w-12 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
+              <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-10 w-10" />
+            </div>
             <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>
           </Link>
 
