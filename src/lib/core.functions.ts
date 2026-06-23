@@ -2,6 +2,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+// ============== PUBLIC: CHECK EMAIL ==============
+export const checkEmailRegistered = createServerFn({ method: "POST" })
+  .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }) => {
+    const email = data.email.toLowerCase();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Check existing auth user
+    const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    if (error) throw error;
+    const exists = (list?.users ?? []).some((u) => (u.email ?? "").toLowerCase() === email);
+    return { exists };
+  });
+
 // ============== ME / EMPRESA ==============
 export const getMe = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
