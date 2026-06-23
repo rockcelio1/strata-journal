@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   getRdo, submitRdo, approveRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
-  logRdoView, getRdoAuditSummary,
+  logRdoView, getRdoAuditSummary, logRdoClimaUpdate,
 } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +71,7 @@ function RdoDetailPage() {
   const [motivo, setMotivo] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [climaState, setClimaState] = useState<{ local?: string; dias?: DiaRegistro[] }>({});
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["rdo", rdoId] });
@@ -131,6 +132,8 @@ function RdoDetailPage() {
       logs: logs as any[],
       anexos: anexos as any[],
       empresa: (me as any)?.empresa,
+      clima_dias: climaState.dias ?? null,
+      clima_local: climaState.local ?? null,
     });
   };
 
@@ -196,7 +199,13 @@ function RdoDetailPage() {
         ))}
       </div>
 
-      <ClimaRelatorio endereco={r.obras?.endereco} data={r.data} />
+      <ClimaRelatorio
+        rdoId={rdoId}
+        endereco={r.obras?.endereco}
+        data={r.data}
+        onData={(local, dias) => setClimaState({ local, dias })}
+      />
+
 
 
       {r.observacoes && (
@@ -461,21 +470,94 @@ async function exportAuditPdf(logs: any[], numero: string | number) {
 }
 
 
-function ClimaRelatorio({ endereco, data }: { endereco?: string | null; data: string }) {
-  const [state, setState] = useState<{ status: "idle" | "loading" | "success" | "error"; erro?: string; local?: string; dias?: DiaRegistro[] }>({ status: "idle" });
+function ClimaRelatorio({
+  rdoId, endereco, data, onData,
+}: {
+  rdoId: string;
+  endereco?: string | null;
+  data: string;
+  onData?: (local: string | undefined, dias: DiaRegistro[] | undefined) => void;
+}) {
+  const logClima = useServerFn(logRdoClimaUpdate);
+  const [state, setState] = useState<{
+    status: "idle" | "loading" | "success" | "error";
+    erro?: string;
+    local?: string;
+    dias?: DiaRegistro[];
+    tentativa?: number;
+    proximaEm?: number;
+  }>({ status: "idle" });
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function carregar() {
+  function clearTimers() {
+    if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+  }
+
+  async function executar(tentativa = 1, manual = false) {
+    clearTimers();
     if (!endereco) { setState({ status: "error", erro: "Obra sem endereço cadastrado." }); return; }
-    setState({ status: "loading" });
+    setState({ status: "loading", tentativa });
     try {
       const r = await fetchHistoricoEPrevisaoUteis(endereco, data, 2, 2);
       setState({ status: "success", local: r.local, dias: r.dias });
+      onData?.(r.local, r.dias);
+      if (manual) {
+        logClima({ data: { rdo_id: rdoId, endereco, local: r.local, ok: true } }).catch(() => {});
+      }
     } catch (e: any) {
-      setState({ status: "error", erro: e?.message ?? "Falha ao consultar previsão" });
+      const msg = e?.message ?? "Falha ao consultar previsão";
+      const MAX = 3;
+      if (tentativa < MAX) {
+        const delay = Math.min(8000, 1000 * Math.pow(2, tentativa - 1)); // 1s, 2s, 4s
+        setState({ status: "error", erro: `${msg} — tentando novamente…`, tentativa, proximaEm: Math.ceil(delay / 1000) });
+        countdownRef.current = setInterval(() => {
+          setState((s) => s.proximaEm && s.proximaEm > 1 ? { ...s, proximaEm: s.proximaEm - 1 } : s);
+        }, 1000);
+        retryTimerRef.current = setTimeout(() => executar(tentativa + 1, manual), delay);
+      } else {
+        setState({ status: "error", erro: msg, tentativa });
+        if (manual) {
+          logClima({ data: { rdo_id: rdoId, endereco, ok: false, erro: msg } }).catch(() => {});
+        }
+      }
     }
   }
 
-  useEffect(() => { carregar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [endereco, data]);
+  useEffect(() => {
+    executar(1, false);
+    return () => clearTimers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endereco, data]);
+
+  function exportarCsv() {
+    const dias = [...(state.dias ?? [])].sort((a, b) => a.data.localeCompare(b.data));
+    if (dias.length === 0) { toast.error("Sem dados meteorológicos para exportar"); return; }
+    const head = ["data_brasilia", "dia_semana", "origem", "t_min_c", "t_max_c", "precipitacao_mm", "prob_chuva_pct", "codigo", "descricao"];
+    const body = dias.map((d) => [
+      new Date(`${d.data}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: TZ_BR }),
+      d.dia_semana, d.origem, d.t_min_c, d.t_max_c, d.precipitacao_mm, d.prob_chuva_pct, d.codigo,
+      String(d.descricao ?? "").replace(/"/g, '""'),
+    ].map((v) => `"${v}"`).join(";"));
+    const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `evidencias-clima-rdo-${rdoId}.csv`;
+    a.click();
+  }
+
+  const badgeText =
+    state.status === "loading"
+      ? state.tentativa && state.tentativa > 1
+        ? `Tentativa ${state.tentativa}/3…`
+        : "Consultando Open-Meteo…"
+      : state.status === "success"
+        ? (state.local ?? "Atualizado")
+        : state.status === "error"
+          ? state.proximaEm ? `Falha — novo tentativa em ${state.proximaEm}s` : "Falha"
+          : "Sem dados";
 
   return (
     <Card className="p-4 mb-4">
@@ -494,21 +576,26 @@ function ClimaRelatorio({ endereco, data }: { endereco?: string | null; data: st
                                             "bg-muted/40 text-muted-foreground border-border")
             }
           >
-            {state.status === "loading" && "Consultando Open-Meteo…"}
-            {state.status === "success" && (state.local ?? "Atualizado")}
-            {state.status === "error" && "Falha"}
-            {state.status === "idle" && "Sem dados"}
+            {badgeText}
           </span>
         </div>
-        <Button size="sm" variant="outline" onClick={carregar} disabled={state.status === "loading"}>
-          {state.status === "loading" ? "Atualizando…" : "Atualizar"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={exportarCsv} disabled={!state.dias?.length}>CSV</Button>
+          <Button size="sm" variant="outline" onClick={() => executar(1, true)} disabled={state.status === "loading"}>
+            {state.status === "loading" ? "Atualizando…" : "Atualizar"}
+          </Button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground mb-2">
         Previsão/observação para o dia do RDO e 2 dias úteis antes/depois — endereço da obra como referência, horário de Brasília.
       </p>
       {state.status === "error" && (
-        <p className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">{state.erro}</p>
+        <div className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
+          <div>{state.erro}</div>
+          {state.tentativa && state.tentativa >= 3 && (
+            <button onClick={() => executar(1, true)} className="underline mt-1">Tentar manualmente</button>
+          )}
+        </div>
       )}
       {state.dias && state.dias.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">

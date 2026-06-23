@@ -4,8 +4,9 @@ import { climaLabel, rdoStatusMeta } from "@/components/status";
 
 type AnyRec = Record<string, any>;
 
-const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString("pt-BR") : "—");
-const fmtDay = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
+const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
+const fmtDay = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
+const fmtDayBR = (yyyyMmDd?: string | null) => (yyyyMmDd ? new Date(`${yyyyMmDd}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
 
 export function exportRdoPdf(args: {
   rdo: AnyRec;
@@ -16,8 +17,10 @@ export function exportRdoPdf(args: {
   logs: AnyRec[];
   anexos: AnyRec[];
   empresa?: { nome?: string; cnpj?: string | null } | null;
+  clima_dias?: AnyRec[] | null;
+  clima_local?: string | null;
 }) {
-  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa } = args;
+  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   let y = 40;
@@ -86,6 +89,22 @@ export function exportRdoPdf(args: {
 
   section("Anexos", ["Nome", "Enviado por", "Em"],
     anexos.map((a) => [a.nome, a.autor?.nome ?? "—", fmtDate(a.created_at)]));
+
+  if (clima_dias && clima_dias.length) {
+    const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+    section(
+      `Evidências meteorológicas${clima_local ? ` — ${clima_local}` : ""}`,
+      ["Data (BR)", "Dia", "Origem", "Mín/Máx (°C)", "Chuva", "Condição"],
+      ordered.map((d) => [
+        fmtDayBR(d.data),
+        d.dia_semana ?? "—",
+        d.origem ?? "—",
+        `${Math.round(Number(d.t_min_c ?? 0))} / ${Math.round(Number(d.t_max_c ?? 0))}`,
+        `${d.prob_chuva_pct ?? 0}% · ${d.precipitacao_mm ?? 0} mm`,
+        d.descricao ?? "—",
+      ]),
+    );
+  }
 
   section("Histórico de status", ["Quando", "Ação", "De → Para", "Por", "Motivo"],
     logs.map((l) => [
