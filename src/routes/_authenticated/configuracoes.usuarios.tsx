@@ -132,6 +132,51 @@ function UsuariosPage() {
         </div>
       </div>
 
+      {/* APROVAÇÕES PENDENTES */}
+      {pendentes.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium uppercase tracking-wider text-amber-600 dark:text-amber-500">
+            Aprovações pendentes ({pendentes.length})
+          </h3>
+          <Card className="p-4 border-amber-300/40 bg-amber-50/40 dark:bg-amber-950/10">
+            <p className="text-xs text-muted-foreground mb-3">
+              Usuários que se cadastraram e aguardam liberação do administrador ou master.
+            </p>
+            <ul className="divide-y">
+              {pendentes.map((m: any) => (
+                <li key={m.id} className="py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <div className="font-medium">{m.nome}</div>
+                    <div className="text-xs text-muted-foreground">{m.email}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => mAprovar.mutate({ user_id: m.id, aprovado: true })}
+                      className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Check className="h-4 w-4 mr-1" /> Aprovar
+                    </Button>
+                    <ConfirmAction
+                      title="Recusar cadastro"
+                      description="O usuário será excluído permanentemente."
+                      confirmLabel="Recusar"
+                      destructive
+                      onConfirm={() => mDelete.mutate(m.id)}
+                      trigger={
+                        <Button size="sm" variant="outline" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring">
+                          <X className="h-4 w-4 mr-1" /> Recusar
+                        </Button>
+                      }
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
+
       {/* MEMBROS */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Membros</h3>
@@ -141,7 +186,10 @@ function UsuariosPage() {
           {(membros.data ?? []).map((m: any) => (
             <Card key={m.id} className="p-4 space-y-3">
               <div>
-                <div className="font-medium">{m.nome}</div>
+                <div className="font-medium flex items-center gap-2">
+                  {m.nome}
+                  {m.aprovado === false && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+                </div>
                 <div className="text-xs text-muted-foreground">{m.email}</div>
                 {m.cargo && <div className="text-xs text-muted-foreground">{m.cargo}</div>}
               </div>
@@ -174,6 +222,7 @@ function UsuariosPage() {
                 <th className="px-3 py-2">Nome</th>
                 <th className="px-3 py-2">E-mail</th>
                 <th className="px-3 py-2">Papel</th>
+                <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2 text-right">Ações</th>
               </tr>
             </thead>
@@ -186,6 +235,11 @@ function UsuariosPage() {
                     {(m.user_roles ?? []).map((r: any) => (
                       <Badge key={r.role} variant="secondary" className="mr-1">{roleLabel(r.role)}</Badge>
                     ))}
+                  </td>
+                  <td className="px-3 py-2">
+                    {m.aprovado === false
+                      ? <Badge variant="outline" className="text-amber-600 border-amber-400">Aguardando aprovação</Badge>
+                      : <Badge variant="outline" className="text-emerald-600 border-emerald-400">Ativo</Badge>}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <MembroActions
@@ -201,7 +255,7 @@ function UsuariosPage() {
                 </tr>
               ))}
               {membros.data?.length === 0 && (
-                <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
               )}
             </tbody>
           </table>
@@ -210,29 +264,105 @@ function UsuariosPage() {
 
       {/* CONVITES */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Convites pendentes</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Convites</h3>
         <div className="border rounded-lg divide-y">
-          {(convites.data ?? []).filter((c: any) => !c.aceito).map((c: any) => (
-            <div key={c.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <div className="text-sm font-medium">{c.email}</div>
-                <div className="text-xs text-muted-foreground">
-                  {roleLabel(c.role)} · expira {new Date(c.expires_at).toLocaleDateString()}
+          {(convites.data ?? []).map((c: any) => {
+            const now = Date.now();
+            const expirado = !c.aceito && new Date(c.expires_at).getTime() < now;
+            const status = c.aceito ? "aceito" : expirado ? "expirado" : "pendente";
+            return (
+              <div key={c.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium flex items-center gap-2">
+                    {c.email}
+                    {status === "aceito" && <Badge variant="outline" className="text-emerald-600 border-emerald-400">Aceito</Badge>}
+                    {status === "pendente" && <Badge variant="outline" className="text-amber-600 border-amber-400">Pendente</Badge>}
+                    {status === "expirado" && <Badge variant="outline" className="text-destructive border-destructive">Expirado</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {roleLabel(c.role)} · {status === "aceito" ? `aceito` : `expira ${new Date(c.expires_at).toLocaleDateString()}`}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {!c.aceito && (
+                    <Button
+                      variant="outline" size="sm"
+                      onClick={() => mReenviar.mutate(c.id)}
+                      className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" /> Reenviar
+                    </Button>
+                  )}
+                  {!c.aceito && (
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={() => mRevogarConv.mutate(c.id)}
+                      className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Revogar
+                    </Button>
+                  )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => mRevogarConv.mutate(c.id)} className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring">
-                Revogar
-              </Button>
-            </div>
-          ))}
-          {(convites.data ?? []).filter((c: any) => !c.aceito).length === 0 && (
-            <div className="p-6 text-sm text-center text-muted-foreground">Nenhum convite pendente.</div>
+            );
+          })}
+          {(convites.data ?? []).length === 0 && (
+            <div className="p-6 text-sm text-center text-muted-foreground">Nenhum convite.</div>
           )}
         </div>
+      </div>
+
+      {/* AUDITORIA */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <History className="h-4 w-4" /> Histórico de auditoria
+        </h3>
+        <Card className="p-0 overflow-hidden">
+          <ul className="divide-y max-h-96 overflow-y-auto text-sm">
+            {(audit.data ?? []).map((log: any) => {
+              const autor = log.autor_id ? membrosById.get(log.autor_id) : null;
+              const alvo = log.alvo_user_id ? membrosById.get(log.alvo_user_id) : null;
+              return (
+                <li key={log.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <div>
+                    <div className="font-medium">{acaoLabel(log.acao)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      por {autor?.nome ?? "—"} {alvo || log.alvo_email ? `· alvo: ${alvo?.nome ?? log.alvo_email}` : ""}
+                      {log.detalhes ? ` · ${JSON.stringify(log.detalhes)}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {new Date(log.created_at).toLocaleString()}
+                  </div>
+                </li>
+              );
+            })}
+            {(audit.data ?? []).length === 0 && (
+              <li className="p-6 text-center text-muted-foreground">Sem registros de auditoria.</li>
+            )}
+          </ul>
+        </Card>
       </div>
     </section>
   );
 }
+
+const ACAO_LABELS: Record<string, string> = {
+  convite_criado: "Convite criado",
+  convite_reenviado: "Convite reenviado",
+  convite_revogado: "Convite revogado",
+  usuario_criado: "Usuário criado",
+  usuario_editado: "Usuário editado",
+  usuario_excluido: "Usuário excluído",
+  usuario_desabilitado: "Usuário desabilitado",
+  usuario_habilitado: "Usuário habilitado",
+  usuario_aprovado: "Usuário aprovado",
+  usuario_reprovado: "Aprovação removida",
+  senha_definida: "Senha redefinida",
+  senha_reset_enviado: "E-mail de reset enviado",
+  papel_alterado: "Papel alterado",
+};
+const acaoLabel = (a: string) => ACAO_LABELS[a] ?? a;
 
 function MembroActions({
   m, onChangePapel, onEdit, onSetPwd, onReset, onToggle, onDelete,
