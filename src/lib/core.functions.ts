@@ -33,6 +33,22 @@ export const updateEmpresa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateEmpresaLogo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { logo_url: string | null }) =>
+    z.object({ logo_url: z.string().url().nullable() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase, userId } = context;
+    const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    const { error } = await (supabase.from("empresas") as any)
+      .update({ logo_url: data.logo_url })
+      .eq("id", me.data.empresa_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 export const listMembros = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
