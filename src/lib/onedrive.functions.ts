@@ -294,27 +294,30 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     const fullPath = `${folder}/${filename}`;
 
     // Valida que a pasta raiz existe antes de enviar (erro claro em vez de criar pasta nova silenciosamente)
-    const rootCheck = await gatewayFetch(`/me/drive/root:/${encodePath(root)}?$select=id,folder`);
+    const rootUrl = `/me/drive/root:/${encodePath(root)}?$select=id,folder`;
+    const rootCheck = await gatewayFetch(rootUrl, undefined, 2, "upload:validateRoot");
+    const rootReqId = rootCheck.headers.get("request-id");
     if (rootCheck.status === 404) {
-      throw new Error(`Pasta raiz "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive.`);
+      throw new Error(`[validar pasta raiz] Pasta "${root}" não encontrada no OneDrive. Ajuste em Configurações → OneDrive. (request-id: ${rootReqId ?? "n/a"})`);
     }
     if (!rootCheck.ok) {
       const b = await rootCheck.text().catch(() => "");
-      throw new Error(`Falha ao validar pasta raiz "${root}" (${rootCheck.status}): ${b.slice(0, 200)}`);
+      throw new Error(parseGraphError(rootCheck.status, b, "validar pasta raiz", `${GATEWAY_URL}${rootUrl}`, rootReqId));
     }
 
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
 
-
-    const res = await gatewayFetch(`/me/drive/root:/${encodePath(fullPath)}:/content`, {
+    const uploadUrl = `/me/drive/root:/${encodePath(fullPath)}:/content`;
+    const res = await gatewayFetch(uploadUrl, {
       method: "PUT",
       headers: { "Content-Type": data.mime_type },
       body: binary,
-    });
+    }, 2, "upload:write");
     if (!res.ok) {
       const body = await res.text().catch(() => "");
+      const requestId = res.headers.get("request-id");
       console.error("[onedrive] upload falhou", res.status, fullPath, body);
-      throw new Error(`OneDrive upload falhou (${res.status}): ${body.slice(0, 300)}`);
+      throw new Error(parseGraphError(res.status, body, "escrever arquivo", `${GATEWAY_URL}${uploadUrl}`, requestId));
     }
 
     const item = await res.json() as {
