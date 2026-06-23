@@ -205,9 +205,7 @@ function NovoRdoPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const isLastStep = false;
   const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
-  void isLastStep;
 
   function add(key: string, item: any) { setForm({ ...form, [key]: [...form[key], item] }); }
   function rm(key: string, idx: number) { setForm({ ...form, [key]: form[key].filter((_: any, i: number) => i !== idx) }); }
