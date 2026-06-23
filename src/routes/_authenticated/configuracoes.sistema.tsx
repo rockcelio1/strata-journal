@@ -39,12 +39,17 @@ function SistemaPage() {
     if (file.size > 2 * 1024 * 1024) return toast.error("Máximo 2 MB");
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${empresaId}/logo-${Date.now()}.${ext}`;
+      const path = `${empresaId}/logo-${Date.now()}.${ext || "png"}`;
+      const mimeMap: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+        bmp: "image/bmp", webp: "image/webp", svg: "image/svg+xml",
+        gif: "image/gif", img: "application/octet-stream",
+      };
+      const contentType = file.type || mimeMap[ext] || "application/octet-stream";
       const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
         cacheControl: "3600",
         upsert: true,
-        contentType: file.type,
+        contentType,
       });
       if (error) throw error;
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
