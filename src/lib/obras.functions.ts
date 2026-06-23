@@ -28,7 +28,7 @@ export const getObra = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: obra, error } = await context.supabase
-      .from("obras").select("*, responsavel:profiles!obras_responsavel_id_fkey(id, nome)").eq("id", data.id).maybeSingle();
+      .from("obras").select("*").eq("id", data.id).maybeSingle();
     if (error) throw error;
     if (!obra) throw new Error("Obra não encontrada");
 
