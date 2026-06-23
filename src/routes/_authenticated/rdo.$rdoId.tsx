@@ -501,6 +501,67 @@ async function exportAuditPdf(logs: any[], numero: string | number) {
 }
 
 
+function filterSummaryRows(rows: any[], f: { autor_id?: string; from?: string; to?: string }) {
+  return rows
+    .filter((r) => !f.autor_id || r.user_id === f.autor_id)
+    .filter((r) => {
+      if (!r.ultima) return !f.from && !f.to;
+      const t = new Date(r.ultima).getTime();
+      if (f.from && t < new Date(f.from).getTime()) return false;
+      if (f.to && t > new Date(f.to + "T23:59:59").getTime()) return false;
+      return true;
+    });
+}
+
+function exportSummaryCsv(rows: any[], f: { autor_id?: string; from?: string; to?: string }) {
+  const data = filterSummaryRows(rows, f);
+  const head = ["usuario", "email", "criou", "visualizou", "editou", "alterou", "ultimo_evento_brasilia"];
+  const body = data.map((r) => [
+    r.nome ?? "",
+    r.email ?? "",
+    r.criou ?? 0,
+    r.visualizou ?? 0,
+    r.editou ?? 0,
+    r.alterou ?? 0,
+    r.ultima ? fmtBR(r.ultima) : "",
+  ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"));
+  const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `auditoria-usuarios-rdo-${Date.now()}.csv`;
+  a.click();
+}
+
+async function exportSummaryPdf(rows: any[], numero: string | number, f: { autor_id?: string; from?: string; to?: string }) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+  const data = filterSummaryRows(rows, f);
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text(`Auditoria por usuário — RDO ${numero}`, 14, 16);
+  doc.setFontSize(9);
+  const periodo = f.from || f.to ? `Período: ${f.from || "início"} até ${f.to || "hoje"} · ` : "";
+  doc.text(`${periodo}Gerado em ${fmtBR(new Date().toISOString())} (Brasília)`, 14, 22);
+  autoTable(doc, {
+    startY: 26,
+    head: [["Usuário", "E-mail", "Criou", "Visualizou", "Editou", "Alterou", "Último evento"]],
+    body: data.map((r) => [
+      r.nome ?? "—",
+      r.email ?? "—",
+      r.criou ?? 0,
+      r.visualizou ?? 0,
+      r.editou ?? 0,
+      r.alterou ?? 0,
+      r.ultima ? fmtBR(r.ultima) : "—",
+    ]),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [30, 41, 59] },
+  });
+  doc.save(`auditoria-usuarios-rdo-${numero}.pdf`);
+}
+
+
 function ClimaRelatorio({
   rdoId, endereco, data, onData,
 }: {
