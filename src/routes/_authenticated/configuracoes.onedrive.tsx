@@ -117,6 +117,14 @@ function OneDriveSettings() {
               {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Verificar
             </button>
+            {ok && (
+              <button
+                onClick={() => setAccountModal("switch")}
+                className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
+              >
+                <UserCog className="h-3 w-3" /> Trocar conta
+              </button>
+            )}
             <button
               onClick={() => testConn.mutate()}
               disabled={testConn.isPending || !ok}
@@ -296,8 +304,8 @@ function OneDriveSettings() {
       <section className="border border-border rounded-lg p-4 bg-card">
         <h3 className="font-medium text-sm mb-2">Conta conectada</h3>
         <p className="text-xs text-muted-foreground mb-3">
-          O OAuth oficial da Microsoft só pode ser aberto pelo assistente Lovable. Use os botões abaixo: copiamos
-          o comando para o chat e o seletor de contas abre dentro do próprio sistema, sem sair desta tela.
+          Para trocar a conta do OneDrive, o assistente abre o login oficial da Microsoft para você escolher outra conta.
+          Clique em "Trocar conta" e cole o comando no chat do Lovable.
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -322,8 +330,9 @@ function OneDriveSettings() {
               {accountModal === "switch" ? "Trocar conta do OneDrive" : "Desconectar OneDrive"}
             </h4>
             <p className="text-xs text-muted-foreground mb-3">
-              Envie a mensagem abaixo no chat do Lovable. O seletor de contas da Microsoft abrirá aqui no sistema
-              para você escolher/desconectar.
+              {accountModal === "switch"
+                ? "Copie o comando abaixo e envie no chat do Lovable. O login oficial da Microsoft será aberto para você escolher outra conta."
+                : "Copie o comando abaixo e envie no chat do Lovable para desconectar a conta atual deste projeto."}
             </p>
             <pre className="text-xs bg-muted rounded p-3 whitespace-pre-wrap break-all mb-3">
               {accountModal === "switch"
@@ -337,19 +346,19 @@ function OneDriveSettings() {
                     ? "Trocar a conta do OneDrive conectada a este projeto"
                     : "Desconectar a conta do OneDrive deste projeto";
                   navigator.clipboard?.writeText(msg).then(
-                    () => toast.success("Mensagem copiada — cole no chat"),
+                    () => toast.success("Comando copiado — cole no chat"),
                     () => toast.error("Não foi possível copiar"),
                   );
                 }}
                 className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent"
               >
-                <Copy className="h-3 w-3" /> Copiar mensagem
+                <Copy className="h-3 w-3" /> Copiar comando
               </button>
               <button
                 onClick={() => setAccountModal(null)}
                 className="text-xs px-3 py-1.5 rounded bg-brand text-brand-foreground"
               >
-                Entendi
+                Fechar
               </button>
             </div>
           </div>
