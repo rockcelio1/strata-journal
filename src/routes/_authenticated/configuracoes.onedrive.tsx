@@ -64,9 +64,24 @@ function OneDriveSettings() {
     onError: (e: any) => toast.error("Falha no teste", { description: e?.message }),
   });
 
+  const testConn = useMutation({
+    mutationFn: () => listFn({ data: { path: "" } }),
+    onSuccess: (r) => toast.success("Conexão OK", { description: `${r.folders.length} pasta(s) na raiz do OneDrive` }),
+    onError: (e: any) => toast.error("Conexão falhou", { description: e?.message ?? "Sem resposta do OneDrive" }),
+  });
+
+  const [accountModal, setAccountModal] = useState<null | "switch" | "disconnect">(null);
 
   const ok = verify.data?.ok === true;
+  const status: "loading" | "connected" | "error" = verify.isLoading
+    ? "loading"
+    : ok ? "connected" : "error";
   const acc = ok ? verify.data!.account : null;
+  const statusBadge = {
+    loading: { cls: "bg-muted text-muted-foreground border-border", label: "Verificando…" },
+    connected: { cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", label: "Conectado" },
+    error: { cls: "bg-destructive/10 text-destructive border-destructive/30", label: "Desconectado / erro" },
+  }[status];
 
   return (
     <div className="space-y-6">
