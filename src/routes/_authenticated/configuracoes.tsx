@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   beforeLoad: async () => {
     const me = await getMe();
-    if (!me.roles?.includes("master")) {
+    const roles = me.roles ?? [];
+    if (!roles.includes("master") && !roles.includes("admin") && !roles.includes("gestor_acessos")) {
       throw redirect({ to: "/dashboard" });
     }
   },
@@ -17,6 +18,7 @@ const subNav = [
   { to: "/configuracoes/sistema", label: "Sistema", icon: Sliders, desc: "Parâmetros globais" },
   { to: "/configuracoes/aplicativo", label: "Aplicativo", icon: Smartphone, desc: "Preferências do app" },
   { to: "/configuracoes/usuarios", label: "Usuários e permissões", icon: Users, desc: "Pessoas e papéis" },
+  { to: "/configuracoes/permissoes", label: "Permissões detalhadas", icon: ShieldCheck, desc: "Matriz por papel e por usuário" },
 ];
 
 function ConfiguracoesLayout() {

@@ -26,6 +26,7 @@ import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
 import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
 import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
+import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
@@ -121,6 +122,12 @@ const AuthenticatedConfiguracoesSistemaRoute =
     path: '/sistema',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesPermissoesRoute =
+  AuthenticatedConfiguracoesPermissoesRouteImport.update({
+    id: '/permissoes',
+    path: '/permissoes',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesAplicativoRoute =
   AuthenticatedConfiguracoesAplicativoRouteImport.update({
     id: '/aplicativo',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
@@ -203,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/_authenticated/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
+    | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
     | '/configuracoes/usuarios'
     | '/obras/$obraId'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
+    | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
     | '/configuracoes/usuarios'
     | '/obras/$obraId'
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/configuracoes/aplicativo'
+    | '/_authenticated/configuracoes/permissoes'
     | '/_authenticated/configuracoes/sistema'
     | '/_authenticated/configuracoes/usuarios'
     | '/_authenticated/obras/$obraId'
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesSistemaRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/permissoes': {
+      id: '/_authenticated/configuracoes/permissoes'
+      path: '/permissoes'
+      fullPath: '/configuracoes/permissoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesPermissoesRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/aplicativo': {
       id: '/_authenticated/configuracoes/aplicativo'
       path: '/aplicativo'
@@ -443,6 +463,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
+  AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesSistemaRoute: typeof AuthenticatedConfiguracoesSistemaRoute
   AuthenticatedConfiguracoesUsuariosRoute: typeof AuthenticatedConfiguracoesUsuariosRoute
   AuthenticatedConfiguracoesIndexRoute: typeof AuthenticatedConfiguracoesIndexRoute
@@ -452,6 +473,8 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
   {
     AuthenticatedConfiguracoesAplicativoRoute:
       AuthenticatedConfiguracoesAplicativoRoute,
+    AuthenticatedConfiguracoesPermissoesRoute:
+      AuthenticatedConfiguracoesPermissoesRoute,
     AuthenticatedConfiguracoesSistemaRoute:
       AuthenticatedConfiguracoesSistemaRoute,
     AuthenticatedConfiguracoesUsuariosRoute:

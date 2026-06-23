@@ -49,6 +49,7 @@ export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
 const ROLES = [
   { value: "master", label: "Master" },
   { value: "admin", label: "Admin" },
+  { value: "gestor_acessos", label: "Gestor de Acessos" },
   { value: "engenheiro", label: "Engenheiro" },
   { value: "mestre", label: "Encarregado" },
   { value: "visualizador", label: "Visualizador" },
