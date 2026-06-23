@@ -96,18 +96,31 @@ function OneDriveSettings() {
       </header>
 
       <section className="border border-border rounded-lg p-4 bg-card">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="font-medium text-sm">Status da conexão</h3>
-          <button
-            onClick={() => verify.refetch()}
-            className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
-            disabled={verify.isFetching}
-          >
-            {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            Verificar
-          </button>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-sm">Status da conexão</h3>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => verify.refetch()}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
+              disabled={verify.isFetching}
+            >
+              {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Verificar
+            </button>
+            <button
+              onClick={() => testConn.mutate()}
+              disabled={testConn.isPending || !ok}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground disabled:opacity-50"
+            >
+              {testConn.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <PlayCircle className="h-3 w-3" />}
+              Testar conexão
+            </button>
+          </div>
         </div>
-        {verify.isLoading ? (
+        {status === "loading" ? (
           <p className="text-sm text-muted-foreground">Verificando…</p>
         ) : ok ? (
           <div className="flex items-start gap-3">
@@ -126,14 +139,17 @@ function OneDriveSettings() {
               <div className="text-xs text-muted-foreground mt-1 break-all">
                 {(verify.data as any)?.error ?? (verify.error as any)?.message ?? "Conector OneDrive não está disponível."}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Para reconectar, abra <strong>Configurações do projeto → Conectores → Microsoft OneDrive</strong> e
-                desconecte/reconecte a conta.
-              </p>
+              <button
+                onClick={() => setAccountModal("switch")}
+                className="mt-2 text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground"
+              >
+                <UserCog className="h-3 w-3" /> Conectar conta
+              </button>
             </div>
           </div>
         )}
       </section>
+
 
       <section className="border border-border rounded-lg p-4 bg-card">
         <h3 className="font-medium text-sm mb-2">Pasta raiz dos uploads</h3>
