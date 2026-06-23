@@ -32,6 +32,12 @@ export const getObra = createServerFn({ method: "GET" })
     if (error) throw error;
     if (!obra) throw new Error("Obra não encontrada");
 
+    let responsavel: { id: string; nome: string } | null = null;
+    if (obra.responsavel_id) {
+      const r = await context.supabase.from("profiles").select("id, nome").eq("id", obra.responsavel_id).maybeSingle();
+      responsavel = r.data as any;
+    }
+
     const [rdosRes, rdoIdsRes] = await Promise.all([
       context.supabase.from("rdos").select("id, numero, data, status").eq("obra_id", data.id).order("data", { ascending: false }).limit(20),
       context.supabase.from("rdos").select("id").eq("obra_id", data.id),
