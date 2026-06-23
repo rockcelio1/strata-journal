@@ -93,19 +93,14 @@ function AuthPage() {
     if (emailStatus === "checking") { toast.error("Aguarde a verificação do e-mail."); return; }
     if (emailStatus === "invalid") { toast.error("E-mail inválido."); return; }
     if (emailStatus === "taken") { toast.error("Este e-mail já está cadastrado."); return; }
+    const pwCheck = validatePasswordStrength(password);
+    if (!pwCheck.ok) { toast.error(pwCheck.errors[0] ?? "Senha fraca."); return; }
 
     setLoading(true);
     try {
-      // Backend é a fonte da verdade — sempre verifica novamente, ignorando o estado do form
       await registerUser({ data: { email, password, nome, empresa_nome } });
-      // Faz login após cadastro bem-sucedido
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) {
-        toast.success("Conta criada. Faça login para continuar.");
-        return;
-      }
-      toast.success("Conta criada!");
-      navigate({ to: "/dashboard" });
+      setResendEmail(email);
+      toast.success("Conta criada! Verifique seu e-mail para confirmar antes de entrar.");
     } catch (err: any) {
       if (err?.message === "EMAIL_TAKEN") {
         setEmailStatus("taken");
