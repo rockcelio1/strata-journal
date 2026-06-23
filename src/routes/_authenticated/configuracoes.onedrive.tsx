@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder } from "@/lib/onedrive.functions";
 
@@ -64,9 +64,24 @@ function OneDriveSettings() {
     onError: (e: any) => toast.error("Falha no teste", { description: e?.message }),
   });
 
+  const testConn = useMutation({
+    mutationFn: () => listFn({ data: { path: "" } }),
+    onSuccess: (r) => toast.success("Conexão OK", { description: `${r.folders.length} pasta(s) na raiz do OneDrive` }),
+    onError: (e: any) => toast.error("Conexão falhou", { description: e?.message ?? "Sem resposta do OneDrive" }),
+  });
+
+  const [accountModal, setAccountModal] = useState<null | "switch" | "disconnect">(null);
 
   const ok = verify.data?.ok === true;
+  const status: "loading" | "connected" | "error" = verify.isLoading
+    ? "loading"
+    : ok ? "connected" : "error";
   const acc = ok ? verify.data!.account : null;
+  const statusBadge = {
+    loading: { cls: "bg-muted text-muted-foreground border-border", label: "Verificando…" },
+    connected: { cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30", label: "Conectado" },
+    error: { cls: "bg-destructive/10 text-destructive border-destructive/30", label: "Desconectado / erro" },
+  }[status];
 
   return (
     <div className="space-y-6">
@@ -81,18 +96,31 @@ function OneDriveSettings() {
       </header>
 
       <section className="border border-border rounded-lg p-4 bg-card">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h3 className="font-medium text-sm">Status da conexão</h3>
-          <button
-            onClick={() => verify.refetch()}
-            className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
-            disabled={verify.isFetching}
-          >
-            {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            Verificar
-          </button>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-sm">Status da conexão</h3>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => verify.refetch()}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
+              disabled={verify.isFetching}
+            >
+              {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Verificar
+            </button>
+            <button
+              onClick={() => testConn.mutate()}
+              disabled={testConn.isPending || !ok}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground disabled:opacity-50"
+            >
+              {testConn.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <PlayCircle className="h-3 w-3" />}
+              Testar conexão
+            </button>
+          </div>
         </div>
-        {verify.isLoading ? (
+        {status === "loading" ? (
           <p className="text-sm text-muted-foreground">Verificando…</p>
         ) : ok ? (
           <div className="flex items-start gap-3">
@@ -111,14 +139,17 @@ function OneDriveSettings() {
               <div className="text-xs text-muted-foreground mt-1 break-all">
                 {(verify.data as any)?.error ?? (verify.error as any)?.message ?? "Conector OneDrive não está disponível."}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Para reconectar, abra <strong>Configurações do projeto → Conectores → Microsoft OneDrive</strong> e
-                desconecte/reconecte a conta.
-              </p>
+              <button
+                onClick={() => setAccountModal("switch")}
+                className="mt-2 text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground"
+              >
+                <UserCog className="h-3 w-3" /> Conectar conta
+              </button>
             </div>
           </div>
         )}
       </section>
+
 
       <section className="border border-border rounded-lg p-4 bg-card">
         <h3 className="font-medium text-sm mb-2">Pasta raiz dos uploads</h3>
@@ -220,14 +251,68 @@ function OneDriveSettings() {
 
 
       <section className="border border-border rounded-lg p-4 bg-card">
-        <h3 className="font-medium text-sm mb-2">Trocar conta / Desconectar</h3>
-        <p className="text-xs text-muted-foreground">
-          A escolha da conta Microsoft é feita no seletor de conectores da Lovable (OAuth oficial da Microsoft).
-          Peça ao assistente "trocar conta do OneDrive" ou "desconectar OneDrive" — o diálogo de contas abrirá
-          aqui no chat para você escolher/desconectar sem sair do sistema.
+        <h3 className="font-medium text-sm mb-2">Conta conectada</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          O OAuth oficial da Microsoft só pode ser aberto pelo assistente Lovable. Use os botões abaixo: copiamos
+          o comando para o chat e o seletor de contas abre dentro do próprio sistema, sem sair desta tela.
         </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setAccountModal("switch")}
+            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded bg-brand text-brand-foreground"
+          >
+            <UserCog className="h-3 w-3" /> Trocar conta do OneDrive
+          </button>
+          <button
+            onClick={() => setAccountModal("disconnect")}
+            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-destructive text-destructive hover:bg-destructive/10"
+          >
+            <Unplug className="h-3 w-3" /> Desconectar OneDrive
+          </button>
+        </div>
       </section>
 
+      {accountModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" onClick={() => setAccountModal(null)}>
+          <div className="bg-card border border-border rounded-lg p-5 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <h4 className="font-medium text-sm mb-2">
+              {accountModal === "switch" ? "Trocar conta do OneDrive" : "Desconectar OneDrive"}
+            </h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Envie a mensagem abaixo no chat do Lovable. O seletor de contas da Microsoft abrirá aqui no sistema
+              para você escolher/desconectar.
+            </p>
+            <pre className="text-xs bg-muted rounded p-3 whitespace-pre-wrap break-all mb-3">
+              {accountModal === "switch"
+                ? "Trocar a conta do OneDrive conectada a este projeto"
+                : "Desconectar a conta do OneDrive deste projeto"}
+            </pre>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  const msg = accountModal === "switch"
+                    ? "Trocar a conta do OneDrive conectada a este projeto"
+                    : "Desconectar a conta do OneDrive deste projeto";
+                  navigator.clipboard?.writeText(msg).then(
+                    () => toast.success("Mensagem copiada — cole no chat"),
+                    () => toast.error("Não foi possível copiar"),
+                  );
+                }}
+                className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent"
+              >
+                <Copy className="h-3 w-3" /> Copiar mensagem
+              </button>
+              <button
+                onClick={() => setAccountModal(null)}
+                className="text-xs px-3 py-1.5 rounded bg-brand text-brand-foreground"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
