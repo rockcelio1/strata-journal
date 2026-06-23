@@ -26,6 +26,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
 
   useEffect(() => {
     if (open) {
+      setPickedId("");
       setForm(obra ? {
         ...obra,
         codigo: obra.codigo ?? "", cliente: obra.cliente ?? "", endereco: obra.endereco ?? "",
