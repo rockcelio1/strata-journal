@@ -61,13 +61,13 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">{obra ? "Editar obra" : "Nova obra"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
               <Label>Nome</Label>
               <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
             </div>
@@ -79,7 +79,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
               <Label>Cliente</Label>
               <Input value={form.cliente} onChange={(e) => setForm({ ...form, cliente: e.target.value })} />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Endereço</Label>
               <Input value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
             </div>
@@ -108,7 +108,7 @@ export function ObraDialog({ open, onOpenChange, obra }: { open: boolean; onOpen
               <Slider value={[Number(form.avanco_pct)]} min={0} max={100} step={1}
                 onValueChange={(v) => setForm({ ...form, avanco_pct: v[0] })} className="mt-3" />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Label>Descrição</Label>
               <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
             </div>

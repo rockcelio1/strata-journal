@@ -24,7 +24,7 @@ function ConfiguracoesLayout() {
   const isIndex = pathname === "/configuracoes";
 
   return (
-    <div className="px-4 md:px-6 py-6 max-w-6xl mx-auto">
+    <div className="px-4 md:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
       <header className="mb-6 flex items-center gap-3">
         <div className="h-10 w-10 rounded-md bg-brand/10 text-brand grid place-items-center">
           <Settings className="h-5 w-5" />
@@ -52,7 +52,7 @@ function ConfiguracoesLayout() {
           ))}
         </div>
       ) : (
-        <div className="grid md:grid-cols-[220px_1fr] gap-6">
+        <div className="grid md:grid-cols-[minmax(0,220px)_minmax(0,1fr)] gap-4 md:gap-6">
           <nav className="flex md:flex-col gap-1 overflow-x-auto">
             {subNav.map((item) => {
               const active = pathname.startsWith(item.to);

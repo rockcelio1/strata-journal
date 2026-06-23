@@ -124,15 +124,15 @@ function EmpresaPage() {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
       <header className="mb-6">
-        <h1 className="font-serif text-3xl">Empresa</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl">Empresa</h1>
         <p className="text-sm text-muted-foreground mt-1">Dados da sua organização e equipe.</p>
       </header>
 
-      <Card className="p-6 mb-6">
+      <Card className="p-4 sm:p-6 mb-6">
         <h2 className="font-serif text-xl mb-4">Dados</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label>Nome</Label>
             <Input value={nome} onChange={(e) => setNome(e.target.value)} disabled={!isAdmin} />

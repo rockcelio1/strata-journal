@@ -109,7 +109,7 @@ function GaleriaPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-[160px]">
+        <div className="flex-1 min-w-[140px] sm:w-40 sm:flex-none">
           <label className="text-xs text-muted-foreground">Tipo</label>
           <Select value={tipo || "all"} onValueChange={(v) => setTipo(v === "all" ? "" : v)}>
             <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
@@ -122,7 +122,7 @@ function GaleriaPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-[160px]">
+        <div className="flex-1 min-w-[140px] sm:w-40 sm:flex-none">
           <label className="text-xs text-muted-foreground">Data do RDO</label>
           <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
         </div>

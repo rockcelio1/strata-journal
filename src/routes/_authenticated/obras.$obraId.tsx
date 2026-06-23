@@ -23,7 +23,7 @@ function ObraDetail() {
   const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       <Link to="/obras" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-4">
         <ArrowLeft className="h-3 w-3" /> Obras
       </Link>

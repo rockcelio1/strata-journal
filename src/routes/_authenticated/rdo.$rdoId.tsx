@@ -118,7 +118,7 @@ function RdoDetailPage() {
   const isAuthor = r.autor?.id === me?.profile?.id;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-4">
         <ArrowLeft className="h-3 w-3" /> RDOs
       </Link>
@@ -164,7 +164,7 @@ function RdoDetailPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {(["manha", "tarde", "noite"] as const).map((p) => (
           <Card key={p} className="p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Cloud className="h-3 w-3" /> {p === "manha" ? "Manhã" : p === "tarde" ? "Tarde" : "Noite"}</div>
