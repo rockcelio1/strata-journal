@@ -21,6 +21,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { LogoMark } from "@/routes/_authenticated/configuracoes.sistema";
+import { LogoWallpaper } from "@/components/logo-wallpaper";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
