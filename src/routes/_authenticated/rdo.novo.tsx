@@ -320,16 +320,22 @@ function NovoRdoPage() {
 
         {stepIdx === 1 && (
           <Card className="p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <h3 className="font-serif text-lg">Clima do dia</h3>
-              <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
-                <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Obter agora"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={importarClimaPorObra}>
+                  <CloudSun size={16} className="mr-1" /> Pelo endereço da obra
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={climaLoading} onClick={importarClima}>
+                  <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando…" : "Minha localização"}
+                </Button>
+              </div>
             </div>
             {climaInfo && (
               <div className="text-xs text-muted-foreground border border-border rounded-md p-2 bg-muted/30">
                 {climaInfo.descricao} · {climaInfo.temperatura_c}°C · vento {climaInfo.vento_kmh} km/h · chuva {climaInfo.precipitacao_mm} mm
-                <span className="block">📍 {climaInfo.latitude.toFixed(4)}, {climaInfo.longitude.toFixed(4)}</span>
+                <span className="block">📍 {(climaInfo as any).local ?? `${climaInfo.latitude.toFixed(4)}, ${climaInfo.longitude.toFixed(4)}`}</span>
+                <span className="block">🕒 {new Date(climaInfo.timestamp).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} (Brasília)</span>
               </div>
             )}
             <div className="grid grid-cols-1 gap-3">
