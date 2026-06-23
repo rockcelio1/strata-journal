@@ -684,6 +684,24 @@ function NovoRdoPage() {
                 <div><Label className="text-xs">Cargo</Label><Input value={signer.cargo} onChange={(e) => setSigner({ ...signer, cargo: e.target.value })} placeholder="Engenheiro, Mestre…" /></div>
               </div>
               <SignaturePad onChange={setAssinaturaBlob} />
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
+                  <Camera size={14} /> Enviar imagem da assinatura
+                  <input
+                    type="file" accept="image/*" className="sr-only"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0]; e.target.value = "";
+                      if (!f) return;
+                      try {
+                        const img = await compressImage(f, { maxDim: 1600, quality: 0.9, maxBytes: 1_500_000 });
+                        setAssinaturaBlob(img);
+                        toast.success("Assinatura carregada");
+                      } catch (err: any) { toast.error(err?.message ?? "Falha ao carregar imagem"); }
+                    }}
+                  />
+                </label>
+                {assinaturaBlob && <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><Check size={12} /> Assinatura pronta</span>}
+              </div>
               <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
                 <MapPin size={12} /> Ao enviar, capturamos data/hora, IP do dispositivo e localização (se permitido) e gravamos o hash do relatório como prova de integridade.
               </p>
