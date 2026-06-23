@@ -303,6 +303,8 @@ function RdoDetailPage() {
         )}
       </Card>
 
+      {canManageAccess && <RdoAcessoCard rdoId={rdoId} obraId={r.obras?.id ?? r.obra_id ?? null} />}
+
       {/* Auditoria por usuário */}
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
