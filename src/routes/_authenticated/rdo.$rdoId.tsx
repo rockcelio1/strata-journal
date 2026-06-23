@@ -71,6 +71,7 @@ function RdoDetailPage() {
   const [motivo, setMotivo] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [climaState, setClimaState] = useState<{ local?: string; dias?: DiaRegistro[] }>({});
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["rdo", rdoId] });
