@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import {
   adminToggleUserDisabled,
   aprovarUsuario,
   listAuditLogs,
+  exportAuditLogsCsv,
 } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History } from "lucide-react";
+import { Pencil, KeyRound, Mail, Trash2, Ban, UserPlus, ShieldCheck, RefreshCw, Check, X, History, Download, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/usuarios")({
   component: UsuariosPage,
