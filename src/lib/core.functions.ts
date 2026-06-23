@@ -138,12 +138,11 @@ export const adminSetUserPassword = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
-    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
     if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "senha_definida", alvo_user_id: data.user_id });
     return { ok: true };
   });
 
@@ -152,9 +151,11 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email);
     if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "senha_reset_enviado", alvo_email: data.email });
     return { ok: true };
   });
 
@@ -164,12 +165,12 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
     if (data.user_id === context.userId) throw new Error("Não é possível excluir a si mesmo");
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
-    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
+    const target = await context.supabase.from("profiles").select("email").eq("id", data.user_id).maybeSingle();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
     if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "usuario_excluido", alvo_user_id: data.user_id, alvo_email: target.data?.email });
     return { ok: true };
   });
 
@@ -181,15 +182,15 @@ export const adminToggleUserDisabled = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
     if (data.user_id === context.userId) throw new Error("Não é possível desabilitar a si mesmo");
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    const target = await context.supabase.from("profiles").select("empresa_id").eq("id", data.user_id).maybeSingle();
-    if (!me.data || !target.data || me.data.empresa_id !== target.data.empresa_id) throw new Error("Usuário fora da empresa");
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // ban_duration: '876000h' (~100y) para desabilitar; 'none' para reabilitar
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
       ban_duration: data.disabled ? "876000h" : "none",
     } as any);
     if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: data.disabled ? "usuario_desabilitado" : "usuario_habilitado", alvo_user_id: data.user_id,
+    });
     return { ok: true };
   });
 
@@ -205,22 +206,23 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const emailLower = data.email.toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Cria convite ativo para que o trigger handle_new_user use a empresa+role correta
-    await context.supabase.from("convites").insert({
-      empresa_id: me.data.empresa_id,
-      email: data.email.toLowerCase(),
-      role: data.role as any,
-    });
+    // Convite ativo para que handle_new_user use empresa+role corretos e marque aprovado
+    await context.supabase.from("convites").insert({ empresa_id, email: emailLower, role: data.role as any });
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
+      email: data.email, password: data.password, email_confirm: true,
       user_metadata: { nome: data.nome },
     });
-    if (error) throw error;
+    if (error) {
+      if (/already (registered|exists)/i.test(error.message)) throw new Error("Já existe um usuário com esse e-mail");
+      throw error;
+    }
+    await logAudit(context.supabase, {
+      empresa_id, acao: "usuario_criado", alvo_user_id: created.user?.id, alvo_email: emailLower,
+      detalhes: { role: data.role, nome: data.nome },
+    });
     return { ok: true, user_id: created.user?.id };
   });
 
@@ -231,12 +233,63 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
-    const { error } = await context.supabase
-      .from("profiles")
-      .update({ nome: data.nome, cargo: data.cargo ?? null })
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
+    const { error } = await context.supabase.from("profiles")
+      .update({ nome: data.nome, cargo: data.cargo ?? null }).eq("id", data.user_id);
+    if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: "usuario_editado", alvo_user_id: data.user_id, detalhes: { nome: data.nome, cargo: data.cargo },
+    });
+    return { ok: true };
+  });
+
+export const aprovarUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { user_id: string; aprovado: boolean }) =>
+    z.object({ user_id: z.string().uuid(), aprovado: z.boolean() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
+    const { error } = await (context.supabase.from("profiles") as any)
+      .update({ aprovado: data.aprovado, aprovado_por: context.userId, aprovado_em: data.aprovado ? new Date().toISOString() : null })
       .eq("id", data.user_id);
     if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: data.aprovado ? "usuario_aprovado" : "usuario_reprovado", alvo_user_id: data.user_id,
+    });
     return { ok: true };
+  });
+
+export const updateEmpresaAppLinks = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { app_ios_url?: string | null; app_android_url?: string | null }) =>
+    z.object({
+      app_ios_url: z.string().url().nullable().optional(),
+      app_android_url: z.string().url().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const { error } = await (context.supabase.from("empresas") as any)
+      .update({ app_ios_url: data.app_ios_url ?? null, app_android_url: data.app_android_url ?? null })
+      .eq("id", empresa_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const listAuditLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("audit_logs_usuarios")
+      .select("id, acao, alvo_user_id, alvo_email, detalhes, created_at, autor_id")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return data ?? [];
   });
 
 export const listConvites = createServerFn({ method: "GET" })
@@ -256,25 +309,49 @@ export const criarConvite = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), role: roleEnum }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
-    const isAdmin = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin.data) throw new Error("Somente administradores");
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const emailLower = data.email.toLowerCase();
+    // Bloqueia se já existe usuário na empresa com este e-mail
+    const existing = await context.supabase.from("profiles").select("id").eq("email", emailLower).eq("empresa_id", empresa_id).maybeSingle();
+    if (existing.data) throw new Error("Já existe um usuário com este e-mail");
+    const dup = await context.supabase.from("convites").select("id").eq("email", emailLower).eq("empresa_id", empresa_id).eq("aceito", false).gt("expires_at", new Date().toISOString()).maybeSingle();
+    if (dup.data) throw new Error("Já existe um convite pendente para este e-mail");
     const { data: created, error } = await context.supabase.from("convites").insert({
-      empresa_id: me.data.empresa_id,
-      email: data.email.toLowerCase(),
-      role: data.role as any,
+      empresa_id, email: emailLower, role: data.role as any,
     }).select().single();
     if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "convite_criado", alvo_email: emailLower, detalhes: { role: data.role } });
     return created;
+  });
+
+export const reenviarConvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const conv = await context.supabase.from("convites").select("id, email, aceito, empresa_id").eq("id", data.id).maybeSingle();
+    if (!conv.data || conv.data.empresa_id !== empresa_id) throw new Error("Convite não encontrado");
+    if (conv.data.aceito) throw new Error("Convite já foi aceito");
+    const newExpires = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    const { error } = await context.supabase.from("convites").update({ expires_at: newExpires }).eq("id", data.id);
+    if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "convite_reenviado", alvo_email: conv.data.email });
+    return { ok: true, expires_at: newExpires };
   });
 
 export const revogarConvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
+    const conv = await context.supabase.from("convites").select("email, empresa_id").eq("id", data.id).maybeSingle();
+    if (!conv.data || conv.data.empresa_id !== empresa_id) throw new Error("Convite não encontrado");
     const { error } = await context.supabase.from("convites").delete().eq("id", data.id);
     if (error) throw error;
+    await logAudit(context.supabase, { empresa_id, acao: "convite_revogado", alvo_email: conv.data.email });
     return { ok: true };
   });
 
@@ -284,16 +361,18 @@ export const atualizarPapelMembro = createServerFn({ method: "POST" })
     z.object({ user_id: z.string().uuid(), role: roleEnum }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
-    // Remove papéis anteriores e insere o novo (modelo de papel único por usuário/empresa)
-    await context.supabase.from("user_roles").delete().eq("user_id", data.user_id).eq("empresa_id", me.data.empresa_id);
+    await assertAdminOrMaster(context.supabase, context.userId);
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
+    const prev = await context.supabase.from("user_roles").select("role").eq("user_id", data.user_id).eq("empresa_id", empresa_id);
+    await context.supabase.from("user_roles").delete().eq("user_id", data.user_id).eq("empresa_id", empresa_id);
     const { error } = await context.supabase.from("user_roles").insert({
-      user_id: data.user_id,
-      empresa_id: me.data.empresa_id,
-      role: data.role as any,
+      user_id: data.user_id, empresa_id, role: data.role as any,
     });
     if (error) throw error;
+    await logAudit(context.supabase, {
+      empresa_id, acao: "papel_alterado", alvo_user_id: data.user_id,
+      detalhes: { de: (prev.data ?? []).map((r: any) => r.role), para: data.role },
+    });
     return { ok: true };
   });
 
@@ -301,11 +380,11 @@ export const removerMembro = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { user_id: string }) => z.object({ user_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await assertAdminOrMaster(context.supabase, context.userId);
     if (data.user_id === context.userId) throw new Error("Você não pode remover a si mesmo");
-    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
+    const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const { error } = await context.supabase.from("user_roles").delete()
-      .eq("user_id", data.user_id).eq("empresa_id", me.data.empresa_id);
+      .eq("user_id", data.user_id).eq("empresa_id", empresa_id);
     if (error) throw error;
     return { ok: true };
   });
