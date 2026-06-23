@@ -70,6 +70,28 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   }
 
+  // Bloqueia acesso de usuários não aprovados (cadastro espontâneo aguardando admin/master)
+  const profile = me?.profile as any;
+  if (me && profile && profile.aprovado === false) {
+    return (
+      <div className="min-h-dvh grid place-items-center bg-background p-6">
+        <div className="max-w-md text-center space-y-4 border rounded-lg p-6 bg-card">
+          <h1 className="font-serif text-2xl">Aguardando aprovação</h1>
+          <p className="text-sm text-muted-foreground">
+            Seu cadastro foi recebido e está aguardando liberação por um administrador ou master da empresa.
+            Você receberá acesso assim que for aprovado.
+          </p>
+          <button
+            onClick={handleSignOut}
+            className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Sair
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
       {/* Header azul */}
