@@ -34,7 +34,7 @@ function DashboardPage() {
         <StatCard className="col-span-1 md:col-span-3" icon={AlertTriangle} label="Ocorrências (7d)" value={data.ocorrencias_semana} sub={`${data.ocorrencias_total} no histórico`} tone="destructive" />
 
         {/* Avanço por obra */}
-        <Card className="col-span-12 md:col-span-8 row-span-3 p-6">
+        <Card className="col-span-2 md:col-span-8 md:row-span-3 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl">Avanço por obra</h2>
             <Link to="/obras" className="text-xs text-muted-foreground hover:underline flex items-center gap-1">
