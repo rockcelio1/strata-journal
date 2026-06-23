@@ -318,7 +318,7 @@ function RdoDetailPage() {
                       <td className="p-2 text-right tabular-nums">{r.visualizou}</td>
                       <td className="p-2 text-right tabular-nums">{r.editou}</td>
                       <td className="p-2 text-right tabular-nums">{r.alterou}</td>
-                      <td className="p-2 text-xs text-muted-foreground">{r.ultima ? new Date(r.ultima).toLocaleString("pt-BR") : "—"}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{r.ultima ? new Date(r.ultima).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
