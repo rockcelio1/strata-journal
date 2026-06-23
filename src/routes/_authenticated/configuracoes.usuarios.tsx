@@ -355,12 +355,59 @@ function UsuariosPage() {
 
       {/* AUDITORIA */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <History className="h-4 w-4" /> Histórico de auditoria
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <History className="h-4 w-4" /> Histórico de auditoria
+          </h3>
+          <Button
+            variant="outline" size="sm"
+            className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={async () => {
+              try {
+                const res = await exportCsvFn({ data: {
+                  user_id: auditPayload.user_id, acao: auditPayload.acao,
+                  from: auditPayload.from, to: auditPayload.to,
+                } });
+                const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `auditoria_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+                toast.success(`Exportado: ${res.count} registros`);
+              } catch (e: any) { toast.error(e.message); }
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Exportar CSV
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <Select value={auditFilters.user_id || "all"} onValueChange={(v) => { setAuditPage(1); setAuditFilters({ ...auditFilters, user_id: v === "all" ? "" : v }); }}>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Usuário" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os usuários</SelectItem>
+              {(membros.data ?? []).map((m: any) => (
+                <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={auditFilters.acao || "all"} onValueChange={(v) => { setAuditPage(1); setAuditFilters({ ...auditFilters, acao: v === "all" ? "" : v }); }}>
+            <SelectTrigger className="h-10"><SelectValue placeholder="Ação" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as ações</SelectItem>
+              {Object.entries(ACAO_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input type="date" value={auditFilters.from} onChange={(e) => { setAuditPage(1); setAuditFilters({ ...auditFilters, from: e.target.value }); }} aria-label="De" />
+          <Input type="date" value={auditFilters.to} onChange={(e) => { setAuditPage(1); setAuditFilters({ ...auditFilters, to: e.target.value }); }} aria-label="Até" />
+        </div>
+
         <Card className="p-0 overflow-hidden">
-          <ul className="divide-y max-h-96 overflow-y-auto text-sm">
-            {(audit.data ?? []).map((log: any) => {
+          <ul className="divide-y text-sm">
+            {auditItems.map((log: any) => {
               const autor = log.autor_id ? membrosById.get(log.autor_id) : null;
               const alvo = log.alvo_user_id ? membrosById.get(log.alvo_user_id) : null;
               return (
@@ -378,11 +425,25 @@ function UsuariosPage() {
                 </li>
               );
             })}
-            {(audit.data ?? []).length === 0 && (
-              <li className="p-6 text-center text-muted-foreground">Sem registros de auditoria.</li>
+            {auditItems.length === 0 && (
+              <li className="p-6 text-center text-muted-foreground">
+                {audit.isLoading ? "Carregando..." : "Sem registros de auditoria."}
+              </li>
             )}
           </ul>
         </Card>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{auditTotal} registro(s) · página {auditPage} de {totalPages}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="min-h-11" disabled={auditPage <= 1 || audit.isFetching} onClick={() => setAuditPage((p) => Math.max(1, p - 1))}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" className="min-h-11" disabled={auditPage >= totalPages || audit.isFetching} onClick={() => setAuditPage((p) => Math.min(totalPages, p + 1))}>
+              Próxima
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   );
