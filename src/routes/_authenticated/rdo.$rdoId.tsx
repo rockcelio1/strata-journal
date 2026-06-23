@@ -45,7 +45,21 @@ function RdoDetailPage() {
 
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
-  const { data: logs = [] } = useQuery({ queryKey: ["rdo-logs", rdoId], queryFn: () => logsFn({ data: { rdo_id: rdoId } }) });
+  const [logFilters, setLogFilters] = useState<{ autor_id: string; acao: string; from: string; to: string; limit: number }>({ autor_id: "", acao: "", from: "", to: "", limit: 25 });
+  const { data: logsData } = useQuery({
+    queryKey: ["rdo-logs", rdoId, logFilters],
+    queryFn: () => logsFn({ data: {
+      rdo_id: rdoId,
+      limit: logFilters.limit,
+      offset: 0,
+      autor_id: logFilters.autor_id || null,
+      acao: logFilters.acao || null,
+      from: logFilters.from ? new Date(logFilters.from).toISOString() : null,
+      to: logFilters.to ? new Date(logFilters.to + "T23:59:59").toISOString() : null,
+    } }),
+  });
+  const logs = logsData?.rows ?? [];
+  const logsTotal = logsData?.total ?? 0;
   const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
   const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }) });
   useEffect(() => {
