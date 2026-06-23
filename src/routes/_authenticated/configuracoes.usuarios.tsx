@@ -384,12 +384,13 @@ function UsuariosPage() {
                 </tr>
               ))}
               {membros.data?.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Nenhum membro.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+      </TooltipProvider>
 
       {/* CONVITES */}
       <div className="space-y-3">
