@@ -20,18 +20,18 @@ function DashboardPage() {
   const obrasAtivas = data.obras.filter((o: any) => o.status === "em_andamento");
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <header className="mb-8">
-        <h1 className="font-serif text-3xl">Visão geral</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="font-serif text-2xl sm:text-3xl">Visão geral</h1>
         <p className="text-sm text-muted-foreground mt-1">Indicadores em tempo real da operação.</p>
       </header>
 
-      {/* Bento grid */}
-      <div className="grid grid-cols-12 gap-4 auto-rows-[120px]">
-        <StatCard className="col-span-6 md:col-span-3 row-span-1" icon={Building2} label="Obras ativas" value={data.obras_ativas} sub={`${data.obras_total} no total`} />
-        <StatCard className="col-span-6 md:col-span-3 row-span-1" icon={FileText} label="RDOs pendentes" value={data.rdos_pendentes} sub="aguardando aprovação" tone="warning" />
-        <StatCard className="col-span-6 md:col-span-3 row-span-1" icon={CheckCircle2} label="RDOs aprovados" value={data.rdos_aprovados} sub={`${data.rdos_total} emitidos`} tone="success" />
-        <StatCard className="col-span-6 md:col-span-3 row-span-1" icon={AlertTriangle} label="Ocorrências (7d)" value={data.ocorrencias_semana} sub={`${data.ocorrencias_total} no histórico`} tone="destructive" />
+      {/* Bento: empilha em mobile, vira grid 12 colunas em md+ */}
+      <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 md:auto-rows-[120px]">
+        <StatCard className="col-span-1 md:col-span-3" icon={Building2} label="Obras ativas" value={data.obras_ativas} sub={`${data.obras_total} no total`} />
+        <StatCard className="col-span-1 md:col-span-3" icon={FileText} label="RDOs pendentes" value={data.rdos_pendentes} sub="aguardando aprovação" tone="warning" />
+        <StatCard className="col-span-1 md:col-span-3" icon={CheckCircle2} label="RDOs aprovados" value={data.rdos_aprovados} sub={`${data.rdos_total} emitidos`} tone="success" />
+        <StatCard className="col-span-1 md:col-span-3" icon={AlertTriangle} label="Ocorrências (7d)" value={data.ocorrencias_semana} sub={`${data.ocorrencias_total} no histórico`} tone="destructive" />
 
         {/* Avanço por obra */}
         <Card className="col-span-12 md:col-span-8 row-span-3 p-6">
