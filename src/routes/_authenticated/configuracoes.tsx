@@ -52,7 +52,7 @@ function ConfiguracoesLayout() {
           ))}
         </div>
       ) : (
-        <div className="grid md:grid-cols-[220px_1fr] gap-6">
+        <div className="grid md:grid-cols-[minmax(0,220px)_minmax(0,1fr)] gap-4 md:gap-6">
           <nav className="flex md:flex-col gap-1 overflow-x-auto">
             {subNav.map((item) => {
               const active = pathname.startsWith(item.to);
