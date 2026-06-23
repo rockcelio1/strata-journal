@@ -16,14 +16,31 @@ export async function emailExistsIn(admin: any, email: string): Promise<boolean>
   return false;
 }
 
+// Política de senha (server-side, fonte da verdade)
+export const passwordSchema = z
+  .string()
+  .min(8, "A senha deve ter pelo menos 8 caracteres.")
+  .max(72, "A senha deve ter no máximo 72 caracteres.")
+  .refine((v) => /[A-Z]/.test(v), "Inclua ao menos uma letra maiúscula.")
+  .refine((v) => /[a-z]/.test(v), "Inclua ao menos uma letra minúscula.")
+  .refine((v) => /[0-9]/.test(v), "Inclua ao menos um número.")
+  .refine((v) => /[^A-Za-z0-9]/.test(v), "Inclua ao menos um caractere especial.");
+
+export function validatePasswordStrength(password: string): { ok: boolean; errors: string[] } {
+  const r = passwordSchema.safeParse(password);
+  if (r.success) return { ok: true, errors: [] };
+  return { ok: false, errors: r.error.issues.map((i) => i.message) };
+}
+
 export async function registerUserCore(
   admin: any,
   input: { email: string; password: string; nome: string; empresa_nome: string },
 ) {
   const email = input.email.toLowerCase();
   if (await emailExistsIn(admin, email)) throw new Error("EMAIL_TAKEN");
+  // Exige confirmação por e-mail: NÃO marcar email_confirm
   const { error } = await admin.auth.admin.createUser({
-    email, password: input.password, email_confirm: true,
+    email, password: input.password, email_confirm: false,
     user_metadata: { nome: input.nome, empresa_nome: input.empresa_nome },
   });
   if (error) {
@@ -40,19 +57,54 @@ export const checkEmailRegistered = createServerFn({ method: "POST" })
     return { exists: await emailExistsIn(supabaseAdmin, data.email) };
   });
 
-// Backend hard-block: cadastra somente se o e-mail ainda não existir.
+// Backend hard-block: cadastra somente se o e-mail ainda não existir e a senha for forte.
 export const registerUser = createServerFn({ method: "POST" })
   .inputValidator((d: { email: string; password: string; nome: string; empresa_nome: string }) =>
     z.object({
       email: z.string().email(),
-      password: z.string().min(6).max(72),
+      password: passwordSchema,
       nome: z.string().trim().min(1).max(120),
       empresa_nome: z.string().trim().min(1).max(120),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    return await registerUserCore(supabaseAdmin, data);
+    await registerUserCore(supabaseAdmin, data);
+    // Dispara o e-mail de confirmação (Supabase envia ao gerar o link de signup)
+    try {
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "signup",
+        email: data.email.toLowerCase(),
+        password: data.password,
+      });
+    } catch { /* envio best-effort */ }
+    return { ok: true };
+  });
+
+// Reenviar e-mail de verificação
+export const resendVerification = createServerFn({ method: "POST" })
+  .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = data.email.toLowerCase();
+    let alreadyConfirmed = false;
+    let found = false;
+    for (let page = 1; page <= 25; page++) {
+      const { data: pg, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+      if (error) throw error;
+      const u = (pg?.users ?? []).find((x: any) => (x.email ?? "").toLowerCase() === email);
+      if (u) { found = true; alreadyConfirmed = !!u.email_confirmed_at; break; }
+      if ((pg?.users ?? []).length < 200) break;
+    }
+    if (!found) throw new Error("EMAIL_NOT_FOUND");
+    if (alreadyConfirmed) return { ok: true, alreadyConfirmed: true };
+    const { createClient } = await import("@supabase/supabase-js");
+    const pub = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await pub.auth.resend({ type: "signup", email });
+    if (error) throw error;
+    return { ok: true, alreadyConfirmed: false };
   });
 
 // ============== ME / EMPRESA ==============

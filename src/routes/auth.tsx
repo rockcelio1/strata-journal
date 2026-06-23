@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { checkEmailRegistered, registerUser } from "@/lib/core.functions";
+import { checkEmailRegistered, registerUser, resendVerification, validatePasswordStrength } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,11 @@ function AuthPage() {
   // Verificação de e-mail em tempo real no cadastro
   const [signupEmail, setSignupEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [signupPassword, setSignupPassword] = useState("");
+  const passwordErrors = signupPassword ? validatePasswordStrength(signupPassword).errors : [];
+  const passwordOk = signupPassword.length > 0 && passwordErrors.length === 0;
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
 
   useEffect(() => {
     const value = signupEmail.trim().toLowerCase();
@@ -41,14 +46,39 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: String(fd.get("email")),
+      email,
       password: String(fd.get("password")),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
+        setResendEmail(email);
+        return toast.error("Confirme seu e-mail antes de entrar. Use o botão para reenviar a verificação.");
+      }
+      return toast.error(error.message);
+    }
     navigate({ to: "/dashboard" });
+  }
+
+  async function handleResend() {
+    const email = (resendEmail || signupEmail).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return toast.error("Informe um e-mail válido para reenviar a verificação.");
+    }
+    setResendLoading(true);
+    try {
+      const res = await resendVerification({ data: { email } });
+      if (res.alreadyConfirmed) toast.success("Este e-mail já está confirmado. Faça login.");
+      else toast.success("E-mail de verificação reenviado. Confira sua caixa de entrada.");
+    } catch (err: any) {
+      if (err?.message === "EMAIL_NOT_FOUND") toast.error("E-mail não cadastrado.");
+      else toast.error(err?.message ?? "Não foi possível reenviar agora.");
+    } finally {
+      setResendLoading(false);
+    }
   }
 
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
@@ -63,19 +93,14 @@ function AuthPage() {
     if (emailStatus === "checking") { toast.error("Aguarde a verificação do e-mail."); return; }
     if (emailStatus === "invalid") { toast.error("E-mail inválido."); return; }
     if (emailStatus === "taken") { toast.error("Este e-mail já está cadastrado."); return; }
+    const pwCheck = validatePasswordStrength(password);
+    if (!pwCheck.ok) { toast.error(pwCheck.errors[0] ?? "Senha fraca."); return; }
 
     setLoading(true);
     try {
-      // Backend é a fonte da verdade — sempre verifica novamente, ignorando o estado do form
       await registerUser({ data: { email, password, nome, empresa_nome } });
-      // Faz login após cadastro bem-sucedido
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) {
-        toast.success("Conta criada. Faça login para continuar.");
-        return;
-      }
-      toast.success("Conta criada!");
-      navigate({ to: "/dashboard" });
+      setResendEmail(email);
+      toast.success("Conta criada! Verifique seu e-mail para confirmar antes de entrar.");
     } catch (err: any) {
       if (err?.message === "EMAIL_TAKEN") {
         setEmailStatus("taken");
@@ -208,16 +233,60 @@ function AuthPage() {
                   </div>
                   <div>
                     <Label htmlFor="password2">Senha</Label>
-                    <Input id="password2" name="password" type="password" required minLength={6} autoComplete="new-password" />
+                    <Input
+                      id="password2" name="password" type="password" required minLength={8} autoComplete="new-password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      aria-invalid={signupPassword.length > 0 && !passwordOk}
+                      aria-describedby="password2-feedback"
+                      className={
+                        signupPassword.length === 0
+                          ? ""
+                          : passwordOk
+                          ? "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-500/5"
+                          : "border-destructive focus-visible:ring-destructive bg-destructive/5"
+                      }
+                    />
+                    <ul
+                      id="password2-feedback"
+                      role="status"
+                      aria-live="polite"
+                      className="text-xs mt-1 space-y-0.5"
+                    >
+                      {signupPassword.length === 0 && (
+                        <li className="text-muted-foreground">Mín. 8 caracteres, maiúscula, minúscula, número e símbolo.</li>
+                      )}
+                      {signupPassword.length > 0 && passwordOk && (
+                        <li className="text-emerald-600">Senha forte.</li>
+                      )}
+                      {signupPassword.length > 0 && !passwordOk && passwordErrors.map((m) => (
+                        <li key={m} className="text-destructive">• {m}</li>
+                      ))}
+                    </ul>
                   </div>
                   <Button
                     type="submit"
                     className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
-                    disabled={loading || emailStatus === "taken" || emailStatus === "invalid" || emailStatus === "checking"}
+                    disabled={loading || emailStatus === "taken" || emailStatus === "invalid" || emailStatus === "checking" || !passwordOk}
                   >
                     Criar empresa
                   </Button>
                 </form>
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">Não recebeu o e-mail de confirmação?</p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value)}
+                      aria-label="E-mail para reenviar verificação"
+                    />
+                    <Button type="button" variant="outline" onClick={handleResend} disabled={resendLoading} aria-busy={resendLoading}>
+                      {resendLoading ? "Enviando..." : "Reenviar"}
+                    </Button>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
 
