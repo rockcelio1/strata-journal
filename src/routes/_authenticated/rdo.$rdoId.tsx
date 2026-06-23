@@ -118,7 +118,7 @@ function RdoDetailPage() {
   const isAuthor = r.autor?.id === me?.profile?.id;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-4">
         <ArrowLeft className="h-3 w-3" /> RDOs
       </Link>

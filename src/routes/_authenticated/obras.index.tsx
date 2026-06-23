@@ -39,7 +39,7 @@ function ObrasPage() {
   const filtered = (obras as any[]).filter((o) => o.nome.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <header className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-3xl">Obras</h1>
