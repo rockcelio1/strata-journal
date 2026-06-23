@@ -90,6 +90,22 @@ export function exportRdoPdf(args: {
   section("Anexos", ["Nome", "Enviado por", "Em"],
     anexos.map((a) => [a.nome, a.autor?.nome ?? "—", fmtDate(a.created_at)]));
 
+  if (clima_dias && clima_dias.length) {
+    const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+    section(
+      `Evidências meteorológicas${clima_local ? ` — ${clima_local}` : ""}`,
+      ["Data (BR)", "Dia", "Origem", "Mín/Máx (°C)", "Chuva", "Condição"],
+      ordered.map((d) => [
+        fmtDayBR(d.data),
+        d.dia_semana ?? "—",
+        d.origem ?? "—",
+        `${Math.round(Number(d.t_min_c ?? 0))} / ${Math.round(Number(d.t_max_c ?? 0))}`,
+        `${d.prob_chuva_pct ?? 0}% · ${d.precipitacao_mm ?? 0} mm`,
+        d.descricao ?? "—",
+      ]),
+    );
+  }
+
   section("Histórico de status", ["Quando", "Ação", "De → Para", "Por", "Motivo"],
     logs.map((l) => [
       fmtDate(l.created_at),
