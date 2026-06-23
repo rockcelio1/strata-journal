@@ -132,6 +132,8 @@ function RdoDetailPage() {
       logs: logs as any[],
       anexos: anexos as any[],
       empresa: (me as any)?.empresa,
+      clima_dias: climaState.dias ?? null,
+      clima_local: climaState.local ?? null,
     });
   };
 
