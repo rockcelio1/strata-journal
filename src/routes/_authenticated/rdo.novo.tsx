@@ -25,6 +25,7 @@ import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, classificaClima, type ClimaSnapshot } from "@/lib/weather";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
+import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
