@@ -174,6 +174,19 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
         height: data.height ?? null,
       });
     }
+    // Auditoria
+    await (supabase.from("audit_logs_usuarios") as any).insert({
+      empresa_id: me.data.empresa_id,
+      autor_id: userId,
+      acao: data.logo_url === null ? "logo_removido" : "logo_atualizado",
+      detalhes: {
+        storage_path: data.storage_path ?? null,
+        mime_type: data.mime_type ?? null,
+        tamanho_bytes: data.tamanho_bytes ?? null,
+        width: data.width ?? null,
+        height: data.height ?? null,
+      },
+    });
     return { ok: true };
   });
 
