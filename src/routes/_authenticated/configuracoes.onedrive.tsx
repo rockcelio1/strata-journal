@@ -185,6 +185,40 @@ function OneDriveSettings() {
         </section>
       )}
 
+      {ok && (
+        <section className="border border-border rounded-lg p-4 bg-card">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h3 className="font-medium text-sm">Teste de permissões</h3>
+            <button
+              onClick={() => test.mutate()}
+              disabled={test.isPending}
+              className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground disabled:opacity-50"
+            >
+              {test.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+              Executar teste
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Verifica existência, listagem, escrita e remoção em <strong>/{rootFolder}</strong>.
+          </p>
+          {test.data && (
+            <ul className="text-sm space-y-1">
+              {test.data.log.map((l, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  {l.ok
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
+                    : <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />}
+                  <span className="flex-1">{l.step}</span>
+                  {l.detail && <span className="text-xs text-muted-foreground break-all">{l.detail}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+
+
       <section className="border border-border rounded-lg p-4 bg-card">
         <h3 className="font-medium text-sm mb-2">Desconectar / reconectar</h3>
         <p className="text-xs text-muted-foreground">
