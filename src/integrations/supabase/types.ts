@@ -732,6 +732,47 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          action: Database["public"]["Enums"]["app_action"]
+          allowed: boolean
+          created_at: string
+          empresa_id: string
+          id: string
+          resource: Database["public"]["Enums"]["app_resource"]
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["app_action"]
+          allowed?: boolean
+          created_at?: string
+          empresa_id: string
+          id?: string
+          resource: Database["public"]["Enums"]["app_resource"]
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["app_action"]
+          allowed?: boolean
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          resource?: Database["public"]["Enums"]["app_resource"]
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tipos_ocorrencia: {
         Row: {
           ativo: boolean
@@ -766,6 +807,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tipos_ocorrencia_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permission_overrides: {
+        Row: {
+          action: Database["public"]["Enums"]["app_action"]
+          allowed: boolean
+          created_at: string
+          empresa_id: string
+          id: string
+          resource: Database["public"]["Enums"]["app_resource"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["app_action"]
+          allowed: boolean
+          created_at?: string
+          empresa_id: string
+          id?: string
+          resource: Database["public"]["Enums"]["app_resource"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["app_action"]
+          allowed?: boolean
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          resource?: Database["public"]["Enums"]["app_resource"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -818,6 +900,14 @@ export type Database = {
     }
     Functions: {
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
+      has_permission: {
+        Args: {
+          _action: Database["public"]["Enums"]["app_action"]
+          _resource: Database["public"]["Enums"]["app_resource"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -827,7 +917,31 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "engenheiro" | "mestre" | "visualizador" | "master"
+      app_action:
+        | "ver"
+        | "criar"
+        | "editar"
+        | "excluir"
+        | "aprovar"
+        | "exportar"
+      app_resource:
+        | "obras"
+        | "rdos"
+        | "usuarios"
+        | "relatorios"
+        | "equipamentos"
+        | "mao_de_obra"
+        | "ocorrencias"
+        | "convites"
+        | "empresa"
+        | "permissoes"
+      app_role:
+        | "admin"
+        | "engenheiro"
+        | "mestre"
+        | "visualizador"
+        | "master"
+        | "gestor_acessos"
       clima:
         | "ensolarado"
         | "nublado"
@@ -965,7 +1079,27 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "engenheiro", "mestre", "visualizador", "master"],
+      app_action: ["ver", "criar", "editar", "excluir", "aprovar", "exportar"],
+      app_resource: [
+        "obras",
+        "rdos",
+        "usuarios",
+        "relatorios",
+        "equipamentos",
+        "mao_de_obra",
+        "ocorrencias",
+        "convites",
+        "empresa",
+        "permissoes",
+      ],
+      app_role: [
+        "admin",
+        "engenheiro",
+        "mestre",
+        "visualizador",
+        "master",
+        "gestor_acessos",
+      ],
       clima: [
         "ensolarado",
         "nublado",
