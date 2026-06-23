@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs_usuarios: {
+        Row: {
+          acao: string
+          alvo_email: string | null
+          alvo_user_id: string | null
+          autor_id: string | null
+          created_at: string
+          detalhes: Json | null
+          empresa_id: string
+          id: string
+        }
+        Insert: {
+          acao: string
+          alvo_email?: string | null
+          alvo_user_id?: string | null
+          autor_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          empresa_id: string
+          id?: string
+        }
+        Update: {
+          acao?: string
+          alvo_email?: string | null
+          alvo_user_id?: string | null
+          autor_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          empresa_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       convites: {
         Row: {
           aceito: boolean
@@ -57,6 +98,8 @@ export type Database = {
       }
       empresas: {
         Row: {
+          app_android_url: string | null
+          app_ios_url: string | null
           cnpj: string | null
           created_at: string
           id: string
@@ -65,6 +108,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          app_android_url?: string | null
+          app_ios_url?: string | null
           cnpj?: string | null
           created_at?: string
           id?: string
@@ -73,6 +118,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          app_android_url?: string | null
+          app_ios_url?: string | null
           cnpj?: string | null
           created_at?: string
           id?: string
@@ -234,6 +281,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          aprovado: boolean
+          aprovado_em: string | null
+          aprovado_por: string | null
           cargo: string | null
           created_at: string
           email: string
@@ -243,6 +293,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           cargo?: string | null
           created_at?: string
           email: string
@@ -252,6 +305,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           cargo?: string | null
           created_at?: string
           email?: string
@@ -710,6 +766,7 @@ export type Database = {
     Functions: {
       can_approve_rdo: { Args: { _user_id: string }; Returns: boolean }
       get_user_empresa: { Args: { _user_id: string }; Returns: string }
+      has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

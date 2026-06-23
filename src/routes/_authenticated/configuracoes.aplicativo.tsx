@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smartphone, Tablet, Monitor, RefreshCw } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Smartphone, Tablet, Monitor, RefreshCw, Apple, Download } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getMe, updateEmpresaAppLinks } from "@/lib/core.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/aplicativo")({
   component: AplicativoPage,
@@ -16,19 +21,110 @@ const PRESETS = [
 ] as const;
 
 function AplicativoPage() {
+  const qc = useQueryClient();
   const [width, setWidth] = useState(360);
   const [height, setHeight] = useState(720);
   const [path, setPath] = useState("/dashboard");
   const [reloadKey, setReloadKey] = useState(0);
+
+  const meFn = useServerFn(getMe);
+  const updateLinksFn = useServerFn(updateEmpresaAppLinks);
+  const me = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
+  const empresa: any = me.data?.empresa ?? null;
+  const isAdmin = (me.data?.roles ?? []).some((r) => r === "admin" || r === "master");
+
+  const [iosUrl, setIosUrl] = useState("");
+  const [androidUrl, setAndroidUrl] = useState("");
+  useEffect(() => {
+    if (empresa) {
+      setIosUrl(empresa.app_ios_url ?? "");
+      setAndroidUrl(empresa.app_android_url ?? "");
+    }
+  }, [empresa?.id, empresa?.app_ios_url, empresa?.app_android_url]);
+
+  const mSave = useMutation({
+    mutationFn: (v: { app_ios_url: string | null; app_android_url: string | null }) => updateLinksFn({ data: v }),
+    onSuccess: () => { toast.success("Links salvos"); qc.invalidateQueries({ queryKey: ["me"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <section className="space-y-6">
       <div>
         <h2 className="font-serif text-xl">Aplicativo</h2>
         <p className="text-sm text-muted-foreground">
-          Preferências do app de campo e pré-visualização responsiva.
+          Downloads do app de campo, pré-visualização responsiva e preferências.
         </p>
       </div>
+
+      {/* Downloads iOS / Android */}
+      <Card className="p-4 space-y-4">
+        <div>
+          <h3 className="font-serif text-lg">Baixar o aplicativo</h3>
+          <p className="text-xs text-muted-foreground">Links para download nas lojas oficiais.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <a
+            href={iosUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!iosUrl}
+            onClick={(e) => { if (!iosUrl) e.preventDefault(); }}
+            className={`flex items-center gap-3 rounded-lg border border-border p-4 min-h-[64px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${iosUrl ? "active:bg-muted/60" : "opacity-50 cursor-not-allowed"}`}
+          >
+            <Apple className="h-8 w-8" />
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground">Baixar para</div>
+              <div className="font-medium">iPhone / iPad (iOS)</div>
+            </div>
+            <Download className="h-5 w-5 text-muted-foreground" />
+          </a>
+          <a
+            href={androidUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!androidUrl}
+            onClick={(e) => { if (!androidUrl) e.preventDefault(); }}
+            className={`flex items-center gap-3 rounded-lg border border-border p-4 min-h-[64px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${androidUrl ? "active:bg-muted/60" : "opacity-50 cursor-not-allowed"}`}
+          >
+            <Smartphone className="h-8 w-8" />
+            <div className="flex-1">
+              <div className="text-xs text-muted-foreground">Baixar para</div>
+              <div className="font-medium">Android (Play Store / APK)</div>
+            </div>
+            <Download className="h-5 w-5 text-muted-foreground" />
+          </a>
+        </div>
+
+        {isAdmin && (
+          <div className="border-t pt-4 space-y-3">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Configurar links (admin)</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="ios-url">URL iOS (App Store / TestFlight)</Label>
+                <Input id="ios-url" value={iosUrl} onChange={(e) => setIosUrl(e.target.value)} placeholder="https://apps.apple.com/..." />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="android-url">URL Android (Play Store / APK)</Label>
+                <Input id="android-url" value={androidUrl} onChange={(e) => setAndroidUrl(e.target.value)} placeholder="https://play.google.com/..." />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                className="min-h-[44px]"
+                onClick={() => mSave.mutate({ app_ios_url: iosUrl.trim() || null, app_android_url: androidUrl.trim() || null })}
+                disabled={mSave.isPending}
+              >
+                Salvar links
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Para iOS sem App Store use TestFlight. Para Android você pode hospedar o APK e usar a URL pública.
+            </p>
+          </div>
+        )}
+      </Card>
+
 
       <Card className="p-4 space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
