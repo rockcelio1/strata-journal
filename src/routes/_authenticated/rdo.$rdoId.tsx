@@ -330,28 +330,68 @@ function RdoDetailPage() {
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
-        <h3 className="font-serif text-lg flex items-center gap-2 mb-3"><History className="h-4 w-4" /> Histórico</h3>
-        {(logs as any[]).length === 0 ? (
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportAuditCsv(logs)}>CSV</Button>
+            <Button size="sm" variant="outline" onClick={() => exportAuditPdf(logs, data?.numero ?? rdoId)}>PDF</Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <select className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.acao} onChange={(e) => setLogFilters({ ...logFilters, acao: e.target.value })}>
+            <option value="">Todas ações</option>
+            <option value="criado">Criou</option>
+            <option value="visualizado">Visualizou</option>
+            <option value="editado">Editou</option>
+            <option value="status_alterado">Alterou status</option>
+            <option value="enviado_para_aprovacao">Enviou</option>
+            <option value="aprovado">Aprovou</option>
+            <option value="reprovado">Reprovou</option>
+          </select>
+          <select className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.autor_id} onChange={(e) => setLogFilters({ ...logFilters, autor_id: e.target.value })}>
+            <option value="">Todos usuários</option>
+            {(audit?.rows ?? []).map((r: any) => (
+              <option key={r.user_id} value={r.user_id}>{r.nome ?? r.email ?? r.user_id.slice(0, 8)}</option>
+            ))}
+          </select>
+          <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.from} onChange={(e) => setLogFilters({ ...logFilters, from: e.target.value })} />
+          <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.to} onChange={(e) => setLogFilters({ ...logFilters, to: e.target.value })} />
+        </div>
+        {logs.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum evento.</p>
         ) : (
-          <ol className="relative border-l border-border ml-2">
-            {(logs as any[]).map((l) => (
-              <li key={l.id} className="ml-4 pb-3">
-                <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
-                <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
-                <div className="text-sm">
-                  <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
-                  {l.status_anterior && l.status_novo && (
-                    <span className="text-muted-foreground"> · {l.status_anterior} → {l.status_novo}</span>
-                  )}
-                  {l.autor?.nome && <span className="text-muted-foreground"> · {l.autor.nome}</span>}
-                </div>
-                {l.motivo && <div className="text-xs text-muted-foreground mt-1 italic">"{l.motivo}"</div>}
-              </li>
-            ))}
-          </ol>
+          <>
+            <ol className="relative border-l border-border ml-2">
+              {logs.map((l: any) => (
+                <li key={l.id} className="ml-4 pb-3">
+                  <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
+                  <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
+                  <div className="text-sm">
+                    <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
+                    {l.status_anterior && l.status_novo && (
+                      <span className="text-muted-foreground"> · {l.status_anterior} → {l.status_novo}</span>
+                    )}
+                    {l.autor?.nome && <span className="text-muted-foreground"> · {l.autor.nome}</span>}
+                  </div>
+                  {l.motivo && <div className="text-xs text-muted-foreground mt-1 italic">"{l.motivo}"</div>}
+                </li>
+              ))}
+            </ol>
+            {logs.length < logsTotal && (
+              <div className="mt-3 flex justify-center">
+                <Button size="sm" variant="outline" onClick={() => setLogFilters({ ...logFilters, limit: logFilters.limit + 25 })}>
+                  Carregar mais ({logsTotal - logs.length} restantes)
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </Card>
+
     </div>
   );
 }
