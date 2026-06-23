@@ -306,6 +306,36 @@ function Kpi({ label, value, icon }: { label: string; value: number; icon: React
   );
 }
 
+function KpiButton({ label, value, icon, onClick, title }: { label: string; value: number; icon: React.ReactNode; onClick: () => void; title?: string }) {
+  return (
+    <button type="button" onClick={onClick} title={title} aria-label={title ?? label}
+      className="text-left rounded-md border-t-2 border-t-brand bg-card overflow-hidden hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+      <div className="px-4 py-3">
+        <div className="text-2xl font-serif text-brand tabular-nums">{value.toLocaleString("pt-BR")}</div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground/70">{icon}</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function KpiLink({ label, value, icon, to, title }: { label: string; value: number; icon: React.ReactNode; to: string; title?: string }) {
+  return (
+    <Link to={to as any} title={title} aria-label={title ?? label}
+      className="text-left rounded-md border-t-2 border-t-brand bg-card overflow-hidden hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors block">
+      <div className="px-4 py-3">
+        <div className="text-2xl font-serif text-brand tabular-nums">{value.toLocaleString("pt-BR")}</div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-sm text-muted-foreground">{label}</span>
+          <span className="text-muted-foreground/70">{icon}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
