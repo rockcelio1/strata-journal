@@ -44,8 +44,8 @@ function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background p-6">
-      <Card className="w-full max-w-sm p-6">
+    <div className="min-h-screen grid place-items-center bg-background p-4 sm:p-6">
+      <Card className="w-full max-w-sm p-5 sm:p-6">
         <h1 className="font-serif text-2xl">Recuperar senha</h1>
         {hasRecovery ? (
           <form onSubmit={setNewPassword} className="space-y-3 mt-4">

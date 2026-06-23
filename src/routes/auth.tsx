@@ -135,7 +135,9 @@ function AuthPage() {
           <img
             src={LOGO_URL}
             alt="Diário de Obra"
-            className="h-40 w-40 rounded-3xl shadow-2xl object-cover mb-8 ring-4 ring-white/20"
+            width={160}
+            height={160}
+            className="aspect-square w-40 max-w-[40vh] rounded-3xl shadow-2xl object-cover mb-8 ring-4 ring-white/20"
           />
           <h1 className="font-serif text-4xl leading-tight">Diário de Obra</h1>
           <p className="mt-4 text-brand-foreground/75 text-sm leading-relaxed">
@@ -152,11 +154,11 @@ function AuthPage() {
             <img
               src={LOGO_URL}
               alt="Diário de Obra"
-              width={96}
-              height={96}
-              className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
+              width={112}
+              height={112}
+              className="aspect-square w-24 sm:w-28 max-w-[28vw] rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
             />
-            <span className="font-serif text-xl sm:text-2xl">Diário de Obra</span>
+            <span className="font-serif text-xl sm:text-2xl text-center">Diário de Obra</span>
           </div>
 
           <Card className="p-5 sm:p-6">
