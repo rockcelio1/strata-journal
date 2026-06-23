@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { InstallAppButton } from "@/components/install-app-button";
-import logoAsset from "@/assets/icone-rdo.png.asset.json";
+
+const LOGO_URL = "/__l5e/assets-v1/9c48395b-ad13-4a2c-a575-611ad9184713/icone-rdo.png";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -132,7 +133,7 @@ function AuthPage() {
       <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-brand text-brand-foreground relative overflow-hidden">
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
           <img
-            src={logoAsset.url}
+            src={LOGO_URL}
             alt="Diário de Obra"
             className="h-40 w-40 rounded-3xl shadow-2xl object-cover mb-8 ring-4 ring-white/20"
           />
@@ -149,7 +150,7 @@ function AuthPage() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex flex-col items-center mb-8">
             <img
-              src={logoAsset.url}
+              src={LOGO_URL}
               alt="Diário de Obra"
               className="h-20 w-20 rounded-2xl shadow-xl object-cover mb-3 ring-2 ring-border"
             />
