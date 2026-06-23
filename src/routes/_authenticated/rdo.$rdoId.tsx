@@ -196,6 +196,9 @@ function RdoDetailPage() {
         ))}
       </div>
 
+      <ClimaRelatorio endereco={r.obras?.endereco} data={r.data} />
+
+
       {r.observacoes && (
         <Card className="p-4 mb-4">
           <div className="text-xs text-muted-foreground uppercase tracking-wider">Observações</div>
