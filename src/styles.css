@@ -178,12 +178,43 @@
       min-height: 44px;
     }
   }
-  /* Imagens fluidas por padrão */
-  img, video, canvas, svg { max-width: 100%; height: auto; }
+  /* Imagens fluidas por padrão + nitidez em telas HiDPI */
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+    -webkit-backface-visibility: hidden;
+  }
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
   /* Evita hover "preso" em touch */
   @media (hover: none) {
     .hover\:bg-accent:hover { background-color: transparent; }
   }
+  /* Scroll suave em toda a app */
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+}
+
+/* ============ Scrollbar ultra fina e quase imperceptível ============ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent) transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; background: transparent; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 20%, transparent);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 45%, transparent);
+}
+*::-webkit-scrollbar-corner { background: transparent; }
+/* Em mobile, esconde completamente mantendo scroll funcional */
+@media (pointer: coarse) {
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
 }
 
 
