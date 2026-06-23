@@ -7,6 +7,7 @@ import {
   listMembros,
   listConvites,
   criarConvite,
+  reenviarConvite,
   revogarConvite,
   atualizarPapelMembro,
   adminCreateUser,
@@ -15,6 +16,8 @@ import {
   adminSendPasswordReset,
   adminDeleteUser,
   adminToggleUserDisabled,
+  aprovarUsuario,
+  listAuditLogs,
 } from "@/lib/core.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
