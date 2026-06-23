@@ -193,17 +193,57 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const clean = data.path.replace(/^\/+|\/+$/g, "");
     if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
-    const url = `/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
-    const res = await gatewayFetch(url, undefined, 2, "ensureFolder");
-    const requestId = res.headers.get("request-id");
-    if (res.status === 404) return { ok: false as const, status: 404, error: `Pasta "${clean}" não existe no OneDrive (request-id: ${requestId ?? "n/a"})` };
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { ok: false as const, status: res.status, error: parseGraphError(res.status, body, "ensureFolder", `${GATEWAY_URL}${url}`, requestId) };
+
+    // 1) Já existe?
+    const getUrl = `/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
+    const getRes = await gatewayFetch(getUrl, undefined, 2, "ensureFolder:get");
+    if (getRes.ok) {
+      const item = await getRes.json() as { id: string; name: string; folder?: unknown };
+      if (!item.folder) return { ok: false as const, status: 409, error: `"${clean}" existe mas não é uma pasta` };
+      return { ok: true as const, id: item.id, name: item.name, path: clean, created: false };
     }
-    const item = await res.json() as { id: string; name: string; folder?: unknown };
-    if (!item.folder) return { ok: false as const, status: 409, error: `"${clean}" existe mas não é uma pasta` };
-    return { ok: true as const, id: item.id, name: item.name, path: clean };
+    if (getRes.status !== 404) {
+      const body = await getRes.text().catch(() => "");
+      const requestId = getRes.headers.get("request-id");
+      return { ok: false as const, status: getRes.status, error: parseGraphError(getRes.status, body, "ensureFolder:get", `${GATEWAY_URL}${getUrl}`, requestId) };
+    }
+
+    // 2) Não existe → cria recursivamente, segmento a segmento
+    const segments = clean.split("/").filter(Boolean);
+    let parentPath = "";
+    let lastItem: { id: string; name: string } | null = null;
+    for (const seg of segments) {
+      const currentPath = parentPath ? `${parentPath}/${seg}` : seg;
+      const checkUrl = `/me/drive/root:/${encodePath(currentPath)}?$select=id,name,folder`;
+      const checkRes = await gatewayFetch(checkUrl, undefined, 2, "ensureFolder:check");
+      if (checkRes.ok) {
+        const item = await checkRes.json() as { id: string; name: string; folder?: unknown };
+        if (!item.folder) return { ok: false as const, status: 409, error: `"${currentPath}" existe mas não é uma pasta` };
+        lastItem = { id: item.id, name: item.name };
+      } else if (checkRes.status === 404) {
+        const createUrl = parentPath
+          ? `/me/drive/root:/${encodePath(parentPath)}:/children`
+          : `/me/drive/root/children`;
+        const createRes = await gatewayFetch(createUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: seg, folder: {}, "@microsoft.graph.conflictBehavior": "replace" }),
+        }, 2, "ensureFolder:create");
+        if (!createRes.ok) {
+          const body = await createRes.text().catch(() => "");
+          const requestId = createRes.headers.get("request-id");
+          return { ok: false as const, status: createRes.status, error: parseGraphError(createRes.status, body, "ensureFolder:create", `${GATEWAY_URL}${createUrl}`, requestId) };
+        }
+        const item = await createRes.json() as { id: string; name: string };
+        lastItem = { id: item.id, name: item.name };
+      } else {
+        const body = await checkRes.text().catch(() => "");
+        const requestId = checkRes.headers.get("request-id");
+        return { ok: false as const, status: checkRes.status, error: parseGraphError(checkRes.status, body, "ensureFolder:check", `${GATEWAY_URL}${checkUrl}`, requestId) };
+      }
+      parentPath = currentPath;
+    }
+    return { ok: true as const, id: lastItem!.id, name: lastItem!.name, path: clean, created: true };
   });
 
 export const testOneDrivePermissions = createServerFn({ method: "POST" })
