@@ -137,16 +137,41 @@ export const deleteRdo = createServerFn({ method: "POST" })
 // ============== AUDIT LOGS ==============
 export const listRdoLogs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .inputValidator((d: {
+    rdo_id: string;
+    limit?: number;
+    offset?: number;
+    autor_id?: string | null;
+    acao?: string | null;
+    from?: string | null;
+    to?: string | null;
+  }) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      limit: z.number().int().min(1).max(200).default(25),
+      offset: z.number().int().min(0).default(0),
+      autor_id: z.string().uuid().nullable().optional(),
+      acao: z.string().nullable().optional(),
+      from: z.string().nullable().optional(),
+      to: z.string().nullable().optional(),
+    }).parse(d),
+  )
   .handler(async ({ context, data }) => {
-    const { data: rows, error } = await context.supabase
+    let q = context.supabase
       .from("rdo_audit_logs")
-      .select("*, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome)")
-      .eq("rdo_id", data.rdo_id)
-      .order("created_at", { ascending: true });
+      .select("*, autor:profiles!rdo_audit_logs_autor_id_fkey(id, nome, email)", { count: "exact" })
+      .eq("rdo_id", data.rdo_id);
+    if (data.autor_id) q = q.eq("autor_id", data.autor_id);
+    if (data.acao) q = q.eq("acao", data.acao);
+    if (data.from) q = q.gte("created_at", data.from);
+    if (data.to) q = q.lte("created_at", data.to);
+    const { data: rows, error, count } = await q
+      .order("created_at", { ascending: false })
+      .range(data.offset, data.offset + data.limit - 1);
     if (error) throw error;
-    return rows;
+    return { rows: rows ?? [], total: count ?? 0 };
   });
+
 
 // ============== ANEXOS ==============
 export const listRdoAnexos = createServerFn({ method: "GET" })

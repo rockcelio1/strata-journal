@@ -154,11 +154,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               <img
                 src={(me!.empresa as any).logo_url}
                 alt="Logo"
-                className="h-7 w-7 rounded-md object-contain bg-brand-foreground/10 p-0.5"
+                loading="eager"
+                decoding="async"
+                className="h-9 w-9 object-contain"
               />
             ) : (
-              <div className="h-7 w-7 rounded-md bg-brand-foreground/15 grid place-items-center">
-                <Building2 className="h-4 w-4" />
+              <div className="h-9 w-9 rounded-md bg-brand-foreground/15 grid place-items-center">
+                <Building2 className="h-5 w-5" />
               </div>
             )}
             <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>

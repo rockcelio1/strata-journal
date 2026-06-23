@@ -45,7 +45,21 @@ function RdoDetailPage() {
 
   const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
-  const { data: logs = [] } = useQuery({ queryKey: ["rdo-logs", rdoId], queryFn: () => logsFn({ data: { rdo_id: rdoId } }) });
+  const [logFilters, setLogFilters] = useState<{ autor_id: string; acao: string; from: string; to: string; limit: number }>({ autor_id: "", acao: "", from: "", to: "", limit: 25 });
+  const { data: logsData } = useQuery({
+    queryKey: ["rdo-logs", rdoId, logFilters],
+    queryFn: () => logsFn({ data: {
+      rdo_id: rdoId,
+      limit: logFilters.limit,
+      offset: 0,
+      autor_id: logFilters.autor_id || null,
+      acao: logFilters.acao || null,
+      from: logFilters.from ? new Date(logFilters.from).toISOString() : null,
+      to: logFilters.to ? new Date(logFilters.to + "T23:59:59").toISOString() : null,
+    } }),
+  });
+  const logs = logsData?.rows ?? [];
+  const logsTotal = logsData?.total ?? 0;
   const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
   const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }) });
   useEffect(() => {
@@ -316,28 +330,68 @@ function RdoDetailPage() {
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
-        <h3 className="font-serif text-lg flex items-center gap-2 mb-3"><History className="h-4 w-4" /> Histórico</h3>
-        {(logs as any[]).length === 0 ? (
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportAuditCsv(logs)}>CSV</Button>
+            <Button size="sm" variant="outline" onClick={() => exportAuditPdf(logs, data?.rdo?.numero ?? rdoId)}>PDF</Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <select className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.acao} onChange={(e) => setLogFilters({ ...logFilters, acao: e.target.value })}>
+            <option value="">Todas ações</option>
+            <option value="criado">Criou</option>
+            <option value="visualizado">Visualizou</option>
+            <option value="editado">Editou</option>
+            <option value="status_alterado">Alterou status</option>
+            <option value="enviado_para_aprovacao">Enviou</option>
+            <option value="aprovado">Aprovou</option>
+            <option value="reprovado">Reprovou</option>
+          </select>
+          <select className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.autor_id} onChange={(e) => setLogFilters({ ...logFilters, autor_id: e.target.value })}>
+            <option value="">Todos usuários</option>
+            {(audit?.rows ?? []).map((r: any) => (
+              <option key={r.user_id} value={r.user_id}>{r.nome ?? r.email ?? r.user_id.slice(0, 8)}</option>
+            ))}
+          </select>
+          <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.from} onChange={(e) => setLogFilters({ ...logFilters, from: e.target.value })} />
+          <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+            value={logFilters.to} onChange={(e) => setLogFilters({ ...logFilters, to: e.target.value })} />
+        </div>
+        {logs.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum evento.</p>
         ) : (
-          <ol className="relative border-l border-border ml-2">
-            {(logs as any[]).map((l) => (
-              <li key={l.id} className="ml-4 pb-3">
-                <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
-                <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
-                <div className="text-sm">
-                  <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
-                  {l.status_anterior && l.status_novo && (
-                    <span className="text-muted-foreground"> · {l.status_anterior} → {l.status_novo}</span>
-                  )}
-                  {l.autor?.nome && <span className="text-muted-foreground"> · {l.autor.nome}</span>}
-                </div>
-                {l.motivo && <div className="text-xs text-muted-foreground mt-1 italic">"{l.motivo}"</div>}
-              </li>
-            ))}
-          </ol>
+          <>
+            <ol className="relative border-l border-border ml-2">
+              {logs.map((l: any) => (
+                <li key={l.id} className="ml-4 pb-3">
+                  <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
+                  <div className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString("pt-BR")}</div>
+                  <div className="text-sm">
+                    <span className="font-medium capitalize">{l.acao.replaceAll("_", " ")}</span>
+                    {l.status_anterior && l.status_novo && (
+                      <span className="text-muted-foreground"> · {l.status_anterior} → {l.status_novo}</span>
+                    )}
+                    {l.autor?.nome && <span className="text-muted-foreground"> · {l.autor.nome}</span>}
+                  </div>
+                  {l.motivo && <div className="text-xs text-muted-foreground mt-1 italic">"{l.motivo}"</div>}
+                </li>
+              ))}
+            </ol>
+            {logs.length < logsTotal && (
+              <div className="mt-3 flex justify-center">
+                <Button size="sm" variant="outline" onClick={() => setLogFilters({ ...logFilters, limit: logFilters.limit + 25 })}>
+                  Carregar mais ({logsTotal - logs.length} restantes)
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </Card>
+
     </div>
   );
 }
@@ -351,3 +405,44 @@ function SectionList({ title, empty, children }: { title: string; empty: string;
     </Card>
   );
 }
+
+function exportAuditCsv(logs: any[]) {
+  const head = ["data_hora", "acao", "usuario", "email", "status_anterior", "status_novo", "motivo"];
+  const body = logs.map((l) => [
+    new Date(l.created_at).toLocaleString("pt-BR"),
+    l.acao,
+    l.autor?.nome ?? "",
+    l.autor?.email ?? "",
+    l.status_anterior ?? "",
+    l.status_novo ?? "",
+    (l.motivo ?? "").replace(/"/g, '""'),
+  ].map((v) => `"${v}"`).join(";"));
+  const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `auditoria-rdo-${Date.now()}.csv`;
+  a.click();
+}
+
+async function exportAuditPdf(logs: any[], numero: string | number) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text(`Auditoria RDO ${numero}`, 14, 16);
+  autoTable(doc, {
+    startY: 22,
+    head: [["Data/Hora", "Ação", "Usuário", "Status", "Motivo"]],
+    body: logs.map((l) => [
+      new Date(l.created_at).toLocaleString("pt-BR"),
+      l.acao,
+      l.autor?.nome ?? l.autor?.email ?? "—",
+      [l.status_anterior, l.status_novo].filter(Boolean).join(" → "),
+      l.motivo ?? "",
+    ]),
+    styles: { fontSize: 8 },
+  });
+  doc.save(`auditoria-rdo-${numero}.pdf`);
+}
+
