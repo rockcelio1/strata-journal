@@ -977,7 +977,7 @@ function NovoRdoPage() {
                           <strong>Etapa {iss.step + 1} · {iss.label}:</strong> {iss.message}
                         </span>
                         {iss.step !== 7 && (
-                          <Button size="sm" variant="outline" onClick={() => { setSubmitError(null); setStepIdx(iss.step); }}>
+                          <Button size="sm" variant="outline" onClick={() => gotoStep(iss.step)}>
                             Corrigir <ArrowRight size={12} className="ml-1" />
                           </Button>
                         )}
@@ -985,6 +985,38 @@ function NovoRdoPage() {
                     ))}
                   </ul>
                 )}
+              </Card>
+            )}
+
+            {save.isPending && (
+              <Card className="p-4 space-y-2">
+                <p className="text-sm font-medium">Enviando RDO…</p>
+                <div className="h-2 w-full bg-muted rounded overflow-hidden">
+                  <div className="h-full bg-brand animate-pulse" style={{ width: "75%" }} />
+                </div>
+                <p className="text-xs text-muted-foreground">Não feche esta tela. Aguardando confirmação do servidor.</p>
+              </Card>
+            )}
+
+            {submitLog.length > 0 && (
+              <Card className="p-4 space-y-2">
+                <h4 className="font-medium text-sm">Histórico de envio</h4>
+                <ul className="space-y-1 max-h-56 overflow-auto text-xs font-mono">
+                  {submitLog.map((l, i) => (
+                    <li key={i} className={cn(
+                      "flex gap-2 items-start border-l-2 pl-2",
+                      l.kind === "ok" && "border-emerald-500 text-emerald-700",
+                      l.kind === "erro" && "border-destructive text-destructive",
+                      l.kind === "offline" && "border-amber-500 text-amber-700",
+                      l.kind === "start" && "border-muted-foreground/40 text-muted-foreground",
+                    )}>
+                      <span className="shrink-0">{new Date(l.at).toLocaleTimeString("pt-BR")}</span>
+                      <span className="uppercase text-[10px] shrink-0">{l.kind}</span>
+                      {l.etapa && <span className="shrink-0">[{l.etapa}]</span>}
+                      <span className="break-all">{l.mensagem}</span>
+                    </li>
+                  ))}
+                </ul>
               </Card>
             )}
           </>
