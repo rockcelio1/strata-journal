@@ -58,6 +58,17 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<{ key: string; x: number; y: number; pinned?: boolean } | null>(null);
   const [spin, setSpin] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Respeita preferência do sistema "reduzir movimento".
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => { setReducedMotion(mq.matches); if (mq.matches) setSpin(false); };
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
   const [, forceTick] = useState(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
@@ -70,20 +81,22 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     if (!dataValid) reportError("dados inválidos", { used, total, deleted });
   }, [used, total, deleted, dataValid]);
 
-  // Auto-rotate 360°
+  // Auto-rotate 360° com throttling (~30fps) e respeito a reduce-motion.
   useEffect(() => {
-    if (!spin) return;
+    if (!spin || reducedMotion) return;
     let raf = 0;
     let last = performance.now();
     const loop = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      setRy((r) => r + dt * 36);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      if (dt >= 1 / 30) {
+        last = now;
+        setRy((r) => (r + dt * 36) % 360);
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [spin]);
+  }, [spin, reducedMotion]);
 
   function armAutoClose() {
     if (tipTimer.current) clearTimeout(tipTimer.current);
@@ -319,9 +332,11 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           type="button"
           onClick={() => setSpin((s) => !s)}
           aria-pressed={spin}
-          className="absolute top-2 left-28 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur"
+          disabled={reducedMotion}
+          title={reducedMotion ? "Desativado pela preferência 'reduzir movimento' do sistema" : undefined}
+          className="absolute top-2 left-28 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {spin ? "Parar giro" : "Girar 360°"}
+          {reducedMotion ? "Movimento reduzido" : spin ? "Parar giro" : "Girar 360°"}
         </button>
         <div className="absolute top-2 right-2 text-[10px] text-white/80 bg-white/10 backdrop-blur px-2 py-1 rounded-md border border-white/20">
           arraste para girar · X {rxNorm.toFixed(0)}° · Y {ryNorm.toFixed(0)}°
