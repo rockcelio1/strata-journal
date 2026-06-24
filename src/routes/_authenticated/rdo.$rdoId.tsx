@@ -646,11 +646,11 @@ function RdoDetailPage() {
 }
 
 function ExclusoesPanel({ logs }: { logs: any[] }) {
-  const exclusoes = React.useMemo(
+  const exclusoes = useMemo(
     () => logs.filter((l: any) => l.acao === "rascunho_excluido" || /excluid/i.test(l.acao ?? "")),
     [logs],
   );
-  const usuarios = React.useMemo(() => {
+  const usuarios = useMemo(() => {
     const m = new Map<string, string>();
     for (const l of exclusoes) {
       const id = l.autor_id ?? l.autor?.id;
@@ -658,12 +658,12 @@ function ExclusoesPanel({ logs }: { logs: any[] }) {
     }
     return Array.from(m.entries());
   }, [exclusoes]);
-  const [filtroUser, setFiltroUser] = React.useState("");
-  const [from, setFrom] = React.useState("");
-  const [to, setTo] = React.useState("");
-  const [page, setPage] = React.useState(1);
+  const [filtroUser, setFiltroUser] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
   const pageSize = 5;
-  const filtradas = React.useMemo(() => {
+  const filtradas = useMemo(() => {
     return exclusoes.filter((l: any) => {
       const id = l.autor_id ?? l.autor?.id ?? "";
       if (filtroUser && id !== filtroUser) return false;
@@ -673,7 +673,7 @@ function ExclusoesPanel({ logs }: { logs: any[] }) {
       return true;
     });
   }, [exclusoes, filtroUser, from, to]);
-  React.useEffect(() => { setPage(1); }, [filtroUser, from, to]);
+  useEffect(() => { setPage(1); }, [filtroUser, from, to]);
   if (exclusoes.length === 0) return null;
   const totalPages = Math.max(1, Math.ceil(filtradas.length / pageSize));
   const slice = filtradas.slice((page - 1) * pageSize, page * pageSize);
