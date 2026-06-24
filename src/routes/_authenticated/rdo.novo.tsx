@@ -29,6 +29,9 @@ import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
+import { PhotoEditor } from "@/components/rdo/PhotoEditor";
+import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
+import { createDraftChannel } from "@/lib/draft-channel";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
@@ -91,8 +94,10 @@ function NovoRdoPage() {
   const [fotos, setFotos] = useState<File[]>([]);
   const [legendas, setLegendas] = useState<string[]>([]);
   const [cameraOpen, setCameraOpen] = useState(false);
-  type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback";
-  const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase" }>>([]);
+  const [editorIdx, setEditorIdx] = useState<number | null>(null);
+  const [lowResIdxs, setLowResIdxs] = useState<number[]>([]);
+  type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback" | "aguardando-rede";
+  const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase"; attempt?: number }>>([]);
   const [uploadHistory, setUploadHistory] = useState<Array<{ at: string; name: string; status: UpStatus; provider?: string; error?: string }>>([]);
 
   const [compressing, setCompressing] = useState(false);
@@ -132,9 +137,56 @@ function NovoRdoPage() {
   }, [me?.profile?.id]);
   useEffect(() => {
     if (!draftLoaded) return;
-    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos }); }, 400);
+    const t = setTimeout(() => {
+      saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos });
+      channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: fotos.length });
+    }, 400);
     return () => clearTimeout(t);
   }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
+
+  // ---- BroadcastChannel: sincroniza rascunho entre abas
+  const channelRef = useRef<ReturnType<typeof createDraftChannel> | null>(null);
+  useEffect(() => {
+    if (!me?.profile?.id) return;
+    const ch = createDraftChannel(draftKey);
+    channelRef.current = ch;
+    ch.post({ type: "claim", tabId: ch.tabId });
+    const off = ch.on(async (m) => {
+      if (m.tabId === ch.tabId) return;
+      if (m.type === "claim") {
+        ch.post({ type: "ack", tabId: ch.tabId });
+        toast.warning("Outra aba está editando este RDO. Mudanças serão mescladas pela aba mais recente.");
+      } else if (m.type === "saved") {
+        const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number; fotos?: Blob[] }>(draftKey);
+        if (!d?.value) return;
+        setForm(d.value.form);
+        if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
+        if (Array.isArray(d.value.fotos)) {
+          setFotos(d.value.fotos.map((b, i) =>
+            b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
+          ));
+        }
+      }
+    });
+    return () => { off(); ch.close(); channelRef.current = null; };
+  }, [me?.profile?.id, draftKey]);
+
+  // ---- Detecta fotos de baixa resolução
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const low: number[] = [];
+      for (let i = 0; i < fotos.length; i++) {
+        try {
+          const { width, height } = await getImageDimensions(fotos[i]);
+          if (Math.min(width, height) < MIN_IMAGE_DIM) low.push(i);
+        } catch { /* ignora */ }
+      }
+      if (!cancelled) setLowResIdxs(low);
+    })();
+    return () => { cancelled = true; };
+  }, [fotos]);
+
 
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
@@ -236,6 +288,18 @@ function NovoRdoPage() {
     const pushHist = (entry: { name: string; status: UpStatus; provider?: string; error?: string }) =>
       setUploadHistory((h) => [{ at: new Date().toISOString(), ...entry }, ...h].slice(0, 50));
 
+    const waitOnline = async (label: string, idx: number) => {
+      if (typeof navigator !== "undefined" && navigator.onLine) return;
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "aguardando-rede" } : x));
+      toast.warning(`Sem conexão — aguardando rede para reenviar "${label}"`);
+      await new Promise<void>((resolve) => {
+        const onUp = () => { window.removeEventListener("online", onUp); resolve(); };
+        window.addEventListener("online", onUp);
+      });
+    };
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const MAX_ATTEMPTS = 4;
+
     for (let idx = 0; idx < all.length; idx++) {
       const a = all[idx];
       const size = (a.file as any).size ?? 0;
@@ -244,7 +308,9 @@ function NovoRdoPage() {
       setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "processando" } : x));
       let uploaded = false;
       let lastErr: any;
-      for (let attempt = 0; attempt < 2 && !uploaded; attempt++) {
+      for (let attempt = 0; attempt < MAX_ATTEMPTS && !uploaded; attempt++) {
+        await waitOnline(a.name, idx);
+        setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "enviando", attempt: attempt + 1 } : x));
         try {
           await uploadOneDriveFn({ data: {
             rdo_id: rdoId, nome: a.name, mime_type: a.mime, tamanho_bytes: size,
@@ -255,6 +321,7 @@ function NovoRdoPage() {
           lastErr = e;
           console.warn(`[rdo] OneDrive tentativa ${attempt + 1} falhou:`, e?.message);
           pushHist({ name: a.name, status: "erro", provider: "onedrive", error: `tentativa ${attempt + 1}: ${e?.message ?? "erro"}` });
+          if (attempt < MAX_ATTEMPTS - 1) await sleep(500 * Math.pow(2, attempt));
         }
       }
       if (uploaded) {
@@ -263,21 +330,30 @@ function NovoRdoPage() {
       } else {
         console.error("[rdo] OneDrive falhou após retentativas, usando Supabase Storage:", lastErr?.message);
         toast.warning("OneDrive indisponível, usando armazenamento alternativo", { description: lastErr?.message?.slice(0, 200) });
-        try {
-          const safe = a.name.replace(/[^\w.\-]+/g, "_");
-          const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
-          const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
-          if (up.error) throw up.error;
-          await registrarFn({ data: {
-            rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
-            storage_path: path, mime_type: a.mime, tamanho_bytes: size,
-          }});
-          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
-          pushHist({ name: a.name, status: "fallback", provider: "supabase" });
-        } catch (e: any) {
-          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: e?.message } : x));
-          pushHist({ name: a.name, status: "erro", provider: "supabase", error: e?.message });
-          throw e;
+        let sbDone = false; let sbErr: any;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS && !sbDone; attempt++) {
+          await waitOnline(a.name, idx);
+          try {
+            const safe = a.name.replace(/[^\w.\-]+/g, "_");
+            const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
+            const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
+            if (up.error) throw up.error;
+            await registrarFn({ data: {
+              rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+              storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+            }});
+            setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
+            pushHist({ name: a.name, status: "fallback", provider: "supabase" });
+            sbDone = true;
+          } catch (e: any) {
+            sbErr = e;
+            if (attempt < MAX_ATTEMPTS - 1) await sleep(500 * Math.pow(2, attempt));
+          }
+        }
+        if (!sbDone) {
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: sbErr?.message } : x));
+          pushHist({ name: a.name, status: "erro", provider: "supabase", error: sbErr?.message });
+          throw sbErr;
         }
       }
     }
@@ -354,7 +430,7 @@ function NovoRdoPage() {
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
   const canNext =
     stepIdx === 0 ? !!form.obra_id
-    : stepIdx === 6 ? fotosSemLegenda === 0
+    : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
     : true;
   const isLast = stepIdx === steps.length - 1;
 
@@ -649,6 +725,20 @@ function NovoRdoPage() {
                   {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
                 </div>
               )}
+              {lowResIdxs.length > 0 && (
+                <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive px-3 py-2 text-xs">
+                  {lowResIdxs.length} foto(s) com baixa resolução (mínimo {MIN_IMAGE_DIM}px no menor lado). Tire novamente ou substitua antes de avançar.
+                </div>
+              )}
+              <PhotoEditor
+                open={editorIdx !== null}
+                file={editorIdx !== null ? fotos[editorIdx] : null}
+                onClose={() => setEditorIdx(null)}
+                onSave={(f) => {
+                  if (editorIdx === null) return;
+                  setFotos((p) => p.map((x, j) => j === editorIdx ? f : x));
+                }}
+              />
               {fotos.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
@@ -700,8 +790,14 @@ function NovoRdoPage() {
                             ><ArrowDown size={12} /></button>
                           </div>
                         </div>
-                        <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                        <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
+                          <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground flex items-center justify-between">
+                          <span>{Math.round(f.size / 1024)} KB</span>
+                          {lowResIdxs.includes(i) && <span className="text-destructive">⚠ baixa resolução</span>}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -720,6 +816,7 @@ function NovoRdoPage() {
                       : 100;
                     const color =
                       u.status === "erro" ? "bg-destructive"
+                      : u.status === "aguardando-rede" ? "bg-amber-400"
                       : u.status === "fallback" ? "bg-amber-500"
                       : u.status === "feito" ? "bg-emerald-500"
                       : "bg-brand";
@@ -727,7 +824,9 @@ function NovoRdoPage() {
                       <div key={i} className="text-[11px]">
                         <div className="flex justify-between gap-2">
                           <span className="truncate flex-1">{u.name}</span>
-                          <span className="text-muted-foreground">{u.status}{u.provider ? ` · ${u.provider}` : ""}</span>
+                          <span className="text-muted-foreground">
+                            {u.status}{u.attempt && u.attempt > 1 ? ` (tentativa ${u.attempt})` : ""}{u.provider ? ` · ${u.provider}` : ""}
+                          </span>
                         </div>
                         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full transition-all", color)} style={{ width: `${pct}%` }} />
