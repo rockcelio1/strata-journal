@@ -645,6 +645,36 @@ function NovoRdoPage() {
                 </Button>
               </div>
             </div>
+
+            {/* CEP manual + detecção automática */}
+            <div className="border border-border rounded-md p-3 bg-muted/20 space-y-2">
+              <Label className="text-xs">Consultar clima por CEP</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  inputMode="numeric"
+                  placeholder="00000-000"
+                  maxLength={9}
+                  value={cepInput}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    setCepInput(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
+                  }}
+                  className="sm:max-w-[160px]"
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || !cepInput} onClick={importarClimaPorCep}>
+                    <CloudSun size={16} className="mr-1" /> Consultar pelo CEP
+                  </Button>
+                  <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
+                    <MapPin size={16} className="mr-1" /> {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Digite o CEP manualmente ou use a detecção automática (geolocalização + IA de reverse-geocoding).
+              </p>
+            </div>
+
             {climaErro && (
               <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
                 {climaErro}
