@@ -134,7 +134,7 @@ function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">Indicadores em tempo real da operação.</p>
       </header>
 
-      <Card className="p-3 sm:p-4 mb-4">
+      <Card className="dash-card p-3 sm:p-4 mb-4">
         <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
           <SlidersHorizontal className="h-4 w-4" /> Filtro avançado
           {filtroAtivo && filtros && (
