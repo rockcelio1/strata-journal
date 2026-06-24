@@ -278,7 +278,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
               transformStyle: "preserve-3d",
             }}
           />
-          {bars.map((b) => {
+          {bars.map((b, barIndex) => {
             const h = Math.max(12, (b.pct / 100) * 210);
             const isActive = active === b.key;
             return (
@@ -300,7 +300,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
                     setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
                     armAutoClose();
                   } catch (err) {
-                    reportError("hover error", { key: b.key, value: b.value, err: String(err) });
+                    reportError("hover error", { value: b.value, err: String(err) }, { chartId, empresa, barIndex, barKey: b.key });
                   }
                 }}
                 onPointerLeave={(e) => {
