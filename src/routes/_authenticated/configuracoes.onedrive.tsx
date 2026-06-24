@@ -2,9 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle } from "lucide-react";
+import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle, ExternalLink, HardDrive } from "lucide-react";
 import { toast } from "sonner";
-import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics } from "@/lib/onedrive.functions";
+import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
+import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
+
+const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
+const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
+const TOTAL_QUOTA_HINT = 1024 * 1024 * 1024 * 1024; // 1 TB
 
 export const Route = createFileRoute("/_authenticated/configuracoes/onedrive")({
   component: OneDriveSettings,
