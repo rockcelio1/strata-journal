@@ -28,15 +28,47 @@ export function classificaClima(codigo: number): "ensolarado" | "nublado" | "chu
   return "nublado";
 }
 
-export async function fetchPosicao(): Promise<{ latitude: number; longitude: number }> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocalização indisponível neste dispositivo"));
-    navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
-      (e) => reject(new Error(`Não foi possível obter sua localização: ${e.message}`)),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  });
+export async function fetchPosicao(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    throw new Error("Geolocalização indisponível neste dispositivo. Abra em um dispositivo com GPS.");
+  }
+  // Tenta verificar o estado da permissão antes (quando suportado)
+  try {
+    const perm = await (navigator as any).permissions?.query?.({ name: "geolocation" as PermissionName });
+    if (perm?.state === "denied") {
+      throw new Error("Permissão de localização negada. Ative o GPS e libere a localização para este site nas configurações do navegador.");
+    }
+  } catch { /* permissions API ausente: segue */ }
+
+  const tentar = (opts: PositionOptions) =>
+    new Promise<{ latitude: number; longitude: number; accuracy: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude, accuracy: p.coords.accuracy }),
+        (e) => reject(e),
+        opts,
+      );
+    });
+
+  try {
+    // 1ª tentativa: alta precisão (GPS), sem cache
+    return await tentar({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  } catch (e: any) {
+    // PERMISSION_DENIED = 1, POSITION_UNAVAILABLE = 2, TIMEOUT = 3
+    if (e?.code === 1) {
+      throw new Error("Permissão de localização negada. Ative o GPS e permita o acesso à localização para este site.");
+    }
+    if (e?.code === 2) {
+      throw new Error("GPS indisponível. Ligue o GPS do celular (Configurações → Localização) e tente novamente em ambiente com sinal.");
+    }
+    // Timeout → tenta de novo aceitando posição menos precisa/em cache
+    try {
+      return await tentar({ enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
+    } catch (e2: any) {
+      if (e2?.code === 1) throw new Error("Permissão de localização negada. Ative o GPS e permita o acesso à localização.");
+      if (e2?.code === 2) throw new Error("GPS indisponível. Ligue o GPS do celular e tente novamente.");
+      throw new Error("Tempo esgotado ao obter sua localização. Verifique se o GPS está ligado e tente novamente.");
+    }
+  }
 }
 
 // ----------------- Cache + retentativa -----------------
@@ -237,14 +269,33 @@ export async function fetchPrevisao5DiasPorCep(cep: string): Promise<{ local: st
   return { ...prev, cep: info };
 }
 
-// AI-assisted CEP detection: tries geolocation → reverse-geocode (Nominatim) → extract CEP.
+// Detecta CEP via geolocalização + reverse-geocoding.
+// Estratégia: 1) ViaCEP (BR) com fallback para BrasilAPI, 2) Nominatim global.
 export async function detectarCepAutomaticamente(): Promise<CepInfo> {
-  let pos: { latitude: number; longitude: number };
+  let pos: { latitude: number; longitude: number; accuracy: number };
   try {
     pos = await fetchPosicao();
   } catch (e: any) {
-    throw new WeatherError("GEOLOCALIZACAO", e?.message ?? "Não foi possível obter sua localização.");
+    throw new WeatherError("GEOLOCALIZACAO", e?.message ?? "Não foi possível obter sua localização. Ligue o GPS e permita o acesso à localização.");
   }
+
+  // 1) BrasilAPI reverse — bem preciso para BR, sem rate-limit do Nominatim
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(
+      `https://brasilapi.com.br/api/cep/v2/reverse?lat=${pos.latitude}&lng=${pos.longitude}`,
+      { signal: ctrl.signal },
+    ).catch(() => null);
+    clearTimeout(t);
+    if (r && r.ok) {
+      const j = await r.json().catch(() => null);
+      const cep: string | undefined = j?.cep ?? j?.[0]?.cep;
+      if (cep) return fetchCepInfo(cep);
+    }
+  } catch { /* segue para Nominatim */ }
+
+  // 2) Nominatim como fallback
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}&addressdetails=1&zoom=18&accept-language=pt-BR`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
@@ -253,7 +304,7 @@ export async function detectarCepAutomaticamente(): Promise<CepInfo> {
     r = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
   } catch (e: any) {
     if (e?.name === "AbortError") throw new WeatherError("NOMINATIM_TIMEOUT", "Tempo esgotado ao consultar o serviço de geolocalização (Nominatim).");
-    throw new WeatherError("NOMINATIM_ERRO", "Falha ao contatar o serviço de geolocalização (Nominatim). Verifique sua conexão.");
+    throw new WeatherError("NOMINATIM_ERRO", "Falha ao contatar o serviço de geolocalização. Verifique sua conexão.");
   } finally {
     clearTimeout(timer);
   }
@@ -261,7 +312,7 @@ export async function detectarCepAutomaticamente(): Promise<CepInfo> {
   if (!r.ok) throw new WeatherError("NOMINATIM_ERRO", `Nominatim retornou erro (${r.status}). Tente novamente.`, r.status);
   const j = await r.json().catch(() => null);
   const postcode: string | undefined = j?.address?.postcode;
-  if (!postcode) throw new WeatherError("NOMINATIM_SEM_CEP", "Nenhum CEP encontrado para sua localização atual.");
+  if (!postcode) throw new WeatherError("NOMINATIM_SEM_CEP", "Nenhum CEP encontrado para sua localização atual. Verifique o sinal do GPS.");
   return fetchCepInfo(postcode);
 }
 
