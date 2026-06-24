@@ -248,23 +248,32 @@ function RdoDetailPage() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="text-destructive border-destructive" disabled={excluir.isPending}>
-                  <Trash2 className="h-4 w-4 mr-1" />Excluir rascunho
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {excluir.isPending ? "Excluindo…" : "Excluir rascunho"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir RDO rascunho?</AlertDialogTitle>
+                  <AlertDialogTitle>Excluir rascunho permanentemente?</AlertDialogTitle>
                 </AlertDialogHeader>
-                <p className="text-sm text-muted-foreground">
-                  Esta ação é permanente. Anexos e assinaturas vinculados serão removidos.
-                </p>
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>
+                    O rascunho <strong>RDO #{r.numero}</strong> será removido do sistema
+                    e <strong>não poderá ser recuperado</strong> pela interface.
+                  </p>
+                  <p>
+                    A exclusão fica registrada no log de auditoria (autor, data e ação)
+                    para fins de rastreabilidade e conformidade.
+                  </p>
+                </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => excluir.mutate()}
+                    onClick={(e) => { e.preventDefault(); excluir.mutate(); }}
+                    disabled={excluir.isPending}
                     className="bg-destructive text-destructive-foreground"
                   >
-                    Excluir
+                    {excluir.isPending ? "Excluindo…" : "Excluir permanentemente"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
