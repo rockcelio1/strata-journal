@@ -18,6 +18,7 @@ import { rdoStatusMeta } from "@/components/status";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
+import { fuzzyFilter, normalizeForSearch, fuzzyScore } from "@/lib/fuzzy-search";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/rdo/")({
