@@ -29,6 +29,7 @@ export const listRdos = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("rdos")
       .select("id, numero, data, status, created_at, obras(id, nome)")
+      .is("deleted_at", null)
       .order("data", { ascending: false });
     if (error) throw error;
     return data;
@@ -47,6 +48,7 @@ export const getRdo = createServerFn({ method: "GET" })
     ]);
     if (rdo.error) throw rdo.error;
     if (!rdo.data) throw new Error("RDO não encontrado");
+    if ((rdo.data as any).deleted_at) throw new Error("Este RDO foi excluído");
     return {
       rdo: rdo.data,
       atividades: ativ.data ?? [],
@@ -129,8 +131,20 @@ export const deleteRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("rdos").delete().eq("id", data.id);
-    if (error) throw error;
+    const { error } = await context.supabase.rpc("soft_delete_rdo", { _rdo_id: data.id });
+    if (error) {
+      const msg = error.message || "";
+      if (error.code === "42501" || /permiss/i.test(msg)) {
+        throw new Error("Você não tem permissão para excluir este rascunho. Apenas o autor, administradores ou master podem excluir.");
+      }
+      if (error.code === "P0002" || /não encontrado/i.test(msg)) {
+        throw new Error("RDO não encontrado ou já foi excluído.");
+      }
+      if (/rascunho/i.test(msg)) {
+        throw new Error("Apenas RDOs em rascunho podem ser excluídos.");
+      }
+      throw new Error(`Falha ao excluir rascunho: ${msg}`);
+    }
     return { ok: true };
   });
 

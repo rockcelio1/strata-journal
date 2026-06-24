@@ -39,8 +39,8 @@ export const getObra = createServerFn({ method: "GET" })
     }
 
     const [rdosRes, rdoIdsRes] = await Promise.all([
-      context.supabase.from("rdos").select("id, numero, data, status").eq("obra_id", data.id).order("data", { ascending: false }).limit(20),
-      context.supabase.from("rdos").select("id").eq("obra_id", data.id),
+      context.supabase.from("rdos").select("id, numero, data, status").eq("obra_id", data.id).is("deleted_at", null).order("data", { ascending: false }).limit(20),
+      context.supabase.from("rdos").select("id").eq("obra_id", data.id).is("deleted_at", null),
     ]);
     const rdoIds = (rdoIdsRes.data ?? []).map((r: any) => r.id);
 

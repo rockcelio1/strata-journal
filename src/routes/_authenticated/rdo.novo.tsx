@@ -22,7 +22,7 @@ import {
   ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
-import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
+import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, fetchClimaPorCep, fetchPrevisao5DiasPorCep, detectarCepAutomaticamente, normalizeCep, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
 import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
@@ -107,6 +107,8 @@ function NovoRdoPage() {
   const [previsao5, setPrevisao5] = useState<DiaPrevisao[] | null>(null);
   const [previsaoLocal, setPrevisaoLocal] = useState<string | null>(null);
   const [previsaoAt, setPrevisaoAt] = useState<string | null>(null);
+  const [cepInput, setCepInput] = useState("");
+  const [cepDetecting, setCepDetecting] = useState(false);
   const climaLoading = climaStatus === "loading";
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
@@ -255,6 +257,46 @@ function NovoRdoPage() {
 
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
+
+  async function importarClimaPorCep() {
+    const norm = normalizeCep(cepInput);
+    if (!norm) { toast.error("Informe um CEP válido (8 dígitos)."); return; }
+    setCepInput(norm);
+    setClimaStatus("loading"); setClimaErro(null);
+    try {
+      const snap = await fetchClimaPorCep(norm);
+      const prev = await fetchPrevisao5DiasPorCep(norm);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima pelo CEP";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
+  }
+
+  async function detectarCep() {
+    setCepDetecting(true); setClimaErro(null);
+    try {
+      const info = await detectarCepAutomaticamente();
+      setCepInput(info.cep);
+      toast.success(`CEP detectado: ${info.cep} — ${info.localidade ?? ""}/${info.uf ?? ""}`);
+      // Já consulta o clima automaticamente para esse CEP
+      setClimaStatus("loading");
+      const snap = await fetchClimaPorCep(info.cep);
+      const prev = await fetchPrevisao5DiasPorCep(info.cep);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível detectar o CEP automaticamente";
+      setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
+    } finally {
+      setCepDetecting(false);
+    }
+  }
+
 
   async function onAddFotos(files: FileList) {
     // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
@@ -603,6 +645,36 @@ function NovoRdoPage() {
                 </Button>
               </div>
             </div>
+
+            {/* CEP manual + detecção automática */}
+            <div className="border border-border rounded-md p-3 bg-muted/20 space-y-2">
+              <Label className="text-xs">Consultar clima por CEP</Label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  inputMode="numeric"
+                  placeholder="00000-000"
+                  maxLength={9}
+                  value={cepInput}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    setCepInput(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
+                  }}
+                  className="sm:max-w-[160px]"
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || !cepInput} onClick={importarClimaPorCep}>
+                    <CloudSun size={16} className="mr-1" /> Consultar pelo CEP
+                  </Button>
+                  <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
+                    <MapPin size={16} className="mr-1" /> {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Digite o CEP manualmente ou use a detecção automática (geolocalização + IA de reverse-geocoding).
+              </p>
+            </div>
+
             {climaErro && (
               <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
                 {climaErro}

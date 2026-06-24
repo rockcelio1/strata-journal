@@ -152,6 +152,61 @@ export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnap
   return { ...snap, local: g.nome };
 }
 
+// ----------------- CEP (ViaCEP) -----------------
+export interface CepInfo {
+  cep: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+}
+
+export function normalizeCep(input: string): string | null {
+  const digits = (input ?? "").replace(/\D/g, "");
+  if (digits.length !== 8) return null;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+export async function fetchCepInfo(cep: string): Promise<CepInfo> {
+  const norm = normalizeCep(cep);
+  if (!norm) throw new Error("CEP inválido. Use o formato 00000-000.");
+  const r = await fetchComRetry(`https://viacep.com.br/ws/${norm.replace("-", "")}/json/`);
+  const j = await r.json();
+  if (!j || j.erro) throw new Error("CEP não encontrado nos correios.");
+  return { cep: norm, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
+}
+
+function enderecoFromCep(info: CepInfo): string {
+  return [info.logradouro, info.bairro, info.localidade && info.uf ? `${info.localidade} - ${info.uf}` : info.localidade, info.cep]
+    .filter(Boolean).join(", ");
+}
+
+export async function fetchClimaPorCep(cep: string): Promise<ClimaSnapshot & { local: string; cep: CepInfo }> {
+  const info = await fetchCepInfo(cep);
+  const snap = await fetchClimaPorEndereco(enderecoFromCep(info));
+  return { ...snap, cep: info };
+}
+
+export async function fetchPrevisao5DiasPorCep(cep: string): Promise<{ local: string; dias: DiaPrevisao[]; cep: CepInfo }> {
+  const info = await fetchCepInfo(cep);
+  const prev = await fetchPrevisao5DiasPorEndereco(enderecoFromCep(info));
+  return { ...prev, cep: info };
+}
+
+// AI-assisted CEP detection: tries geolocation → reverse-geocode (Nominatim) → extract CEP.
+export async function detectarCepAutomaticamente(): Promise<CepInfo> {
+  const pos = await fetchPosicao();
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}&addressdetails=1&zoom=18&accept-language=pt-BR`;
+  const r = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!r.ok) throw new Error("Não foi possível identificar o CEP da sua localização.");
+  const j = await r.json();
+  const postcode: string | undefined = j?.address?.postcode;
+  if (!postcode) throw new Error("Nenhum CEP encontrado para sua localização atual.");
+  return fetchCepInfo(postcode);
+}
+
+
+
 // ----------------- Previsão diária (5 dias úteis: seg-sex) -----------------
 export interface DiaPrevisao {
   data: string;          // YYYY-MM-DD
