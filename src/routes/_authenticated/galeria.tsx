@@ -242,14 +242,20 @@ function GaleriaPage() {
   );
 }
 
-function Stat({ label, value, icon: Icon }: { label: string; value: number; icon: any }) {
+function Stat({ label, value, icon: Icon, active, onClick }: { label: string; value: number; icon: any; active?: boolean; onClick?: () => void }) {
   return (
-    <Card className="p-3 flex items-center gap-3">
-      <div className="h-9 w-9 rounded-md bg-brand/10 text-brand grid place-items-center"><Icon size={18} /></div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`facom-glow w-full text-left rounded-lg border bg-card p-3 flex items-center gap-3 transition-colors ${active ? "border-brand ring-2 ring-brand/40" : "border-border hover:bg-accent/40"}`}
+    >
+      <div className={`h-9 w-9 rounded-md grid place-items-center ${active ? "bg-brand text-brand-foreground" : "bg-brand/10 text-brand"}`}><Icon size={18} /></div>
       <div>
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-xl font-semibold tabular-nums">{value}</div>
       </div>
-    </Card>
+    </button>
   );
 }
+
