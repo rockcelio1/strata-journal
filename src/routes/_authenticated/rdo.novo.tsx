@@ -258,6 +258,46 @@ function NovoRdoPage() {
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
+  async function importarClimaPorCep() {
+    const norm = normalizeCep(cepInput);
+    if (!norm) { toast.error("Informe um CEP válido (8 dígitos)."); return; }
+    setCepInput(norm);
+    setClimaStatus("loading"); setClimaErro(null);
+    try {
+      const snap = await fetchClimaPorCep(norm);
+      const prev = await fetchPrevisao5DiasPorCep(norm);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível obter o clima pelo CEP";
+      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+    }
+  }
+
+  async function detectarCep() {
+    setCepDetecting(true); setClimaErro(null);
+    try {
+      const info = await detectarCepAutomaticamente();
+      setCepInput(info.cep);
+      toast.success(`CEP detectado: ${info.cep} — ${info.localidade ?? ""}/${info.uf ?? ""}`);
+      // Já consulta o clima automaticamente para esse CEP
+      setClimaStatus("loading");
+      const snap = await fetchClimaPorCep(info.cep);
+      const prev = await fetchPrevisao5DiasPorCep(info.cep);
+      setClimaInfo(snap); applyTurnoClima(snap.codigo);
+      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+      setClimaStatus("success");
+    } catch (e: any) {
+      const msg = e?.message ?? "Não foi possível detectar o CEP automaticamente";
+      setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
+    } finally {
+      setCepDetecting(false);
+    }
+  }
+
+
   async function onAddFotos(files: FileList) {
     // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
     const out: File[] = Array.from(files);
