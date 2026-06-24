@@ -113,6 +113,16 @@ function RdoDetailPage() {
     onSuccess: () => { toast.success("Anexo removido"); qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }); },
     onError: (e: any) => toast.error(`Falha ao remover anexo: ${e.message}. Verifique permissões no OneDrive/Storage.`),
   });
+  const excluir = useMutation({
+    mutationFn: () => deleteFn({ data: { id: rdoId } }),
+    onSuccess: () => {
+      toast.success("RDO excluído");
+      qc.invalidateQueries({ queryKey: ["rdos"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      navigate({ to: "/rdo" });
+    },
+    onError: (e: any) => toast.error(`Falha ao excluir: ${e.message}`),
+  });
 
   const fileToBase64 = (f: File) => new Promise<string>((resolve, reject) => {
     const r = new FileReader();
