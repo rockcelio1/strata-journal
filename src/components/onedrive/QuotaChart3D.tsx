@@ -229,18 +229,30 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         {(() => {
           if (!tip) return null;
           const b = bars.find((x) => x.key === tip.key);
-          if (!b) return null;
-          const stageW = stageRef.current?.clientWidth ?? 0;
-          const stageH = stageRef.current?.clientHeight ?? 0;
-          const tipW = Math.min(260, Math.max(180, stageW - 24));
-          const tipH = 130;
+          if (!b) {
+            console.warn("[QuotaChart3D] tooltip key sem barra correspondente", tip.key);
+            return null;
+          }
+          if (!Number.isFinite(b.value) || !Number.isFinite(b.pct)) {
+            console.warn("[QuotaChart3D] valores inválidos para tooltip", { key: b.key, value: b.value, pct: b.pct });
+            return null;
+          }
+          const rect = stageRef.current?.getBoundingClientRect();
+          const stageW = rect?.width ?? stageRef.current?.clientWidth ?? 0;
+          const stageH = rect?.height ?? stageRef.current?.clientHeight ?? 0;
+          const tipW = Math.min(260, Math.max(160, stageW - 24));
+          const tipH = Math.min(180, Math.max(110, stageH * 0.55));
+          // Clamp considerando bordas reais; recalculado a cada render (resize/zoom).
           let x = tip.x + 14;
           let y = tip.y + 14;
-          if (x + tipW > stageW - 8) x = Math.max(8, tip.x - tipW - 14);
-          if (y + tipH > stageH - 8) y = Math.max(8, tip.y - tipH - 14);
+          if (x + tipW > stageW - 8) x = tip.x - tipW - 14;
+          if (y + tipH > stageH - 8) y = tip.y - tipH - 14;
+          x = Math.max(8, Math.min(x, Math.max(8, stageW - tipW - 8)));
+          y = Math.max(8, Math.min(y, Math.max(8, stageH - tipH - 8)));
           return (
             <div
-              className="pointer-events-none absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md"
+              ref={tipRef}
+              className={`absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md ${tip.pinned ? "" : "pointer-events-none"}`}
               style={{
                 left: x,
                 top: y,
@@ -256,10 +268,18 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 <span className="h-3 w-3 rounded-full" style={{ background: "#fff", boxShadow: `0 0 8px #fff` }} />
                 <span className="font-bold text-sm">{b.label}</span>
                 <span className="ml-auto font-bold">{b.pct.toFixed(1)}%</span>
+                {tip.pinned && (
+                  <button
+                    type="button"
+                    aria-label="Fechar"
+                    onClick={(e) => { e.stopPropagation(); setTip(null); }}
+                    className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
+                  >×</button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 opacity-95">
                 <span className="opacity-80">Tamanho</span><span className="font-semibold text-right">{fmtBytes(b.value)}</span>
-                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{b.value.toLocaleString("pt-BR")}</span>
+                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{Number.isFinite(b.value) ? b.value.toLocaleString("pt-BR") : "—"}</span>
                 <span className="opacity-80">Total</span><span className="font-semibold text-right">{fmtBytes(total)}</span>
               </div>
               <div className="mt-1 text-[10px] opacity-90 italic">
@@ -272,6 +292,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           );
         })()}
       </div>
+
 
 
       {/* Detalhes da barra ativa */}
