@@ -256,7 +256,7 @@ function DashboardPage() {
 
       <div className="grid md:grid-cols-12 gap-3 sm:gap-4">
         {/* Avanço por obra */}
-        <Card className="md:col-span-8 p-4 sm:p-6">
+        <Card className="dash-card md:col-span-8 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl">Avanço por obra</h2>
             <Link to="/obras" className="text-xs text-muted-foreground hover:underline flex items-center gap-1">
