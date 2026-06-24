@@ -201,6 +201,8 @@ function RdoDetailPage() {
   const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
   const canManageAccess = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master" || x === "gestor_acessos");
   const isAuthor = r.autor?.id === me?.profile?.id;
+  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
+  const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
