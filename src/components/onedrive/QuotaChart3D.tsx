@@ -15,9 +15,19 @@ type Props = {
   deleted?: number;
 };
 
+type BarDef = {
+  key: string;
+  label: string;
+  value: number;
+  pct: number;
+  color: string;       // cor base, vívida
+  highlight: string;   // brilho/topo
+  shadow: string;      // sombra colorida (glow)
+};
+
 /**
- * 3D bar chart (CSS perspective) — não anima sozinho.
- * Arraste com o mouse (clique e segure) para girar e ver de todos os lados.
+ * Gráfico 3D em barras (CSS perspective). Arraste para girar 360° em qualquer eixo,
+ * inclusive a legenda dentro do palco (fica solidária ao giro).
  */
 export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const safeTotal = Math.max(total, 1);
@@ -38,77 +48,124 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     if (!drag.current) return;
     const dx = e.clientX - drag.current.x;
     const dy = e.clientY - drag.current.y;
-    setRy(drag.current.ry + dx * 0.5);
-    setRx(Math.max(-80, Math.min(20, drag.current.rx - dy * 0.5)));
+    // 360° livre nos dois eixos
+    setRy(drag.current.ry + dx * 0.6);
+    setRx(drag.current.rx - dy * 0.6);
   }
   function onUp(e: React.PointerEvent) {
     drag.current = null;
     try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
   }
+  function resetView() { setRx(-18); setRy(-28); }
 
-  const bars = [
-    { key: "used", label: "Usado", value: used, pct: pctUsed, color: "#2563eb" },
-    { key: "free", label: "Disponível", value: free, pct: pctFree, color: "#10b981" },
-    { key: "deleted", label: "Lixeira", value: deleted, pct: pctDel, color: "#f59e0b" },
-    { key: "total", label: "Total", value: total, pct: 100, color: "#6b7280" },
+  const bars: BarDef[] = [
+    { key: "used",    label: "Usado",      value: used,    pct: pctUsed, color: "#2563eb", highlight: "#60a5fa", shadow: "rgba(37,99,235,0.55)" },
+    { key: "free",    label: "Disponível", value: free,    pct: pctFree, color: "#10b981", highlight: "#6ee7b7", shadow: "rgba(16,185,129,0.55)" },
+    { key: "deleted", label: "Lixeira",    value: deleted, pct: pctDel,  color: "#f59e0b", highlight: "#fcd34d", shadow: "rgba(245,158,11,0.55)" },
+    { key: "total",   label: "Total",      value: total,   pct: 100,     color: "#8b5cf6", highlight: "#c4b5fd", shadow: "rgba(139,92,246,0.55)" },
   ];
+
+  const ryNorm = ((ry % 360) + 360) % 360;
+  const rxNorm = ((rx % 360) + 360) % 360;
 
   return (
     <div className="space-y-3">
       <div
-        className="relative h-72 w-full rounded-md border border-border bg-gradient-to-b from-muted/40 to-background cursor-grab active:cursor-grabbing select-none overflow-hidden"
-        style={{ perspective: "900px" }}
+        className="relative h-80 w-full rounded-2xl border border-border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 cursor-grab active:cursor-grabbing select-none overflow-hidden shadow-inner"
+        style={{ perspective: "1100px" }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        title="Clique e arraste para girar"
+        title="Clique e arraste para girar 360°"
       >
+        {/* brilho ambiente */}
+        <div className="pointer-events-none absolute inset-0 opacity-40"
+          style={{ background: "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), transparent 60%)" }} />
+
         <div
-          className="absolute inset-0 flex items-end justify-center gap-8 pb-8"
+          className="absolute inset-0 flex items-end justify-center gap-10 pb-10"
           style={{
             transformStyle: "preserve-3d",
             transform: `rotateX(${rx}deg) rotateY(${ry}deg)`,
-            transition: drag.current ? "none" : "transform 0s",
           }}
         >
-          {/* "Chão" */}
+          {/* "Chão" arredondado */}
           <div
-            className="absolute left-1/2 bottom-6 rounded bg-border/40"
+            className="absolute left-1/2 bottom-8"
             style={{
-              width: 360, height: 200,
+              width: 420, height: 220,
+              borderRadius: 9999,
+              background: "radial-gradient(ellipse at center, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 70%)",
               transform: "translateX(-50%) rotateX(90deg) translateZ(-1px)",
               transformStyle: "preserve-3d",
             }}
           />
           {bars.map((b) => {
-            const h = Math.max(8, (b.pct / 100) * 200);
+            const h = Math.max(12, (b.pct / 100) * 210);
             return (
               <div key={b.key} className="flex flex-col items-center" style={{ transformStyle: "preserve-3d" }}>
-                <span className="text-[10px] text-muted-foreground mb-1" style={{ transform: `rotateY(${-ry}deg) rotateX(${-rx}deg)` }}>
+                <span
+                  className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
+                  style={{
+                    color: "#fff",
+                    background: b.color,
+                    boxShadow: `0 0 12px ${b.shadow}`,
+                  }}
+                >
                   {b.pct.toFixed(1)}%
                 </span>
-                <Bar3D height={h} color={b.color} />
-                <span className="text-[11px] mt-2 font-medium" style={{ transform: `rotateY(${-ry}deg) rotateX(${-rx}deg)` }}>
+                <Bar3D height={h} color={b.color} highlight={b.highlight} shadow={b.shadow} />
+                <span
+                  className="text-[11px] mt-2 font-bold tracking-wide px-2 py-0.5 rounded-md"
+                  style={{
+                    color: "#fff",
+                    background: `linear-gradient(135deg, ${b.color}, ${b.highlight})`,
+                    boxShadow: `0 4px 14px ${b.shadow}`,
+                  }}
+                >
                   {b.label}
                 </span>
               </div>
             );
           })}
         </div>
-        <div className="absolute top-2 right-2 text-[10px] text-muted-foreground bg-background/70 px-2 py-1 rounded border border-border">
-          arraste para girar
+
+        <button
+          type="button"
+          onClick={resetView}
+          className="absolute top-2 left-2 text-[10px] bg-background/80 hover:bg-background text-foreground px-2 py-1 rounded-md border border-border"
+        >
+          Resetar vista
+        </button>
+        <div className="absolute top-2 right-2 text-[10px] text-white/80 bg-white/10 backdrop-blur px-2 py-1 rounded-md border border-white/20">
+          arraste para girar · X {rxNorm.toFixed(0)}° · Y {ryNorm.toFixed(0)}°
         </div>
       </div>
 
+      {/* Legenda colorida e destacada */}
       <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
         {bars.map((b) => (
-          <li key={b.key} className="border border-border rounded p-2 bg-card">
+          <li
+            key={b.key}
+            className="relative rounded-xl p-3 overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${b.color}22, ${b.highlight}11)`,
+              border: `1px solid ${b.color}`,
+              boxShadow: `0 6px 18px ${b.shadow}`,
+            }}
+          >
             <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-sm" style={{ background: b.color }} />
-              <span className="font-medium">{b.label}</span>
+              <span
+                className="h-4 w-4 rounded-full"
+                style={{
+                  background: `radial-gradient(circle at 30% 30%, ${b.highlight}, ${b.color})`,
+                  boxShadow: `0 0 8px ${b.shadow}`,
+                }}
+              />
+              <span className="font-bold" style={{ color: b.color }}>{b.label}</span>
             </div>
-            <div className="mt-1 text-muted-foreground">{fmtBytes(b.value)}</div>
+            <div className="mt-1 font-semibold text-foreground">{fmtBytes(b.value)}</div>
             <div className="text-[10px] text-muted-foreground">{b.pct.toFixed(1)}% do total</div>
           </li>
         ))}
@@ -117,21 +174,31 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   );
 }
 
-function Bar3D({ height, color }: { height: number; color: string }) {
-  const w = 48;
-  const d = 48;
+function Bar3D({ height, color, highlight, shadow }: { height: number; color: string; highlight: string; shadow: string }) {
+  const w = 56;
+  const d = 56;
+  const radius = 14;
+  const front = `linear-gradient(180deg, ${highlight} 0%, ${color} 55%, ${shade(color, -25)} 100%)`;
+  const side  = `linear-gradient(180deg, ${shade(color, -10)} 0%, ${shade(color, -35)} 100%)`;
+  const back  = `linear-gradient(180deg, ${shade(color, -20)} 0%, ${shade(color, -45)} 100%)`;
+  const top   = `radial-gradient(circle at 35% 30%, ${shade(highlight, 25)}, ${color})`;
+  const baseStyle: React.CSSProperties = {
+    position: "absolute",
+    borderRadius: radius,
+    boxShadow: `0 0 22px ${shadow}`,
+  };
   return (
     <div style={{ width: w, height, position: "relative", transformStyle: "preserve-3d" }}>
       {/* frente */}
-      <div style={{ position: "absolute", inset: 0, background: color, transform: `translateZ(${d / 2}px)` }} />
+      <div style={{ ...baseStyle, inset: 0, background: front, transform: `translateZ(${d / 2}px)` }} />
       {/* trás */}
-      <div style={{ position: "absolute", inset: 0, background: shade(color, -30), transform: `translateZ(${-d / 2}px) rotateY(180deg)` }} />
+      <div style={{ ...baseStyle, inset: 0, background: back, transform: `translateZ(${-d / 2}px) rotateY(180deg)` }} />
       {/* direita */}
-      <div style={{ position: "absolute", top: 0, right: 0, width: d, height, background: shade(color, -15), transform: `rotateY(90deg) translateZ(${w / 2}px)`, transformOrigin: "right center" }} />
+      <div style={{ ...baseStyle, top: 0, right: 0, width: d, height, background: side, transform: `rotateY(90deg) translateZ(${w / 2}px)`, transformOrigin: "right center" }} />
       {/* esquerda */}
-      <div style={{ position: "absolute", top: 0, left: 0, width: d, height, background: shade(color, -20), transform: `rotateY(-90deg) translateZ(${w / 2}px)`, transformOrigin: "left center" }} />
+      <div style={{ ...baseStyle, top: 0, left: 0, width: d, height, background: side, transform: `rotateY(-90deg) translateZ(${w / 2}px)`, transformOrigin: "left center" }} />
       {/* topo */}
-      <div style={{ position: "absolute", top: 0, left: 0, width: w, height: d, background: shade(color, 20), transform: `rotateX(90deg) translateZ(${d / 2}px)`, transformOrigin: "top center" }} />
+      <div style={{ ...baseStyle, top: 0, left: 0, width: w, height: d, background: top, transform: `rotateX(90deg) translateZ(${d / 2}px)`, transformOrigin: "top center" }} />
     </div>
   );
 }
