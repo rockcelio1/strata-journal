@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function fmtBytes(n: number): string {
   if (!n || n < 0) return "0 B";
@@ -39,14 +39,58 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
   const [active, setActive] = useState<string | null>(null);
-  const [tip, setTip] = useState<{ key: string; x: number; y: number } | null>(null);
+  const [tip, setTip] = useState<{ key: string; x: number; y: number; pinned?: boolean } | null>(null);
+  const [, forceTick] = useState(0); // força re-render em resize/zoom
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const tipRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+  const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-fechamento por inatividade (3s) — exceto se "pinned" por toque/clique.
+  function armAutoClose() {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => {
+      setTip((t) => (t && !t.pinned ? null : t));
+    }, 3000);
+  }
+  useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
+
+  // Re-render no resize/zoom para o tooltip re-clampar com o novo rect.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => forceTick((n) => n + 1);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    let ro: ResizeObserver | null = null;
+    if ("ResizeObserver" in window && stageRef.current) {
+      ro = new ResizeObserver(onResize);
+      ro.observe(stageRef.current);
+    }
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      ro?.disconnect();
+    };
+  }, []);
+
+  // Fecha ao tocar/clicar fora (mobile + desktop).
+  useEffect(() => {
+    if (!tip?.pinned) return;
+    function onDocDown(e: PointerEvent) {
+      const t = e.target as Node | null;
+      if (stageRef.current && t && stageRef.current.contains(t)) return;
+      if (tipRef.current && t && tipRef.current.contains(t)) return;
+      setTip(null);
+    }
+    document.addEventListener("pointerdown", onDocDown, true);
+    return () => document.removeEventListener("pointerdown", onDocDown, true);
+  }, [tip?.pinned]);
 
   function onHoverMove(e: React.PointerEvent) {
-    if (!stageRef.current || !tip) return;
+    if (!stageRef.current || !tip || tip.pinned) return;
     const rect = stageRef.current.getBoundingClientRect();
     setTip({ key: tip.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+    armAutoClose();
   }
 
   function onDown(e: React.PointerEvent) {
@@ -87,7 +131,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         onPointerMove={(e) => { onMove(e); onHoverMove(e); }}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        onPointerLeave={() => setTip(null)}
+        onPointerLeave={() => setTip((t) => (t?.pinned ? t : null))}
         title="Clique e arraste para girar 360°"
       >
         {/* brilho ambiente */}
@@ -121,12 +165,32 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 className="flex flex-col items-center cursor-pointer"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
                 onPointerEnter={(e) => {
-                  setActive(b.key);
-                  const rect = stageRef.current?.getBoundingClientRect();
-                  if (rect) setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                  try {
+                    setActive(b.key);
+                    const rect = stageRef.current?.getBoundingClientRect();
+                    if (!rect) return;
+                    setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
+                    armAutoClose();
+                  } catch (err) {
+                    console.warn("[QuotaChart3D] hover error", { key: b.key, value: b.value, err });
+                  }
                 }}
-                onPointerLeave={() => { setActive((cur) => (cur === b.key ? null : cur)); setTip((t) => (t?.key === b.key ? null : t)); }}
-                onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
+                onPointerLeave={(e) => {
+                  if (e.pointerType === "touch") return; // toque mantém aberto até tocar fora
+                  setActive((cur) => (cur === b.key ? null : cur));
+                  setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActive((cur) => (cur === b.key ? null : b.key));
+                  // Em toque, fixa o tooltip; clique do mouse só alterna o destaque.
+                  setTip((t) => {
+                    const rect = stageRef.current?.getBoundingClientRect();
+                    if (!rect) return t;
+                    if (t?.key === b.key) return null;
+                    return { key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: true };
+                  });
+                }}
               >
                 <span
                   className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
@@ -165,18 +229,30 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         {(() => {
           if (!tip) return null;
           const b = bars.find((x) => x.key === tip.key);
-          if (!b) return null;
-          const stageW = stageRef.current?.clientWidth ?? 0;
-          const stageH = stageRef.current?.clientHeight ?? 0;
-          const tipW = Math.min(260, Math.max(180, stageW - 24));
-          const tipH = 130;
+          if (!b) {
+            console.warn("[QuotaChart3D] tooltip key sem barra correspondente", tip.key);
+            return null;
+          }
+          if (!Number.isFinite(b.value) || !Number.isFinite(b.pct)) {
+            console.warn("[QuotaChart3D] valores inválidos para tooltip", { key: b.key, value: b.value, pct: b.pct });
+            return null;
+          }
+          const rect = stageRef.current?.getBoundingClientRect();
+          const stageW = rect?.width ?? stageRef.current?.clientWidth ?? 0;
+          const stageH = rect?.height ?? stageRef.current?.clientHeight ?? 0;
+          const tipW = Math.min(260, Math.max(160, stageW - 24));
+          const tipH = Math.min(180, Math.max(110, stageH * 0.55));
+          // Clamp considerando bordas reais; recalculado a cada render (resize/zoom).
           let x = tip.x + 14;
           let y = tip.y + 14;
-          if (x + tipW > stageW - 8) x = Math.max(8, tip.x - tipW - 14);
-          if (y + tipH > stageH - 8) y = Math.max(8, tip.y - tipH - 14);
+          if (x + tipW > stageW - 8) x = tip.x - tipW - 14;
+          if (y + tipH > stageH - 8) y = tip.y - tipH - 14;
+          x = Math.max(8, Math.min(x, Math.max(8, stageW - tipW - 8)));
+          y = Math.max(8, Math.min(y, Math.max(8, stageH - tipH - 8)));
           return (
             <div
-              className="pointer-events-none absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md"
+              ref={tipRef}
+              className={`absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md ${tip.pinned ? "" : "pointer-events-none"}`}
               style={{
                 left: x,
                 top: y,
@@ -192,10 +268,18 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 <span className="h-3 w-3 rounded-full" style={{ background: "#fff", boxShadow: `0 0 8px #fff` }} />
                 <span className="font-bold text-sm">{b.label}</span>
                 <span className="ml-auto font-bold">{b.pct.toFixed(1)}%</span>
+                {tip.pinned && (
+                  <button
+                    type="button"
+                    aria-label="Fechar"
+                    onClick={(e) => { e.stopPropagation(); setTip(null); }}
+                    className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
+                  >×</button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 opacity-95">
                 <span className="opacity-80">Tamanho</span><span className="font-semibold text-right">{fmtBytes(b.value)}</span>
-                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{b.value.toLocaleString("pt-BR")}</span>
+                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{Number.isFinite(b.value) ? b.value.toLocaleString("pt-BR") : "—"}</span>
                 <span className="opacity-80">Total</span><span className="font-semibold text-right">{fmtBytes(total)}</span>
               </div>
               <div className="mt-1 text-[10px] opacity-90 italic">
@@ -208,6 +292,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           );
         })()}
       </div>
+
 
 
       {/* Detalhes da barra ativa */}
