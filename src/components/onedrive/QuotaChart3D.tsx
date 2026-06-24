@@ -179,7 +179,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   );
 }
 
-function Bar3D({ height, color, highlight, shadow }: { height: number; color: string; highlight: string; shadow: string }) {
+function Bar3D({ height, color, highlight, shadow, active }: { height: number; color: string; highlight: string; shadow: string; active?: boolean }) {
   const w = 56;
   const d = 56;
   const radius = 14;
@@ -190,7 +190,7 @@ function Bar3D({ height, color, highlight, shadow }: { height: number; color: st
   const baseStyle: React.CSSProperties = {
     position: "absolute",
     borderRadius: radius,
-    boxShadow: `0 0 22px ${shadow}`,
+    boxShadow: active ? `0 0 36px ${shadow}, 0 0 0 2px ${highlight}` : `0 0 22px ${shadow}`,
   };
   return (
     <div style={{ width: w, height, position: "relative", transformStyle: "preserve-3d" }}>
