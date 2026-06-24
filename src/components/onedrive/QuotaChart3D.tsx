@@ -20,28 +20,83 @@ type SentryCtx = {
   empresa?: string;
   barIndex?: number;
   barKey?: string;
+  trigger?: "hover" | "touch" | "keyboard" | "legend" | "auto" | "system";
+  valor_atual?: number;
+  valor_prev?: number;
+  condicao_invalida?: string;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSentry(): any | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = typeof window !== "undefined" ? (window as any) : null;
+  return w?.Sentry ?? null;
+}
+
+function applyScope(s: unknown, scope: string, ctx: SentryCtx, payload: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sc = s as any;
+  sc.setTag("component", "QuotaChart3D");
+  sc.setTag("scope", scope);
+  if (ctx.chartId) sc.setTag("chart_id", ctx.chartId);
+  if (ctx.empresa) sc.setTag("empresa", ctx.empresa);
+  if (typeof ctx.barIndex === "number") sc.setTag("bar_index", String(ctx.barIndex));
+  if (ctx.barKey) sc.setTag("bar_key", ctx.barKey);
+  if (ctx.trigger) sc.setTag("trigger", ctx.trigger);
+  sc.setContext("quota_chart", {
+    valor_atual: ctx.valor_atual,
+    valor_prev: ctx.valor_prev,
+    condicao_invalida: ctx.condicao_invalida,
+    ...payload,
+    ...ctx,
+  });
+}
 
 function reportError(scope: string, payload: Record<string, unknown>, ctx: SentryCtx = {}) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = typeof window !== "undefined" ? (window as any) : null;
-    if (w?.Sentry?.withScope && w?.Sentry?.captureMessage) {
-      w.Sentry.withScope((s: any) => {
-        s.setTag("component", "QuotaChart3D");
-        s.setTag("scope", scope);
-        if (ctx.chartId) s.setTag("chart_id", ctx.chartId);
-        if (ctx.empresa) s.setTag("empresa", ctx.empresa);
-        if (typeof ctx.barIndex === "number") s.setTag("bar_index", String(ctx.barIndex));
-        if (ctx.barKey) s.setTag("bar_key", ctx.barKey);
-        s.setContext("quota_chart", { ...payload, ...ctx });
-        w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
+    const S = getSentry();
+    if (S?.withScope && S?.captureMessage) {
+      S.withScope((s: unknown) => {
+        applyScope(s, scope, ctx, payload);
+        S.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
       });
-    } else if (w?.Sentry?.captureMessage) {
-      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
+    } else if (S?.captureMessage) {
+      S.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
     }
   } catch { /* noop */ }
   console.warn(`[QuotaChart3D] ${scope}`, { ...payload, ...ctx });
+}
+
+function reportEvent(phase:
+  | "hover_start"
+  | "tooltip_rendered"
+  | "tooltip_closed_by_timeout"
+  | "tooltip_closed_by_pointerleave"
+  | "tooltip_closed_by_escape"
+  | "tooltip_closed_by_outside"
+  | "tooltip_closed_by_close_button"
+  | "tooltip_pinned_by_touch"
+  | "keyboard_open"
+, payload: Record<string, unknown> = {}, ctx: SentryCtx = {}) {
+  try {
+    const S = getSentry();
+    if (S?.addBreadcrumb) {
+      S.addBreadcrumb({
+        category: "quota_chart",
+        type: "info",
+        level: "info",
+        message: phase,
+        data: { ...payload, ...ctx, ts: Date.now() },
+      });
+    }
+    if (phase === "tooltip_rendered" && S?.withScope && S?.captureMessage && payload.sample === true) {
+      S.withScope((s: unknown) => {
+        applyScope(s, phase, ctx, payload);
+        S.captureMessage(`[QuotaChart3D] ${phase}`, "info");
+      });
+    }
+  } catch { /* noop */ }
+  if (typeof console !== "undefined") console.debug(`[QuotaChart3D:${phase}]`, { ...payload, ...ctx });
 }
 
 type Props = {
