@@ -433,11 +433,33 @@ function NovoRdoPage() {
   }
 
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
+
+  // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
+  const stepIssues: { step: number; label: string; message: string }[] = [];
+  if (!form.obra_id) stepIssues.push({ step: 0, label: "Obra", message: "Selecione a obra do RDO." });
+  if ((form.atividades ?? []).length === 0)
+    stepIssues.push({ step: 2, label: "Atividades", message: "Adicione ao menos uma atividade." });
+  if (maoInvalidIdx.length > 0)
+    stepIssues.push({ step: 3, label: "Mão de obra", message: `${maoInvalidIdx.length} linha(s) sem pessoa selecionada.` });
+  if (equipInvalidIdx.length > 0)
+    stepIssues.push({ step: 4, label: "Equipamentos", message: `${equipInvalidIdx.length} equipamento(s) sem seleção.` });
+  if (ocInvalidIdx.length > 0)
+    stepIssues.push({ step: 5, label: "Ocorrências", message: `${ocInvalidIdx.length} ocorrência(s) sem descrição.` });
+  if (fotosSemLegenda > 0)
+    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) sem legenda.` });
+  if (lowResIdxs.length > 0)
+    stepIssues.push({ step: 6, label: "Fotos", message: `${lowResIdxs.length} foto(s) abaixo da resolução mínima (${MIN_IMAGE_DIM}px).` });
+  if (stepIdx === 7 && !signer.nome.trim())
+    stepIssues.push({ step: 7, label: "Assinatura", message: "Informe o nome do responsável." });
+  if (stepIdx === 7 && !assinaturaBlob)
+    stepIssues.push({ step: 7, label: "Assinatura", message: "Desenhe ou envie a assinatura." });
+
   const canNext =
     stepIdx === 0 ? !!form.obra_id
     : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
     : true;
   const isLast = stepIdx === steps.length - 1;
+  const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id;
 
   return (
     <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
