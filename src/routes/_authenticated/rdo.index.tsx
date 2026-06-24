@@ -61,6 +61,7 @@ function RdoListPage() {
   const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
 
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string>(() => {
     const s = search.status;
     return s && (statusFilters as readonly string[]).includes(s) ? s : "todos";
@@ -69,6 +70,18 @@ function RdoListPage() {
     const s = search.status;
     if (s && (statusFilters as readonly string[]).includes(s)) setStatus(s);
   }, [search.status]);
+
+  // Contadores reais por status (a partir do mesmo cache que alimenta a lista).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { todos: rdos.length, rascunho: 0, enviado: 0, aprovado: 0, reprovado: 0 };
+    for (const r of rdos as any[]) if (c[r.status] !== undefined) c[r.status]++;
+    return c;
+  }, [rdos]);
+
+  function selectStatus(s: string) {
+    setStatus(s);
+    navigate({ to: "/rdo", search: { status: s === "todos" ? undefined : s }, replace: true });
+  }
   const [obraId, setObraId] = useState<string>("todas");
   const [contrato, setContrato] = useState<string>("");
   const [autorId, setAutorId] = useState<string>("todos");
