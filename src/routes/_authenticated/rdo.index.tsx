@@ -263,11 +263,13 @@ function RdoListPage() {
       )}
 
       {/* Filtros */}
-      <Card className="p-3 md:p-4 mb-4">
+      <Card className="p-3 md:p-4 mb-4 space-y-2">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
-          <div className="md:col-span-4 relative">
+          <div className="md:col-span-5 relative">
             <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por número ou obra…" className="pl-8" />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)}
+              placeholder="Busca aproximada (ignora acento e erros): número, obra, autor, assinatura, aprovador…"
+              className="pl-8" />
           </div>
           <div className="md:col-span-3">
             <Select value={obraId} onValueChange={setObraId}>
@@ -281,10 +283,42 @@ function RdoListPage() {
             </Select>
           </div>
           <div className="md:col-span-2">
+            <Input value={contrato} onChange={(e) => setContrato(e.target.value)} placeholder="Contrato/cliente" />
+          </div>
+          <div className="md:col-span-1">
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Data inicial" />
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Data final" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
+          <div className="md:col-span-4">
+            <Select value={autorId} onValueChange={setAutorId}>
+              <SelectTrigger><SelectValue placeholder="Registrado por" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem registrou: todos</SelectItem>
+                {autoresOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-4">
+            <Select value={signerId} onValueChange={setSignerId}>
+              <SelectTrigger><SelectValue placeholder="Quem assinou" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem assinou: todos</SelectItem>
+                {signersOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <Select value={aprovadorId} onValueChange={setAprovadorId}>
+              <SelectTrigger><SelectValue placeholder="Quem aprovou" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem aprovou: todos</SelectItem>
+                {aprovadoresOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="md:col-span-1 flex md:justify-end">
             <Button variant="ghost" size="sm" onClick={limparFiltros}>Limpar</Button>
