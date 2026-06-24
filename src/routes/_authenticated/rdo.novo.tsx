@@ -862,7 +862,8 @@ function NovoRdoPage() {
                           {lowResIdxs.includes(i) && <span className="text-destructive">⚠ baixa resolução</span>}
                         </p>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
