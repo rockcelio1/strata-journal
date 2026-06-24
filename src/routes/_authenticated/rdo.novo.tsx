@@ -28,6 +28,7 @@ import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { CameraCapture } from "@/components/rdo/CameraCapture";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
