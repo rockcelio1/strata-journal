@@ -217,7 +217,7 @@ function DashboardPage() {
       </div>
 
       {/* ============== GRÁFICOS MULTI-DIMENSÃO ============== */}
-      <Card id="graficos" className="p-4 sm:p-6 mb-4 overflow-hidden relative">
+      <Card id="graficos" className="dash-card p-4 sm:p-6 mb-4 overflow-hidden relative">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-brand" />
