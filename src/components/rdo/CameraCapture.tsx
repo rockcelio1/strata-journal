@@ -24,7 +24,12 @@ export function CameraCapture({ open, onClose, onCapture }: Props) {
     (async () => {
       try {
         if (!navigator.mediaDevices?.getUserMedia) {
-          toast.error("Câmera não suportada neste dispositivo/navegador.");
+          toast.error("Câmera não disponível neste navegador. Use a opção Galeria para enviar fotos.");
+          onClose();
+          return;
+        }
+        if (typeof window !== "undefined" && !window.isSecureContext) {
+          toast.error("Câmera exige HTTPS. Abra o app no domínio seguro ou use a Galeria.");
           onClose();
           return;
         }
@@ -47,7 +52,16 @@ export function CameraCapture({ open, onClose, onCapture }: Props) {
           setReady(true);
         }
       } catch (e: any) {
-        toast.error("Não foi possível acessar a câmera: " + (e?.message ?? e));
+        const name = e?.name ?? "";
+        const msg =
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "Permissão da câmera negada. Habilite o acesso nas configurações do navegador ou use a opção Galeria."
+            : name === "NotFoundError" || name === "OverconstrainedError"
+            ? "Nenhuma câmera encontrada neste dispositivo. Use a opção Galeria."
+            : name === "NotReadableError"
+            ? "A câmera está em uso por outro app. Feche-o e tente novamente, ou use a Galeria."
+            : "Não foi possível acessar a câmera: " + (e?.message ?? name ?? "erro desconhecido");
+        toast.error(msg);
         onClose();
       }
     })();
