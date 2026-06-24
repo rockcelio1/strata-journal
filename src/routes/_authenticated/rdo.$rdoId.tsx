@@ -241,8 +241,35 @@ function RdoDetailPage() {
               </AlertDialog>
             </>
           )}
+          {canDeleteRascunho && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive border-destructive" disabled={excluir.isPending}>
+                  <Trash2 className="h-4 w-4 mr-1" />Excluir rascunho
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir RDO rascunho?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Esta ação é permanente. Anexos e assinaturas vinculados serão removidos.
+                </p>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => excluir.mutate()}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </header>
+
 
       {r.status === "reprovado" && r.motivo_reprovacao && (
         <Card className="p-4 border-destructive/50 bg-destructive/5 mb-4">
