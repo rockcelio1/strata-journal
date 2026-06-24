@@ -90,6 +90,7 @@ function NovoRdoPage() {
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [legendas, setLegendas] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
   type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback";
   const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase" }>>([]);
   const [uploadHistory, setUploadHistory] = useState<Array<{ at: string; name: string; status: UpStatus; provider?: string; error?: string }>>([]);
