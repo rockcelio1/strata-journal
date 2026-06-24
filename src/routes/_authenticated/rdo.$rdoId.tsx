@@ -298,8 +298,40 @@ function RdoDetailPage() {
               </AlertDialogContent>
             </AlertDialog>
           )}
+          {isAdminOrMaster && (
+            <>
+              <AdminConfirmTwiceButton
+                label={r.disabled_at ? "Reabilitar (admin)" : "Desabilitar (admin)"}
+                title={r.disabled_at ? "Reabilitar este RDO?" : "Desabilitar este RDO?"}
+                description={r.disabled_at
+                  ? `O RDO #${r.numero} voltará a ficar disponível para edição/uso.`
+                  : `O RDO #${r.numero} ficará marcado como desabilitado e indisponível para novas edições.`}
+                doubleConfirmText={r.disabled_at ? "REABILITAR" : "DESABILITAR"}
+                isPending={adminToggleDisabled.isPending}
+                variant="outline"
+                onConfirm={() => adminToggleDisabled.mutate(!r.disabled_at)}
+              />
+              {!canDeleteRascunho && (
+                <AdminConfirmTwiceButton
+                  label={`Excluir RDO #${r.numero} (admin)`}
+                  title={`Excluir RDO #${r.numero} em status "${r.status}"?`}
+                  description={`Como administrador você pode excluir RDOs em qualquer status. Esta ação é irreversível pela interface e fica registrada na auditoria.`}
+                  doubleConfirmText={`EXCLUIR-${r.numero}`}
+                  isPending={adminExcluir.isPending}
+                  variant="destructive"
+                  onConfirm={() => adminExcluir.mutate()}
+                />
+              )}
+            </>
+          )}
         </div>
       </header>
+
+      {r.disabled_at && (
+        <Card className="p-3 border-amber-300 bg-amber-50 text-amber-900 mb-4 text-sm">
+          ⚠️ Este RDO está <strong>desabilitado</strong> por um administrador desde {new Date(r.disabled_at).toLocaleString("pt-BR")}.
+        </Card>
+      )}
 
 
       {r.status === "reprovado" && r.motivo_reprovacao && (
