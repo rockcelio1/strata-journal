@@ -699,7 +699,7 @@ function NovoRdoPage() {
               const invalid = !isUuid(it.equipamento_id);
               const errId = `rdo-equipamentos-${i}-err`;
               return (
-              <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "equipamentos" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Equipamento</Label>
                   <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
                     <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
