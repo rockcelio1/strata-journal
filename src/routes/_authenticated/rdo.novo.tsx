@@ -106,6 +106,29 @@ function NovoRdoPage() {
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
   useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
 
+  // ---- Rascunho local (IndexedDB) — salva automaticamente e restaura ao reabrir
+  const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  useEffect(() => {
+    if (!me?.profile?.id || draftLoaded) return;
+    (async () => {
+      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number }>(draftKey);
+      if (d?.value?.form) {
+        setForm(d.value.form);
+        if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
+        if (d.value.signer) setSigner(d.value.signer);
+        if (typeof d.value.stepIdx === "number") setStepIdx(d.value.stepIdx);
+        toast.info("Rascunho restaurado automaticamente.");
+      }
+      setDraftLoaded(true);
+    })();
+  }, [me?.profile?.id]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx }); }, 400);
+    return () => clearTimeout(t);
+  }, [form, legendas, signer, stepIdx, draftLoaded, draftKey]);
+
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
     const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
