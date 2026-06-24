@@ -29,6 +29,7 @@ export const listRdos = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("rdos")
       .select("id, numero, data, status, created_at, obras(id, nome)")
+      .is("deleted_at", null)
       .order("data", { ascending: false });
     if (error) throw error;
     return data;
