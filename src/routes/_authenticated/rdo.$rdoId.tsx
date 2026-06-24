@@ -130,6 +130,21 @@ function RdoDetailPage() {
       toast.error(msg, { duration: 6000 });
     },
   });
+  const adminExcluir = useMutation({
+    mutationFn: () => adminDeleteFn({ data: { id: rdoId } }),
+    onSuccess: () => {
+      toast.success("RDO excluído (admin)");
+      qc.invalidateQueries({ queryKey: ["rdos"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      navigate({ to: "/rdo" });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir RDO", { duration: 6000 }),
+  });
+  const adminToggleDisabled = useMutation({
+    mutationFn: (disable: boolean) => adminDisableFn({ data: { id: rdoId, disable } }),
+    onSuccess: () => { toast.success("Status atualizado"); refresh(); },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao alterar disponibilidade", { duration: 6000 }),
+  });
 
   const fileToBase64 = (f: File) => new Promise<string>((resolve, reject) => {
     const r = new FileReader();
