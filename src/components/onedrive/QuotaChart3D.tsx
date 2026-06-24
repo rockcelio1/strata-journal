@@ -413,6 +413,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
               id="quota-tooltip"
               role="tooltip"
               aria-live="polite"
+              tabIndex={-1}
               className={`absolute z-10 rounded-2xl p-3 text-[11px] ${tip.pinned ? "" : "pointer-events-none"}`}
               style={{
                 left: x,
