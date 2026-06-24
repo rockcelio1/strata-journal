@@ -978,6 +978,8 @@ export type Database = {
           data: string
           deleted_at: string | null
           deleted_by: string | null
+          disabled_at: string | null
+          disabled_by: string | null
           empresa_id: string
           enviado_em: string | null
           id: string
@@ -999,6 +1001,8 @@ export type Database = {
           data: string
           deleted_at?: string | null
           deleted_by?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
           empresa_id: string
           enviado_em?: string | null
           id?: string
@@ -1020,6 +1024,8 @@ export type Database = {
           data?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          disabled_at?: string | null
+          disabled_by?: string | null
           empresa_id?: string
           enviado_em?: string | null
           id?: string
@@ -1228,6 +1234,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_disable_rdo: {
+        Args: { _disable: boolean; _rdo_id: string }
+        Returns: undefined
+      }
+      admin_soft_delete_rdo: { Args: { _rdo_id: string }; Returns: undefined }
+      admin_update_rdo_basico: {
+        Args: {
+          _clima_manha: Database["public"]["Enums"]["clima"]
+          _clima_noite: Database["public"]["Enums"]["clima"]
+          _clima_tarde: Database["public"]["Enums"]["clima"]
+          _data: string
+          _obra_id: string
+          _observacoes: string
+          _rdo_id: string
+        }
+        Returns: undefined
+      }
       can_access_rdo: {
         Args: {
           _nivel: Database["public"]["Enums"]["rdo_acesso_nivel"]

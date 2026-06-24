@@ -18,6 +18,7 @@ import { rdoStatusMeta } from "@/components/status";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
+import { fuzzyFilter, normalizeForSearch, fuzzyScore } from "@/lib/fuzzy-search";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/rdo/")({
@@ -58,6 +59,10 @@ function RdoListPage() {
 
   const [status, setStatus] = useState<string>("todos");
   const [obraId, setObraId] = useState<string>("todas");
+  const [contrato, setContrato] = useState<string>("");
+  const [autorId, setAutorId] = useState<string>("todos");
+  const [signerId, setSignerId] = useState<string>("todos");
+  const [aprovadorId, setAprovadorId] = useState<string>("todos");
   const [busca, setBusca] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -125,39 +130,68 @@ function RdoListPage() {
   async function descartar(id: string) { await removeQueued(id); await refreshQueue(); }
   async function retry(id: string) { await retryQueued(id); await refreshQueue(); sincronizar(); }
 
-  const filtered = useMemo(() => {
-    const q = busca.trim().toLowerCase();
+  // Conjuntos únicos para alimentar selects (autor/assinou/aprovou)
+  const autoresOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => { if (r.autor?.id) m.set(r.autor.id, r.autor.nome ?? r.autor.email ?? r.autor.id.slice(0, 8)); });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+  const signersOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => (r.rdo_assinaturas ?? []).forEach((a: any) => {
+      const s = a.signatario; if (s?.id) m.set(s.id, s.nome ?? s.email ?? s.id.slice(0, 8));
+    }));
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+  const aprovadoresOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => { if (r.aprovador?.id) m.set(r.aprovador.id, r.aprovador.nome ?? r.aprovador.email ?? r.aprovador.id.slice(0, 8)); });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+
+  // Pré-filtro estrutural (status, obra, contrato, datas, pessoas) — depois aplica fuzzy.
+  const preFiltered = useMemo(() => {
+    const cn = normalizeForSearch(contrato);
     return (rdos as any[]).filter((r) => {
       if (status !== "todos" && r.status !== status) return false;
       if (obraId !== "todas" && r.obras?.id !== obraId) return false;
       if (from && r.data < from) return false;
       if (to && r.data > to) return false;
-      if (q) {
-        const hay = `${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+      if (autorId !== "todos" && r.autor?.id !== autorId) return false;
+      if (aprovadorId !== "todos" && r.aprovador?.id !== aprovadorId) return false;
+      if (signerId !== "todos") {
+        const ok = (r.rdo_assinaturas ?? []).some((a: any) => a.signatario?.id === signerId);
+        if (!ok) return false;
+      }
+      if (cn) {
+        const hayCon = normalizeForSearch(`${r.obras?.codigo ?? ""} ${r.obras?.cliente ?? ""}`);
+        if (fuzzyScore(hayCon, cn) === 0) return false;
       }
       if (view === "calendario" && calSelected) {
         if (r.data !== toISODate(calSelected)) return false;
       }
       return true;
     });
-  }, [rdos, status, obraId, busca, from, to, view, calSelected]);
+  }, [rdos, status, obraId, contrato, autorId, signerId, aprovadorId, from, to, view, calSelected]);
 
-  // Pontos do calendário (datas com RDOs já considerando filtros, exceto a data selecionada)
+  // Busca aproximada ignorando acentos/erros sobre os campos relevantes.
+  const filtered = useMemo(() => {
+    return fuzzyFilter(preFiltered, busca, (r: any) => [
+      r.numero, r.obras?.nome, r.obras?.codigo, r.obras?.cliente,
+      r.autor?.nome, r.aprovador?.nome,
+      (r.rdo_assinaturas ?? []).map((a: any) => a.signatario?.nome).filter(Boolean).join(" "),
+    ].filter(Boolean).join(" "));
+  }, [preFiltered, busca]);
+
   const diasComRdo = useMemo(() => {
     const set = new Set<string>();
-    const q = busca.trim().toLowerCase();
-    (rdos as any[]).forEach((r) => {
-      if (status !== "todos" && r.status !== status) return;
-      if (obraId !== "todas" && r.obras?.id !== obraId) return;
-      if (q && !`${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase().includes(q)) return;
-      set.add(r.data);
-    });
+    preFiltered.forEach((r: any) => set.add(r.data));
     return set;
-  }, [rdos, status, obraId, busca]);
+  }, [preFiltered]);
 
   function limparFiltros() {
-    setStatus("todos"); setObraId("todas"); setBusca(""); setFrom(""); setTo(""); setCalSelected(undefined);
+    setStatus("todos"); setObraId("todas"); setContrato(""); setAutorId("todos"); setSignerId("todos");
+    setAprovadorId("todos"); setBusca(""); setFrom(""); setTo(""); setCalSelected(undefined);
   }
 
   return (
@@ -229,11 +263,13 @@ function RdoListPage() {
       )}
 
       {/* Filtros */}
-      <Card className="p-3 md:p-4 mb-4">
+      <Card className="p-3 md:p-4 mb-4 space-y-2">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
-          <div className="md:col-span-4 relative">
+          <div className="md:col-span-5 relative">
             <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por número ou obra…" className="pl-8" />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)}
+              placeholder="Busca aproximada (ignora acento e erros): número, obra, autor, assinatura, aprovador…"
+              className="pl-8" />
           </div>
           <div className="md:col-span-3">
             <Select value={obraId} onValueChange={setObraId}>
@@ -247,10 +283,42 @@ function RdoListPage() {
             </Select>
           </div>
           <div className="md:col-span-2">
+            <Input value={contrato} onChange={(e) => setContrato(e.target.value)} placeholder="Contrato/cliente" />
+          </div>
+          <div className="md:col-span-1">
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Data inicial" />
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Data final" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
+          <div className="md:col-span-4">
+            <Select value={autorId} onValueChange={setAutorId}>
+              <SelectTrigger><SelectValue placeholder="Registrado por" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem registrou: todos</SelectItem>
+                {autoresOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-4">
+            <Select value={signerId} onValueChange={setSignerId}>
+              <SelectTrigger><SelectValue placeholder="Quem assinou" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem assinou: todos</SelectItem>
+                {signersOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <Select value={aprovadorId} onValueChange={setAprovadorId}>
+              <SelectTrigger><SelectValue placeholder="Quem aprovou" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Quem aprovou: todos</SelectItem>
+                {aprovadoresOpts.map(([id, nome]) => <SelectItem key={id} value={id}>{nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="md:col-span-1 flex md:justify-end">
             <Button variant="ghost" size="sm" onClick={limparFiltros}>Limpar</Button>
