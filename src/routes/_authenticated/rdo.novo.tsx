@@ -923,6 +923,33 @@ function NovoRdoPage() {
                 <MapPin size={12} /> Ao enviar, capturamos data/hora, IP do dispositivo e localização (se permitido) e gravamos o hash do relatório como prova de integridade.
               </p>
             </Card>
+
+            {(stepIssues.length > 0 || submitError) && (
+              <Card className="p-4 border-destructive/40 bg-destructive/5 space-y-2">
+                <h4 className="font-medium text-destructive text-sm">Não é possível concluir o RDO</h4>
+                {submitError && (
+                  <div className="text-xs text-destructive border border-destructive/30 rounded p-2 bg-background">
+                    <strong>Erro no envio:</strong> {submitError}
+                  </div>
+                )}
+                {stepIssues.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {stepIssues.map((iss, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs">
+                        <span>
+                          <strong>Etapa {iss.step + 1} · {iss.label}:</strong> {iss.message}
+                        </span>
+                        {iss.step !== 7 && (
+                          <Button size="sm" variant="outline" onClick={() => { setSubmitError(null); setStepIdx(iss.step); }}>
+                            Corrigir <ArrowRight size={12} className="ml-1" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            )}
           </>
         )}
       </div>
