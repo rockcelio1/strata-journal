@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
+import { SignaturesCard } from "@/components/rdo/SignaturesCard";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
