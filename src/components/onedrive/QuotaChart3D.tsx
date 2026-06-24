@@ -395,25 +395,40 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
                 className="flex flex-col items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-md"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
                 role="button"
-                tabIndex={0}
+                tabIndex={focusKey === b.key ? 0 : -1}
                 aria-label={`${b.label}: ${fmtBytes(b.value)}, ${b.pct.toFixed(1)} por cento`}
                 aria-describedby={tip?.key === b.key ? "quota-tooltip" : undefined}
-                onKeyDown={(e) => onBarKey(e, b.key)}
+                onFocus={() => setFocusKey(b.key)}
+                onKeyDown={(e) => onBarKey(e, b.key, "bar")}
                 onPointerEnter={(e) => {
                   try {
                     setActive(b.key);
                     const rect = stageRef.current?.getBoundingClientRect();
                     if (!rect) return;
+                    hoverStartRef.current = { key: b.key, t: performance.now() };
+                    reportEvent("hover_start", { pointerType: e.pointerType },
+                      { chartId, empresa, barIndex, barKey: b.key, trigger: e.pointerType === "touch" ? "touch" : "hover", valor_atual: b.value });
                     setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
+                    if (e.pointerType === "touch") {
+                      reportEvent("tooltip_pinned_by_touch", {}, { chartId, empresa, barIndex, barKey: b.key, trigger: "touch" });
+                    }
                     armAutoClose();
                   } catch (err) {
-                    reportError("hover error", { value: b.value, err: String(err) }, { chartId, empresa, barIndex, barKey: b.key });
+                    reportError("hover error", { value: b.value, err: String(err) },
+                      { chartId, empresa, barIndex, barKey: b.key, trigger: "hover", valor_atual: b.value, condicao_invalida: "exception" });
                   }
                 }}
                 onPointerLeave={(e) => {
                   if (e.pointerType === "touch") return;
                   setActive((cur) => (cur === b.key ? null : cur));
-                  setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
+                  setTip((t) => {
+                    if (t?.key === b.key && !t.pinned) {
+                      reportEvent("tooltip_closed_by_pointerleave", {},
+                        { chartId, empresa, barIndex, barKey: b.key, trigger: "hover" });
+                      return null;
+                    }
+                    return t;
+                  });
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
