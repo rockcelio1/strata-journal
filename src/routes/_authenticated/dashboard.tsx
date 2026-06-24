@@ -180,12 +180,40 @@ function DashboardPage() {
         </div>
       </Card>
 
-      {/* Stat cards clicáveis */}
+      {/* Stat cards clicáveis — Relatório de obras (RDOs) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        <StatCard icon={Building2} label="Obras ativas" value={data.obras_ativas} sub={`${data.obras_total} no total`} tone="brand" onClick={() => navigate({ to: "/obras" })} />
-        <StatCard icon={FileText} label={filtroAtivo ? "RDOs filtrados" : "RDOs pendentes"} value={filtroAtivo && filtros ? filtros.rdos : data.rdos_pendentes} sub={filtroAtivo ? "no filtro atual" : "aguardando aprovação"} tone="warning" onClick={() => navigate({ to: "/rdo" })} />
-        <StatCard icon={CheckCircle2} label="RDOs aprovados" value={data.rdos_aprovados} sub={`${data.rdos_total} emitidos`} tone="success" onClick={() => navigate({ to: "/rdo" })} />
-        <StatCard icon={AlertTriangle} label={filtroAtivo ? "Ocorrências filtradas" : "Ocorrências (7d)"} value={filtroAtivo && filtros ? filtros.ocorrencias : data.ocorrencias_semana} sub={filtroAtivo ? "no filtro atual" : `${data.ocorrencias_total} no histórico`} tone="destructive" onClick={() => { setDim("ocorrencias"); document.getElementById("graficos")?.scrollIntoView({ behavior: "smooth" }); }} />
+        <StatCard
+          icon={FileText}
+          label="RDOs totais"
+          value={data.rdos_total}
+          sub="todos os RDOs emitidos"
+          tone="brand"
+          onClick={() => navigate({ to: "/rdo", search: { status: "todos" } })}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Aprovados"
+          value={data.rdos_aprovados}
+          sub="RDOs aprovados"
+          tone="success"
+          onClick={() => navigate({ to: "/rdo", search: { status: "aprovado" } })}
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Pendentes"
+          value={data.rdos_pendentes}
+          sub="aguardando aprovação"
+          tone="warning"
+          onClick={() => navigate({ to: "/rdo", search: { status: "enviado" } })}
+        />
+        <StatCard
+          icon={Building2}
+          label="Rascunhos"
+          value={(data.rdos_all as any[] | undefined)?.filter((r) => r.status === "rascunho").length ?? 0}
+          sub="ainda não enviados"
+          tone="destructive"
+          onClick={() => navigate({ to: "/rdo", search: { status: "rascunho" } })}
+        />
       </div>
 
       {/* ============== GRÁFICOS MULTI-DIMENSÃO ============== */}
