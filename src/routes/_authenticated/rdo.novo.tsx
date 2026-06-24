@@ -728,7 +728,7 @@ function NovoRdoPage() {
               const invalid = !it.descricao?.trim();
               const errId = `rdo-ocorrencias-${i}-err`;
               return (
-              <Card key={i} id={`rdo-ocorrencias-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-ocorrencias-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "ocorrencias" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Tipo</Label>
                   <Select value={it.tipo_ocorrencia_id ?? ""} onValueChange={(v) => upd("ocorrencias", i, "tipo_ocorrencia_id", v || null)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
