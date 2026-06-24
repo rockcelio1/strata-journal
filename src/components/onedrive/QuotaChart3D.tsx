@@ -131,7 +131,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         onPointerMove={(e) => { onMove(e); onHoverMove(e); }}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        onPointerLeave={() => setTip(null)}
+        onPointerLeave={() => setTip((t) => (t?.pinned ? t : null))}
         title="Clique e arraste para girar 360°"
       >
         {/* brilho ambiente */}
