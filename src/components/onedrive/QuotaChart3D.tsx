@@ -120,8 +120,12 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 key={b.key}
                 className="flex flex-col items-center cursor-pointer"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
-                onMouseEnter={() => setActive(b.key)}
-                onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+                onPointerEnter={(e) => {
+                  setActive(b.key);
+                  const rect = stageRef.current?.getBoundingClientRect();
+                  if (rect) setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                }}
+                onPointerLeave={() => { setActive((cur) => (cur === b.key ? null : cur)); setTip((t) => (t?.key === b.key ? null : t)); }}
                 onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
               >
                 <span
