@@ -725,6 +725,20 @@ function NovoRdoPage() {
                   {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
                 </div>
               )}
+              {lowResIdxs.length > 0 && (
+                <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 text-destructive px-3 py-2 text-xs">
+                  {lowResIdxs.length} foto(s) com baixa resolução (mínimo {MIN_IMAGE_DIM}px no menor lado). Tire novamente ou substitua antes de avançar.
+                </div>
+              )}
+              <PhotoEditor
+                open={editorIdx !== null}
+                file={editorIdx !== null ? fotos[editorIdx] : null}
+                onClose={() => setEditorIdx(null)}
+                onSave={(f) => {
+                  if (editorIdx === null) return;
+                  setFotos((p) => p.map((x, j) => j === editorIdx ? f : x));
+                }}
+              />
               {fotos.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
