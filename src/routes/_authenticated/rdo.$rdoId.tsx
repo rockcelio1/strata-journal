@@ -574,31 +574,8 @@ function RdoDetailPage() {
 
 
       {/* Auditoria de Exclusões */}
-      {(() => {
-        const exclusoes = logs.filter((l: any) => l.acao === "rascunho_excluido" || /excluid/i.test(l.acao));
-        if (exclusoes.length === 0) return null;
-        return (
-          <Card className="p-4 mb-4 border-destructive/40">
-            <h3 className="font-serif text-lg flex items-center gap-2 mb-3 text-destructive">
-              <History className="h-4 w-4" /> Auditoria de exclusões ({exclusoes.length})
-            </h3>
-            <ul className="space-y-2 text-sm">
-              {exclusoes.map((l: any) => (
-                <li key={l.id} className="border border-destructive/20 rounded-md p-2 bg-destructive/5">
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                  </div>
-                  <div>
-                    <span className="font-medium">{l.autor?.nome ?? l.autor?.email ?? "Usuário"}</span>
-                    <span className="text-muted-foreground"> · ID: <code className="text-[11px]">{l.autor_id ?? "—"}</code></span>
-                  </div>
-                  {l.motivo && <div className="text-xs italic text-muted-foreground mt-1">"{l.motivo}"</div>}
-                </li>
-              ))}
-            </ul>
-          </Card>
-        );
-      })()}
+      <ExclusoesPanel logs={logs} />
+
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
