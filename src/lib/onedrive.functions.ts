@@ -139,6 +139,32 @@ export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: diagBuf.slice(0, DIAG_MAX) }));
 
+export const getOneDriveQuota = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    try {
+      const res = await gatewayFetch("/me/drive?$select=quota,webUrl", undefined, 2, "quota");
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        const requestId = res.headers.get("request-id");
+        return { ok: false as const, error: parseGraphError(res.status, body, "quota", `${GATEWAY_URL}/me/drive`, requestId) };
+      }
+      const j = await res.json() as { webUrl?: string; quota?: { total?: number; used?: number; remaining?: number; deleted?: number; state?: string } };
+      const q = j.quota ?? {};
+      return {
+        ok: true as const,
+        webUrl: j.webUrl ?? null,
+        total: Number(q.total ?? 0),
+        used: Number(q.used ?? 0),
+        remaining: Number(q.remaining ?? 0),
+        deleted: Number(q.deleted ?? 0),
+        state: q.state ?? null,
+      };
+    } catch (e: any) {
+      return { ok: false as const, error: e?.message ?? "Erro" };
+    }
+  });
+
 export const verifyOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
