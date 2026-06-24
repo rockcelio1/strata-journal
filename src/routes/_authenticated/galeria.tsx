@@ -92,11 +92,12 @@ function GaleriaPage() {
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Stat label="Fotos" value={totals.imagem} icon={ImageIcon} />
-        <Stat label="Vídeos" value={totals.video} icon={FilmStrip} />
-        <Stat label="PDFs" value={totals.pdf} icon={FilePdf} />
-        <Stat label="Outros" value={totals.outro} icon={FileText} />
+        <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
+        <Stat label="Vídeos" value={totals.video}  icon={FilmStrip} active={tipo === "video"}  onClick={() => setTipo(tipo === "video"  ? "" : "video")} />
+        <Stat label="PDFs"   value={totals.pdf}    icon={FilePdf}   active={tipo === "pdf"}    onClick={() => setTipo(tipo === "pdf"    ? "" : "pdf")} />
+        <Stat label="Outros" value={totals.outro}  icon={FileText}  active={tipo === "outro"}  onClick={() => setTipo(tipo === "outro"  ? "" : "outro")} />
       </div>
+
 
       <Card className="p-3 mb-4 flex flex-wrap gap-2 items-end">
         <div className="flex-1 min-w-[180px]">
