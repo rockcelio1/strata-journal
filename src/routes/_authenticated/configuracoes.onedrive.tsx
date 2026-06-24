@@ -23,11 +23,18 @@ function OneDriveSettings() {
   const testFn = useServerFn(testOneDrivePermissions);
   const ensureFn = useServerFn(ensureOneDriveFolder);
   const diagFn = useServerFn(getOneDriveDiagnostics);
+  const quotaFn = useServerFn(getOneDriveQuota);
 
   const diag = useQuery({
     queryKey: ["onedrive", "diag"],
     queryFn: () => diagFn({ data: undefined as any }),
     refetchInterval: 5000,
+  });
+
+  const quota = useQuery({
+    queryKey: ["onedrive", "quota"],
+    queryFn: () => quotaFn({ data: undefined as any }),
+    retry: 1,
   });
 
   const [path, setPath] = useState<string>("");
