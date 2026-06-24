@@ -213,41 +213,47 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
       const t = e.target as Node | null;
       if (stageRef.current && t && stageRef.current.contains(t)) return;
       if (tipRef.current && t && tipRef.current.contains(t)) return;
+      const k = tip?.key;
+      reportEvent("tooltip_closed_by_outside", {}, { chartId, empresa, barKey: k, trigger: "touch" });
       setTip(null);
     }
     document.addEventListener("pointerdown", onDocDown, true);
     return () => document.removeEventListener("pointerdown", onDocDown, true);
-  }, [tip?.pinned]);
+  }, [tip?.pinned, tip?.key, chartId, empresa]);
 
   // Esc fecha o tooltip e devolve foco à barra (sem armadilha de foco).
-  const closeTipAndRefocus = useCallback(() => {
+  const closeTipAndRefocus = useCallback((reason: "escape" | "close_button" = "escape") => {
     const k = tip?.key;
     setTip(null);
     setActive(null);
+    reportEvent(reason === "escape" ? "tooltip_closed_by_escape" : "tooltip_closed_by_close_button",
+      {}, { chartId, empresa, barKey: k, trigger: "keyboard" });
     if (k && barRefs.current[k]) {
       requestAnimationFrame(() => barRefs.current[k]?.focus());
     }
-  }, [tip?.key]);
+  }, [tip?.key, chartId, empresa]);
 
   useEffect(() => {
     if (!tip) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
-        closeTipAndRefocus();
+        closeTipAndRefocus("escape");
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [tip, closeTipAndRefocus]);
 
-  function openTipForKey(key: string, pinned = true) {
+  function openTipForKey(key: string, pinned = true, trigger: SentryCtx["trigger"] = "keyboard") {
     const rect = stageRef.current?.getBoundingClientRect();
     const barEl = barRefs.current[key];
     if (!rect || !barEl) return;
     const br = barEl.getBoundingClientRect();
     const x = br.left - rect.left + br.width / 2;
     const y = br.top - rect.top + br.height / 2;
+    hoverStartRef.current = { key, t: performance.now() };
+    reportEvent("keyboard_open", {}, { chartId, empresa, barKey: key, trigger });
     setTip({ key, x, y, pinned });
     setActive(key);
     armAutoClose();
