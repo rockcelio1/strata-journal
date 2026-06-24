@@ -203,6 +203,9 @@ export async function detectarCepAutomaticamente(): Promise<CepInfo> {
   const postcode: string | undefined = j?.address?.postcode;
   if (!postcode) throw new Error("Nenhum CEP encontrado para sua localização atual.");
   return fetchCepInfo(postcode);
+}
+
+
 
 // ----------------- Previsão diária (5 dias úteis: seg-sex) -----------------
 export interface DiaPrevisao {
