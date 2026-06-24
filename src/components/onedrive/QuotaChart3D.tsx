@@ -15,21 +15,41 @@ function fmtBytes(n: number): string {
   return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${u[i]}`;
 }
 
-function reportError(scope: string, payload: Record<string, unknown>) {
+type SentryCtx = {
+  chartId?: string;
+  empresa?: string;
+  barIndex?: number;
+  barKey?: string;
+};
+
+function reportError(scope: string, payload: Record<string, unknown>, ctx: SentryCtx = {}) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = typeof window !== "undefined" ? (window as any) : null;
-    if (w?.Sentry?.captureMessage) {
-      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: payload });
+    if (w?.Sentry?.withScope && w?.Sentry?.captureMessage) {
+      w.Sentry.withScope((s: any) => {
+        s.setTag("component", "QuotaChart3D");
+        s.setTag("scope", scope);
+        if (ctx.chartId) s.setTag("chart_id", ctx.chartId);
+        if (ctx.empresa) s.setTag("empresa", ctx.empresa);
+        if (typeof ctx.barIndex === "number") s.setTag("bar_index", String(ctx.barIndex));
+        if (ctx.barKey) s.setTag("bar_key", ctx.barKey);
+        s.setContext("quota_chart", { ...payload, ...ctx });
+        w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
+      });
+    } else if (w?.Sentry?.captureMessage) {
+      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
     }
   } catch { /* noop */ }
-  console.warn(`[QuotaChart3D] ${scope}`, payload);
+  console.warn(`[QuotaChart3D] ${scope}`, { ...payload, ...ctx });
 }
 
 type Props = {
   used: number;
   total: number;
   deleted?: number;
+  chartId?: string;
+  empresa?: string;
 };
 
 type BarDef = {
@@ -42,7 +62,7 @@ type BarDef = {
   shadow: string;
 };
 
-export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
+export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quota", empresa }: Props) {
   const usedSafe = toNum(used);
   const totalSafe = toNum(total);
   const deletedSafe = toNum(deleted);
@@ -78,7 +98,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
 
   // Log dados inválidos uma única vez por mudança.
   useEffect(() => {
-    if (!dataValid) reportError("dados inválidos", { used, total, deleted });
+    if (!dataValid) reportError("dados inválidos", { used, total, deleted }, { chartId, empresa });
   }, [used, total, deleted, dataValid]);
 
   // Auto-rotate 360° com throttling (~30fps) e respeito a reduce-motion.
@@ -135,18 +155,27 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     return () => document.removeEventListener("pointerdown", onDocDown, true);
   }, [tip?.pinned]);
 
-  // Esc fecha o tooltip
+  // Esc fecha o tooltip e devolve foco à barra (sem armadilha de foco).
+  const closeTipAndRefocus = useCallback(() => {
+    const k = tip?.key;
+    setTip(null);
+    setActive(null);
+    if (k && barRefs.current[k]) {
+      requestAnimationFrame(() => barRefs.current[k]?.focus());
+    }
+  }, [tip?.key]);
+
   useEffect(() => {
     if (!tip) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        setTip(null);
-        setActive(null);
+        e.stopPropagation();
+        closeTipAndRefocus();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [tip]);
+  }, [tip, closeTipAndRefocus]);
 
   function openTipForKey(key: string, pinned = true) {
     const rect = stageRef.current?.getBoundingClientRect();
@@ -258,7 +287,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
               transformStyle: "preserve-3d",
             }}
           />
-          {bars.map((b) => {
+          {bars.map((b, barIndex) => {
             const h = Math.max(12, (b.pct / 100) * 210);
             const isActive = active === b.key;
             return (
@@ -280,7 +309,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                     setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
                     armAutoClose();
                   } catch (err) {
-                    reportError("hover error", { key: b.key, value: b.value, err: String(err) });
+                    reportError("hover error", { value: b.value, err: String(err) }, { chartId, empresa, barIndex, barKey: b.key });
                   }
                 }}
                 onPointerLeave={(e) => {
@@ -347,11 +376,11 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           if (!tip) return null;
           const b = bars.find((x) => x.key === tip.key);
           if (!b) {
-            reportError("tooltip sem barra", { key: tip.key });
+            reportError("tooltip sem barra", { key: tip.key }, { chartId, empresa });
             return null;
           }
           if (!Number.isFinite(b.value) || !Number.isFinite(b.pct)) {
-            reportError("tooltip valores inválidos", { key: b.key, value: b.value, pct: b.pct });
+            reportError("tooltip valores inválidos", { value: b.value, pct: b.pct }, { chartId, empresa, barKey: b.key, barIndex: bars.indexOf(b) });
             return null;
           }
           const rect = stageRef.current?.getBoundingClientRect();
@@ -384,6 +413,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
               id="quota-tooltip"
               role="tooltip"
               aria-live="polite"
+              tabIndex={-1}
               className={`absolute z-10 rounded-2xl p-3 text-[11px] ${tip.pinned ? "" : "pointer-events-none"}`}
               style={{
                 left: x,
@@ -410,7 +440,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                   <button
                     type="button"
                     aria-label="Fechar tooltip"
-                    onClick={(e) => { e.stopPropagation(); setTip(null); }}
+                    onClick={(e) => { e.stopPropagation(); closeTipAndRefocus(); }}
                     className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
                   >×</button>
                 )}
