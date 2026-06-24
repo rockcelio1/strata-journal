@@ -284,13 +284,53 @@
 }
 
 /* Borda grossa laranja FACOM no hover (sem mover layout) */
+@property --facom-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes facom-border-spin {
+  to { --facom-angle: 360deg; }
+}
 @utility dash-card {
-  transition: box-shadow 180ms ease, transform 180ms ease;
+  position: relative;
+  isolation: isolate;
+  transition: transform 180ms ease;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    padding: 3px;
+    background: conic-gradient(
+      from var(--facom-angle),
+      rgba(255, 122, 26, 0) 0deg,
+      rgba(255, 122, 26, 0) 240deg,
+      rgba(255, 170, 80, 0.95) 300deg,
+      rgba(255, 102, 0, 1)     330deg,
+      rgba(255, 170, 80, 0.95) 360deg,
+      rgba(255, 122, 26, 0) 420deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+    z-index: 2;
+  }
   &:hover, &:focus-visible {
-    box-shadow:
-      0 0 0 4px rgba(255, 122, 26, 0.95),
-      0 10px 30px -10px rgba(255, 122, 26, 0.45);
+    &::after {
+      opacity: 1;
+      animation: facom-border-spin 2.2s linear infinite;
+    }
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .dash-card::after { animation: none !important; }
+}
+
 
 
