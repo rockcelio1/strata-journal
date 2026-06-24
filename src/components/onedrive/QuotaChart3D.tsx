@@ -207,6 +207,17 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
     };
   }, []);
 
+  // Telemetria de render do tooltip (tempo desde hover_start).
+  useEffect(() => {
+    if (!tip) return;
+    const start = hoverStartRef.current;
+    const t_to_render_ms = start && start.key === tip.key
+      ? Math.max(0, Math.round(performance.now() - start.t))
+      : null;
+    reportEvent("tooltip_rendered", { t_to_render_ms, pinned: !!tip.pinned },
+      { chartId, empresa, barKey: tip.key });
+  }, [tip?.key, tip?.pinned, chartId, empresa]);
+
   useEffect(() => {
     if (!tip?.pinned) return;
     function onDocDown(e: PointerEvent) {
