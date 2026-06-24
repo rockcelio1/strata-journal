@@ -148,8 +148,45 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         </div>
       </div>
 
+      {/* Detalhes da barra ativa */}
+      {(() => {
+        const b = bars.find((x) => x.key === active);
+        if (!b) {
+          return (
+            <p className="text-[11px] text-muted-foreground italic">
+              Passe o mouse ou clique em uma barra (ou na legenda) para ver os detalhes.
+            </p>
+          );
+        }
+        const totalRef = Math.max(total, 1);
+        return (
+          <div
+            className="rounded-xl p-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
+            style={{
+              background: `linear-gradient(135deg, ${b.color}1a, ${b.highlight}0d)`,
+              border: `1px solid ${b.color}`,
+              boxShadow: `0 4px 16px ${b.shadow}`,
+            }}
+          >
+            <span className="font-bold" style={{ color: b.color }}>{b.label}</span>
+            <span><span className="text-muted-foreground">Tamanho:</span> <b>{fmtBytes(b.value)}</b></span>
+            <span><span className="text-muted-foreground">% do total:</span> <b>{b.pct.toFixed(2)}%</b></span>
+            <span><span className="text-muted-foreground">Bytes:</span> <b>{b.value.toLocaleString("pt-BR")}</b></span>
+            <span><span className="text-muted-foreground">Referência total:</span> <b>{fmtBytes(totalRef)}</b></span>
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              className="ml-auto text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted"
+            >
+              Fechar
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Legenda colorida e destacada */}
       <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+
         {bars.map((b) => (
           <li
             key={b.key}
