@@ -37,10 +37,12 @@ export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
 function RdoDetailPage() {
   const { rdoId } = Route.useParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const fn = useServerFn(getRdo);
   const meFn = useServerFn(getMe);
   const submitFn = useServerFn(submitRdo);
   const approveFn = useServerFn(approveRdo);
+  const deleteFn = useServerFn(deleteRdo);
   const logsFn = useServerFn(listRdoLogs);
   const anexosFn = useServerFn(listRdoAnexos);
   const registrarFn = useServerFn(registrarAnexo);
