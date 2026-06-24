@@ -293,14 +293,42 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
   const ryNorm = ((ry % 360) + 360) % 360;
   const rxNorm = ((rx % 360) + 360) % 360;
 
-  const onBarKey = useCallback((e: React.KeyboardEvent, key: string) => {
+  const orderedKeys = bars.map((b) => b.key);
+
+  function moveFocus(currentKey: string, delta: number | "home" | "end", group: "bar" | "legend") {
+    const i = orderedKeys.indexOf(currentKey);
+    if (i < 0) return;
+    const n = orderedKeys.length;
+    const next = delta === "home" ? 0 : delta === "end" ? n - 1 : (i + delta + n) % n;
+    const k = orderedKeys[next];
+    setFocusKey(k);
+    requestAnimationFrame(() => {
+      const el = group === "bar" ? barRefs.current[k] : legendRefs.current[k];
+      el?.focus();
+    });
+  }
+
+  const onBarKey = useCallback((e: React.KeyboardEvent, key: string, group: "bar" | "legend" = "bar") => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openTipForKey(key, true);
+      openTipForKey(key, true, "keyboard");
     } else if (e.key === "Escape") {
       setTip(null);
       setActive(null);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      moveFocus(key, 1, group);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveFocus(key, -1, group);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      moveFocus(key, "home", group);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      moveFocus(key, "end", group);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
