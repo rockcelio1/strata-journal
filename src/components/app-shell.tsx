@@ -27,6 +27,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notification-bell";
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
