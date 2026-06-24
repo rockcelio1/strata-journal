@@ -14,6 +14,7 @@ import {
   Images,
   Settings,
   Menu,
+  ArrowLeft,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
