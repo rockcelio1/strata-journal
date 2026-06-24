@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck,
+  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
@@ -114,12 +114,17 @@ function NovoRdoPage() {
   useEffect(() => {
     if (!me?.profile?.id || draftLoaded) return;
     (async () => {
-      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number }>(draftKey);
+      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number; fotos?: Blob[] }>(draftKey);
       if (d?.value?.form) {
         setForm(d.value.form);
         if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
         if (d.value.signer) setSigner(d.value.signer);
         if (typeof d.value.stepIdx === "number") setStepIdx(d.value.stepIdx);
+        if (Array.isArray(d.value.fotos) && d.value.fotos.length) {
+          setFotos(d.value.fotos.map((b, i) =>
+            b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
+          ));
+        }
         toast.info("Rascunho restaurado automaticamente.");
       }
       setDraftLoaded(true);
@@ -127,9 +132,9 @@ function NovoRdoPage() {
   }, [me?.profile?.id]);
   useEffect(() => {
     if (!draftLoaded) return;
-    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx }); }, 400);
+    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos }); }, 400);
     return () => clearTimeout(t);
-  }, [form, legendas, signer, stepIdx, draftLoaded, draftKey]);
+  }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
 
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
@@ -647,20 +652,60 @@ function NovoRdoPage() {
               {fotos.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {fotos.map((f, i) => (
-                    <div key={i} className="space-y-1.5">
-                      <div className="relative aspect-square overflow-hidden rounded-md border border-border">
-                        <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
-                        <button onClick={() => { setFotos((p) => p.filter((_, j) => j !== i)); setLegendas((p) => p.filter((_, j) => j !== i)); }} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                          <X size={12} />
-                        </button>
+                <>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{fotos.length} foto(s) — use as setas para reordenar antes de enviar.</span>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm("Remover todas as fotos?")) { setFotos([]); setLegendas([]); } }}
+                      className="text-destructive hover:underline"
+                    >Limpar tudo</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {fotos.map((f, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="relative aspect-square overflow-hidden rounded-md border border-border">
+                          <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
+                          <span className="absolute top-1 left-1 bg-background/80 text-[10px] font-medium rounded px-1.5 py-0.5">#{i + 1}</span>
+                          <button
+                            type="button"
+                            aria-label="Remover foto"
+                            onClick={() => { setFotos((p) => p.filter((_, j) => j !== i)); setLegendas((p) => p.filter((_, j) => j !== i)); }}
+                            className="absolute top-1 right-1 bg-background/80 rounded-full p-1"
+                          >
+                            <X size={12} />
+                          </button>
+                          <div className="absolute bottom-1 right-1 flex gap-1">
+                            <button
+                              type="button"
+                              aria-label="Mover para cima"
+                              disabled={i === 0}
+                              onClick={() => {
+                                if (i === 0) return;
+                                setFotos((p) => { const a = [...p]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; });
+                                setLegendas((p) => { const a = [...p]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; });
+                              }}
+                              className="bg-background/80 rounded-full p-1 disabled:opacity-40"
+                            ><ArrowUp size={12} /></button>
+                            <button
+                              type="button"
+                              aria-label="Mover para baixo"
+                              disabled={i === fotos.length - 1}
+                              onClick={() => {
+                                if (i === fotos.length - 1) return;
+                                setFotos((p) => { const a = [...p]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; });
+                                setLegendas((p) => { const a = [...p]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; });
+                              }}
+                              className="bg-background/80 rounded-full p-1 disabled:opacity-40"
+                            ><ArrowDown size={12} /></button>
+                          </div>
+                        </div>
+                        <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
+                        <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
                       </div>
-                      <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                      <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
               )}
 
               {uploadProgress.length > 0 && (
