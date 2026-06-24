@@ -167,13 +167,28 @@ export function normalizeCep(input: string): string | null {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }
 
+export function validarCep(input: string): { ok: true; cep: string } | { ok: false; mensagem: string } {
+  const raw = (input ?? "").trim();
+  if (!raw) return { ok: false, mensagem: "Informe o CEP." };
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return { ok: false, mensagem: "CEP deve conter apenas números." };
+  if (digits.length < 8) return { ok: false, mensagem: `CEP incompleto (${digits.length}/8 dígitos).` };
+  if (digits.length > 8) return { ok: false, mensagem: "CEP com dígitos demais. Use o formato 00000-000." };
+  return { ok: true, cep: `${digits.slice(0, 5)}-${digits.slice(5)}` };
+}
+
 export async function fetchCepInfo(cep: string): Promise<CepInfo> {
-  const norm = normalizeCep(cep);
-  if (!norm) throw new Error("CEP inválido. Use o formato 00000-000.");
-  const r = await fetchComRetry(`https://viacep.com.br/ws/${norm.replace("-", "")}/json/`);
-  const j = await r.json();
-  if (!j || j.erro) throw new Error("CEP não encontrado nos correios.");
-  return { cep: norm, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
+  const v = validarCep(cep);
+  if (!v.ok) throw new Error(v.mensagem);
+  try {
+    const r = await fetchComRetry(`https://viacep.com.br/ws/${v.cep.replace("-", "")}/json/`);
+    const j = await r.json();
+    if (!j || j.erro) throw new Error(`CEP ${v.cep} não encontrado nos Correios.`);
+    return { cep: v.cep, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o CEP. Verifique sua conexão.");
+    throw e;
+  }
 }
 
 function enderecoFromCep(info: CepInfo): string {
