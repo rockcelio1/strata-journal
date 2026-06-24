@@ -114,12 +114,17 @@ function NovoRdoPage() {
   useEffect(() => {
     if (!me?.profile?.id || draftLoaded) return;
     (async () => {
-      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number }>(draftKey);
+      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number; fotos?: Blob[] }>(draftKey);
       if (d?.value?.form) {
         setForm(d.value.form);
         if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
         if (d.value.signer) setSigner(d.value.signer);
         if (typeof d.value.stepIdx === "number") setStepIdx(d.value.stepIdx);
+        if (Array.isArray(d.value.fotos) && d.value.fotos.length) {
+          setFotos(d.value.fotos.map((b, i) =>
+            b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
+          ));
+        }
         toast.info("Rascunho restaurado automaticamente.");
       }
       setDraftLoaded(true);
@@ -127,9 +132,9 @@ function NovoRdoPage() {
   }, [me?.profile?.id]);
   useEffect(() => {
     if (!draftLoaded) return;
-    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx }); }, 400);
+    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos }); }, 400);
     return () => clearTimeout(t);
-  }, [form, legendas, signer, stepIdx, draftLoaded, draftKey]);
+  }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
 
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
