@@ -103,19 +103,23 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           />
           {bars.map((b) => {
             const h = Math.max(12, (b.pct / 100) * 210);
+            const isActive = active === b.key;
             return (
-              <div key={b.key} className="flex flex-col items-center" style={{ transformStyle: "preserve-3d" }}>
+              <div
+                key={b.key}
+                className="flex flex-col items-center cursor-pointer"
+                style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
+                onMouseEnter={() => setActive(b.key)}
+                onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+                onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
+              >
                 <span
                   className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
-                  style={{
-                    color: "#fff",
-                    background: b.color,
-                    boxShadow: `0 0 12px ${b.shadow}`,
-                  }}
+                  style={{ color: "#fff", background: b.color, boxShadow: `0 0 12px ${b.shadow}` }}
                 >
                   {b.pct.toFixed(1)}%
                 </span>
-                <Bar3D height={h} color={b.color} highlight={b.highlight} shadow={b.shadow} />
+                <Bar3D height={h} color={b.color} highlight={b.highlight} shadow={b.shadow} active={isActive} />
                 <span
                   className="text-[11px] mt-2 font-bold tracking-wide px-2 py-0.5 rounded-md"
                   style={{
