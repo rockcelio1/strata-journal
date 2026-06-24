@@ -304,6 +304,13 @@ function RdoDetailPage() {
         })}
       </SectionList>
 
+      {/* Assinaturas requeridas */}
+      <SignaturesCard
+        rdoId={rdoId}
+        myUserId={me?.profile?.id}
+        canManage={!!me?.profile?.id && (me.profile.id === data.rdo.autor_id)}
+      />
+
       {/* Anexos unificados (OneDrive + Supabase) */}
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
