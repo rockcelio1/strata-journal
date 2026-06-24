@@ -652,20 +652,60 @@ function NovoRdoPage() {
               {fotos.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {fotos.map((f, i) => (
-                    <div key={i} className="space-y-1.5">
-                      <div className="relative aspect-square overflow-hidden rounded-md border border-border">
-                        <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
-                        <button onClick={() => { setFotos((p) => p.filter((_, j) => j !== i)); setLegendas((p) => p.filter((_, j) => j !== i)); }} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                          <X size={12} />
-                        </button>
+                <>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{fotos.length} foto(s) — use as setas para reordenar antes de enviar.</span>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm("Remover todas as fotos?")) { setFotos([]); setLegendas([]); } }}
+                      className="text-destructive hover:underline"
+                    >Limpar tudo</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {fotos.map((f, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="relative aspect-square overflow-hidden rounded-md border border-border">
+                          <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
+                          <span className="absolute top-1 left-1 bg-background/80 text-[10px] font-medium rounded px-1.5 py-0.5">#{i + 1}</span>
+                          <button
+                            type="button"
+                            aria-label="Remover foto"
+                            onClick={() => { setFotos((p) => p.filter((_, j) => j !== i)); setLegendas((p) => p.filter((_, j) => j !== i)); }}
+                            className="absolute top-1 right-1 bg-background/80 rounded-full p-1"
+                          >
+                            <X size={12} />
+                          </button>
+                          <div className="absolute bottom-1 right-1 flex gap-1">
+                            <button
+                              type="button"
+                              aria-label="Mover para cima"
+                              disabled={i === 0}
+                              onClick={() => {
+                                if (i === 0) return;
+                                setFotos((p) => { const a = [...p]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; });
+                                setLegendas((p) => { const a = [...p]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; });
+                              }}
+                              className="bg-background/80 rounded-full p-1 disabled:opacity-40"
+                            ><ArrowUp size={12} /></button>
+                            <button
+                              type="button"
+                              aria-label="Mover para baixo"
+                              disabled={i === fotos.length - 1}
+                              onClick={() => {
+                                if (i === fotos.length - 1) return;
+                                setFotos((p) => { const a = [...p]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; });
+                                setLegendas((p) => { const a = [...p]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; });
+                              }}
+                              className="bg-background/80 rounded-full p-1 disabled:opacity-40"
+                            ><ArrowDown size={12} /></button>
+                          </div>
+                        </div>
+                        <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
+                        <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
                       </div>
-                      <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                      <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
               )}
 
               {uploadProgress.length > 0 && (
