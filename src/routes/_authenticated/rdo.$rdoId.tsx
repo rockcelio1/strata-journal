@@ -116,12 +116,15 @@ function RdoDetailPage() {
   const excluir = useMutation({
     mutationFn: () => deleteFn({ data: { id: rdoId } }),
     onSuccess: () => {
-      toast.success("RDO excluído");
+      toast.success("Rascunho excluído com sucesso");
       qc.invalidateQueries({ queryKey: ["rdos"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       navigate({ to: "/rdo" });
     },
-    onError: (e: any) => toast.error(`Falha ao excluir: ${e.message}`),
+    onError: (e: any) => {
+      const msg = e?.message ?? "Erro desconhecido ao excluir o rascunho.";
+      toast.error(msg, { duration: 6000 });
+    },
   });
 
   const fileToBase64 = (f: File) => new Promise<string>((resolve, reject) => {
