@@ -134,7 +134,7 @@ function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">Indicadores em tempo real da operação.</p>
       </header>
 
-      <Card className="p-3 sm:p-4 mb-4">
+      <Card className="dash-card p-3 sm:p-4 mb-4">
         <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
           <SlidersHorizontal className="h-4 w-4" /> Filtro avançado
           {filtroAtivo && filtros && (
@@ -217,7 +217,7 @@ function DashboardPage() {
       </div>
 
       {/* ============== GRÁFICOS MULTI-DIMENSÃO ============== */}
-      <Card id="graficos" className="p-4 sm:p-6 mb-4 overflow-hidden relative">
+      <Card id="graficos" className="dash-card p-4 sm:p-6 mb-4 overflow-hidden relative">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-brand" />
@@ -256,7 +256,7 @@ function DashboardPage() {
 
       <div className="grid md:grid-cols-12 gap-3 sm:gap-4">
         {/* Avanço por obra */}
-        <Card className="md:col-span-8 p-4 sm:p-6">
+        <Card className="dash-card md:col-span-8 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl">Avanço por obra</h2>
             <Link to="/obras" className="text-xs text-muted-foreground hover:underline flex items-center gap-1">
@@ -283,7 +283,7 @@ function DashboardPage() {
         </Card>
 
         {/* Últimos RDOs */}
-        <Card className="md:col-span-4 p-4 sm:p-6">
+        <Card className="dash-card md:col-span-4 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl">Últimos RDOs</h2>
             <Link to="/rdo" className="text-xs text-muted-foreground hover:underline flex items-center gap-1">
@@ -383,7 +383,7 @@ function StatCard({ icon: Icon, label, value, sub, tone, onClick }: { icon: any;
     <button
       type="button"
       onClick={onClick}
-      className={`facom-flash text-left group rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[120px] transition-all hover:-translate-y-0.5 hover:shadow-lg hover:ring-2 ${ring} focus:outline-none focus:ring-2 focus:ring-brand`}
+      className={`facom-flash dash-card text-left group rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[120px] hover:-translate-y-0.5 ${ring} focus:outline-none focus:ring-2 focus:ring-brand`}
     >
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
