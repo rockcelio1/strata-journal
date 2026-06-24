@@ -626,18 +626,20 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
         {bars.map((b) => (
           <li
             key={b.key}
-            onMouseEnter={() => { setActive(b.key); openTipForKey(b.key, false); }}
+            ref={(el) => { legendRefs.current[b.key] = el; }}
+            onMouseEnter={() => { setActive(b.key); openTipForKey(b.key, false, "legend"); }}
             onMouseLeave={() => {
               setActive((cur) => (cur === b.key ? null : cur));
               setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
             }}
             onClick={() => {
               setActive((cur) => (cur === b.key ? null : b.key));
-              openTipForKey(b.key, true);
+              openTipForKey(b.key, true, "legend");
             }}
             className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/70 outline-none"
-            tabIndex={0}
-            onKeyDown={(e) => onBarKey(e, b.key)}
+            tabIndex={focusKey === b.key ? 0 : -1}
+            onFocus={() => setFocusKey(b.key)}
+            onKeyDown={(e) => onBarKey(e, b.key, "legend")}
             role="button"
             aria-label={`Destacar ${b.label}`}
             style={{
