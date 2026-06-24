@@ -58,6 +58,17 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<{ key: string; x: number; y: number; pinned?: boolean } | null>(null);
   const [spin, setSpin] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Respeita preferência do sistema "reduzir movimento".
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => { setReducedMotion(mq.matches); if (mq.matches) setSpin(false); };
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
   const [, forceTick] = useState(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
