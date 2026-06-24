@@ -964,19 +964,19 @@ function NovoRdoPage() {
           </Button>
         ) : (
           <div className="flex flex-col items-end gap-1">
-            {!formValid && (
+            {stepIssues.length > 0 && (
               <p className="text-xs text-destructive" role="alert">
-                Corrija {equipInvalidIdx.length > 0 ? `${equipInvalidIdx.length} equipamento(s) sem seleção` : ""}
-                {equipInvalidIdx.length > 0 && (ocInvalidIdx.length > 0 || maoInvalidIdx.length > 0) ? " · " : ""}
-                {ocInvalidIdx.length > 0 ? `${ocInvalidIdx.length} ocorrência(s) sem descrição` : ""}
-                {ocInvalidIdx.length > 0 && maoInvalidIdx.length > 0 ? " · " : ""}
-                {maoInvalidIdx.length > 0 ? `${maoInvalidIdx.length} mão de obra sem pessoa` : ""}.
+                {stepIssues.length} pendência(s) — veja a lista acima.
               </p>
             )}
             <div className="flex gap-2">
-              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
-              <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || !formValid || save.isPending} onClick={() => save.mutate(true)}>
-                <Check size={16} className="mr-1" /> Concluir
+              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => { setSubmitError(null); save.mutate(false); }}>Rascunho</Button>
+              <Button
+                className="bg-brand text-brand-foreground"
+                disabled={!canSubmit || save.isPending}
+                onClick={() => { setSubmitError(null); save.mutate(true); }}
+              >
+                <Check size={16} className="mr-1" /> {save.isPending ? "Enviando…" : "Concluir RDO"}
               </Button>
             </div>
           </div>
