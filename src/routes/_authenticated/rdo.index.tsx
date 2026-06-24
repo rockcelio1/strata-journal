@@ -59,6 +59,10 @@ function RdoListPage() {
 
   const [status, setStatus] = useState<string>("todos");
   const [obraId, setObraId] = useState<string>("todas");
+  const [contrato, setContrato] = useState<string>("");
+  const [autorId, setAutorId] = useState<string>("todos");
+  const [signerId, setSignerId] = useState<string>("todos");
+  const [aprovadorId, setAprovadorId] = useState<string>("todos");
   const [busca, setBusca] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
