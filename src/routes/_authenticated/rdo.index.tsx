@@ -60,7 +60,15 @@ function RdoListPage() {
   const { data: rdos = [] } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
   const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
 
-  const [status, setStatus] = useState<string>("todos");
+  const search = Route.useSearch();
+  const [status, setStatus] = useState<string>(() => {
+    const s = search.status;
+    return s && (statusFilters as readonly string[]).includes(s) ? s : "todos";
+  });
+  useEffect(() => {
+    const s = search.status;
+    if (s && (statusFilters as readonly string[]).includes(s)) setStatus(s);
+  }, [search.status]);
   const [obraId, setObraId] = useState<string>("todas");
   const [contrato, setContrato] = useState<string>("");
   const [autorId, setAutorId] = useState<string>("todos");
