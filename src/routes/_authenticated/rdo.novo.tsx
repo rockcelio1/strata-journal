@@ -376,8 +376,17 @@ function NovoRdoPage() {
     };
   }
 
+  type LogEntry = { at: string; kind: "start" | "ok" | "erro" | "offline"; mensagem: string; etapa?: string };
+  const [submitLog, setSubmitLog] = useState<LogEntry[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [flashRow, setFlashRow] = useState<{ key: string; idx: number } | null>(null);
+  function pushLog(e: Omit<LogEntry, "at">) {
+    setSubmitLog((l) => [{ at: new Date().toISOString(), ...e }, ...l].slice(0, 30));
+  }
+
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
+      pushLog({ kind: "start", mensagem: enviar ? "Iniciando envio do RDO…" : "Salvando rascunho…" });
       const { sane: cleaned } = sanitizeRdoPayload(form);
       const payload = { ...cleaned, enviar };
       const sigManifest = await buildSignatureManifest(payload);
@@ -385,13 +394,17 @@ function NovoRdoPage() {
 
       if (!navigator.onLine) {
         toast.info("Salvo offline. Será sincronizado quando voltar a conexão.");
+        pushLog({ kind: "offline", mensagem: "Sem conexão — RDO enfileirado para sincronizar." });
         return { offline: true as const, local_id: queued.local_id };
       }
       try {
         const rdo: any = await createFn({ data: payload });
         if ((fotos.length || assinaturaBlob) && me?.profile?.empresa_id) {
           try { await uploadAttachments(rdo.id, me.profile.empresa_id, sigManifest); }
-          catch (e: any) { toast.error("Anexos: " + (e.message ?? "falha")); }
+          catch (e: any) {
+            toast.error("Anexos: " + (e.message ?? "falha"));
+            pushLog({ kind: "erro", etapa: "Anexos", mensagem: e?.message ?? "Falha ao enviar anexos" });
+          }
         }
         await markQueued(queued.local_id, { status: "sincronizado", remote_id: rdo.id });
         return { offline: false as const, rdo };
@@ -402,16 +415,18 @@ function NovoRdoPage() {
     },
     onSuccess: (r: any) => {
       clearDraft(draftKey);
+      pushLog({ kind: "ok", mensagem: r.offline ? "RDO em fila offline" : `RDO ${r.rdo?.numero ?? ""} sincronizado` });
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
     onError: (e: any) => {
       const msg = e?.message ?? "Falha ao concluir RDO";
+      const etapa = e?.rows?.[0]?.split(":")?.[0] ?? e?.code;
       setSubmitError(msg);
       toast.error(msg);
+      pushLog({ kind: "erro", etapa, mensagem: msg });
     },
   });
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
 
