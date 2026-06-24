@@ -259,19 +259,22 @@ function NovoRdoPage() {
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
   async function importarClimaPorCep() {
-    const norm = normalizeCep(cepInput);
-    if (!norm) { toast.error("Informe um CEP válido (8 dígitos)."); return; }
-    setCepInput(norm);
+    const v = validarCep(cepInput);
+    if (!v.ok) { setClimaErro(v.mensagem); toast.error(v.mensagem); return; }
+    setCepInput(v.cep);
     setClimaStatus("loading"); setClimaErro(null);
     try {
-      const snap = await fetchClimaPorCep(norm);
-      const prev = await fetchPrevisao5DiasPorCep(norm);
+      const snap = await fetchClimaPorCep(v.cep);
+      const prev = await fetchPrevisao5DiasPorCep(v.cep);
       setClimaInfo(snap); applyTurnoClima(snap.codigo);
       setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
       setClimaStatus("success");
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
     } catch (e: any) {
-      const msg = e?.message ?? "Não foi possível obter o clima pelo CEP";
+      const raw = e?.message ?? "Não foi possível obter o clima pelo CEP";
+      const msg = /não encontrado/i.test(raw) ? `${raw} Verifique o número digitado.`
+                : /Tempo esgotado|timeout/i.test(raw) ? "Tempo esgotado na consulta do CEP. Tente novamente."
+                : raw;
       setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
     }
   }
@@ -282,7 +285,6 @@ function NovoRdoPage() {
       const info = await detectarCepAutomaticamente();
       setCepInput(info.cep);
       toast.success(`CEP detectado: ${info.cep} — ${info.localidade ?? ""}/${info.uf ?? ""}`);
-      // Já consulta o clima automaticamente para esse CEP
       setClimaStatus("loading");
       const snap = await fetchClimaPorCep(info.cep);
       const prev = await fetchPrevisao5DiasPorCep(info.cep);
@@ -290,7 +292,11 @@ function NovoRdoPage() {
       setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
       setClimaStatus("success");
     } catch (e: any) {
-      const msg = e?.message ?? "Não foi possível detectar o CEP automaticamente";
+      const raw = e?.message ?? "Não foi possível detectar o CEP automaticamente";
+      const msg = /permission|denied|negad/i.test(raw) ? "Permissão de localização negada pelo navegador."
+                : /Nominatim|geolocaliza/i.test(raw) ? raw
+                : /Tempo esgotado|timeout/i.test(raw) ? "Tempo esgotado ao detectar o CEP. Tente novamente."
+                : raw;
       setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
     } finally {
       setCepDetecting(false);
