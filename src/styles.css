@@ -283,7 +283,20 @@
   .facom-flash::before { animation: none !important; }
 }
 
-/* Borda grossa laranja FACOM no hover (sem mover layout) */
+/* ============ FACOM glow tokens (calibragem central) ============ */
+:root {
+  --facom-glow-rgb: 255, 122, 26;          /* laranja da logomarca */
+  --facom-glow-rgb-soft: 255, 170, 80;
+  --facom-glow-rgb-deep: 255, 102, 0;
+  --facom-glow-duration: 240ms;
+  --facom-glow-ease: cubic-bezier(.2,.7,.2,1);
+  --facom-glow-opacity: 1;
+  --facom-glow-spread-sm: 14px;
+  --facom-glow-spread-md: 22px;
+  --facom-glow-spread-lg: 44px;
+  --facom-spin-duration: 2.2s;
+}
+
 @property --facom-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -292,56 +305,8 @@
 @keyframes facom-border-spin {
   to { --facom-angle: 360deg; }
 }
-@utility dash-card {
-  position: relative;
-  isolation: isolate;
-  transform: translateZ(0);
-  will-change: transform;
-  transition: transform 180ms ease, box-shadow 280ms ease;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    padding: 3px;
-    background: conic-gradient(
-      from var(--facom-angle),
-      rgba(255, 122, 26, 0) 0deg,
-      rgba(255, 122, 26, 0) 240deg,
-      rgba(255, 170, 80, 0.95) 300deg,
-      rgba(255, 102, 0, 1)     330deg,
-      rgba(255, 170, 80, 0.95) 360deg,
-      rgba(255, 122, 26, 0) 420deg
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-            mask-composite: exclude;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 180ms ease;
-    z-index: 2;
-    will-change: opacity, transform;
-  }
-  &:hover, &:focus-visible {
-    box-shadow:
-      0 0 0 1px rgba(255, 138, 51, 0.45),
-      0 0 24px 4px rgba(255, 122, 26, 0.45),
-      0 0 60px 12px rgba(255, 102, 0, 0.28);
-    &::after {
-      opacity: 1;
-      animation: facom-border-spin 2.2s linear infinite;
-    }
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dash-card { transition: none !important; }
-  .dash-card::after { animation: none !important; transition: none !important; }
-  .dash-card:hover::after, .dash-card:focus-visible::after { opacity: 0.6; }
-}
 
-/* "Acender a luz" — glow no hover via pseudo-elemento (opacity-only, GPU-friendly) */
+/* Sombra de glow reaproveitada — usa as tokens acima */
 @utility facom-glow {
   position: relative;
   isolation: isolate;
@@ -353,21 +318,101 @@
     pointer-events: none;
     z-index: -1;
     opacity: 0;
-    transition: opacity 220ms ease;
+    transition: opacity var(--facom-glow-duration) var(--facom-glow-ease);
     box-shadow:
-      0 0 0 1px rgba(255, 138, 51, 0.5),
-      0 0 18px 2px rgba(255, 122, 26, 0.55),
-      0 0 40px 8px rgba(255, 102, 0, 0.3);
+      0 0 0 1px rgba(var(--facom-glow-rgb), 0.5),
+      0 0 var(--facom-glow-spread-sm) 2px rgba(var(--facom-glow-rgb), 0.55),
+      0 0 var(--facom-glow-spread-lg) 8px rgba(var(--facom-glow-rgb-deep), 0.3);
     will-change: opacity;
   }
-  &:hover::before, &:focus-visible::before {
-    opacity: 1;
+  &:hover::before,
+  &:focus-visible::before,
+  &[data-state="open"]::before {
+    opacity: var(--facom-glow-opacity);
+  }
+  &:focus-visible {
+    outline: 2px solid rgba(var(--facom-glow-rgb), 0.85);
+    outline-offset: 2px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .facom-glow::before { transition: none !important; }
-  .facom-glow:hover::before, .facom-glow:focus-visible::before { opacity: 0.7; }
+
+/* Borda grossa laranja girando — para cards do dashboard */
+@utility dash-card {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+  will-change: transform;
+  transition: transform 180ms var(--facom-glow-ease), box-shadow var(--facom-glow-duration) var(--facom-glow-ease);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    padding: 3px;
+    background: conic-gradient(
+      from var(--facom-angle),
+      rgba(var(--facom-glow-rgb), 0) 0deg,
+      rgba(var(--facom-glow-rgb), 0) 240deg,
+      rgba(var(--facom-glow-rgb-soft), 0.95) 300deg,
+      rgba(var(--facom-glow-rgb-deep), 1)    330deg,
+      rgba(var(--facom-glow-rgb-soft), 0.95) 360deg,
+      rgba(var(--facom-glow-rgb), 0) 420deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--facom-glow-duration) var(--facom-glow-ease);
+    z-index: 2;
+    will-change: opacity;
+  }
+  &:hover, &:focus-visible {
+    box-shadow:
+      0 0 0 1px rgba(var(--facom-glow-rgb), 0.45),
+      0 0 var(--facom-glow-spread-md) 4px rgba(var(--facom-glow-rgb), 0.45),
+      0 0 calc(var(--facom-glow-spread-lg) + 16px) 12px rgba(var(--facom-glow-rgb-deep), 0.28);
+    &::after {
+      opacity: 1;
+      animation: facom-border-spin var(--facom-spin-duration) linear infinite;
+    }
+  }
+  &:focus-visible {
+    outline: 2px solid rgba(var(--facom-glow-rgb), 0.85);
+    outline-offset: 2px;
+  }
 }
+
+/* Seta voltar — acende na cor da logomarca no hover/focus */
+@utility brand-arrow {
+  color: var(--color-brand-foreground);
+  transition: color var(--facom-glow-duration) var(--facom-glow-ease),
+              transform var(--facom-glow-duration) var(--facom-glow-ease);
+  &:hover,
+  &:focus-visible {
+    color: rgb(var(--facom-glow-rgb));
+  }
+  &:hover svg,
+  &:focus-visible svg {
+    transform: translateX(-2px);
+    filter: drop-shadow(0 0 6px rgba(var(--facom-glow-rgb), 0.85));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facom-glow::before,
+  .dash-card,
+  .dash-card::after,
+  .brand-arrow,
+  .brand-arrow svg { transition: none !important; animation: none !important; }
+  .facom-glow:hover::before,
+  .facom-glow:focus-visible::before { opacity: 0.7; }
+  .dash-card:hover::after,
+  .dash-card:focus-visible::after { opacity: 0.6; }
+}
+
 
 
 

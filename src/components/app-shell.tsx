@@ -14,8 +14,8 @@ import {
   Images,
   Settings,
   Menu,
-  ArrowLeft,
 } from "lucide-react";
+import { BackNav } from "@/components/back-nav";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -154,18 +154,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          {/* Botão voltar — esconde no dashboard (rota raiz) */}
-          {pathname !== "/dashboard" && (
-            <button
-              type="button"
-              onClick={() => window.history.length > 1 ? window.history.back() : navigate({ to: "/dashboard" })}
-              aria-label="Voltar"
-              title="Voltar"
-              className="facom-glow inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md bg-brand-foreground/10 ring-1 ring-brand-foreground/25 hover:bg-brand-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/70"
-            >
-              <ArrowLeft className="h-6 w-6" strokeWidth={3} />
-            </button>
-          )}
 
 
           <Link to="/dashboard" className="flex items-center gap-3 shrink-0 min-h-[44px]">
@@ -223,6 +211,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+
+      {/* Navegação contextual reutilizável: voltar + breadcrumb */}
+      <BackNav />
 
       {/* Conteúdo: sidebar só em /cadastros no desktop */}
       <div className="flex-1 flex">
