@@ -976,6 +976,8 @@ export type Database = {
           clima_tarde: Database["public"]["Enums"]["clima"] | null
           created_at: string
           data: string
+          deleted_at: string | null
+          deleted_by: string | null
           empresa_id: string
           enviado_em: string | null
           id: string
@@ -995,6 +997,8 @@ export type Database = {
           clima_tarde?: Database["public"]["Enums"]["clima"] | null
           created_at?: string
           data: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           empresa_id: string
           enviado_em?: string | null
           id?: string
@@ -1014,6 +1018,8 @@ export type Database = {
           clima_tarde?: Database["public"]["Enums"]["clima"] | null
           created_at?: string
           data?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           empresa_id?: string
           enviado_em?: string | null
           id?: string
@@ -1252,6 +1258,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      soft_delete_rdo: { Args: { _rdo_id: string }; Returns: undefined }
     }
     Enums: {
       app_action:
