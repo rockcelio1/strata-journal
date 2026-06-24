@@ -323,7 +323,11 @@ function NovoRdoPage() {
     }, 50);
   }
 
-  const canNext = stepIdx === 0 ? !!form.obra_id : true;
+  const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
+  const canNext =
+    stepIdx === 0 ? !!form.obra_id
+    : stepIdx === 6 ? fotosSemLegenda === 0
+    : true;
   const isLast = stepIdx === steps.length - 1;
 
   return (
