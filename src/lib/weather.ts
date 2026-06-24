@@ -212,9 +212,20 @@ export async function fetchPrevisao5DiasPorCep(cep: string): Promise<{ local: st
 export async function detectarCepAutomaticamente(): Promise<CepInfo> {
   const pos = await fetchPosicao();
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}&addressdetails=1&zoom=18&accept-language=pt-BR`;
-  const r = await fetch(url, { headers: { "Accept": "application/json" } });
-  if (!r.ok) throw new Error("Não foi possível identificar o CEP da sua localização.");
-  const j = await r.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  let r: Response;
+  try {
+    r = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o serviço de geolocalização (Nominatim).");
+    throw new Error("Falha ao contatar o serviço de geolocalização (Nominatim). Verifique sua conexão.");
+  } finally {
+    clearTimeout(timer);
+  }
+  if (r.status === 429) throw new Error("Limite do Nominatim atingido. Tente novamente em alguns instantes.");
+  if (!r.ok) throw new Error(`Nominatim retornou erro (${r.status}). Tente novamente.`);
+  const j = await r.json().catch(() => null);
   const postcode: string | undefined = j?.address?.postcode;
   if (!postcode) throw new Error("Nenhum CEP encontrado para sua localização atual.");
   return fetchCepInfo(postcode);
