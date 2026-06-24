@@ -167,13 +167,28 @@ export function normalizeCep(input: string): string | null {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }
 
+export function validarCep(input: string): { ok: true; cep: string } | { ok: false; mensagem: string } {
+  const raw = (input ?? "").trim();
+  if (!raw) return { ok: false, mensagem: "Informe o CEP." };
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return { ok: false, mensagem: "CEP deve conter apenas números." };
+  if (digits.length < 8) return { ok: false, mensagem: `CEP incompleto (${digits.length}/8 dígitos).` };
+  if (digits.length > 8) return { ok: false, mensagem: "CEP com dígitos demais. Use o formato 00000-000." };
+  return { ok: true, cep: `${digits.slice(0, 5)}-${digits.slice(5)}` };
+}
+
 export async function fetchCepInfo(cep: string): Promise<CepInfo> {
-  const norm = normalizeCep(cep);
-  if (!norm) throw new Error("CEP inválido. Use o formato 00000-000.");
-  const r = await fetchComRetry(`https://viacep.com.br/ws/${norm.replace("-", "")}/json/`);
-  const j = await r.json();
-  if (!j || j.erro) throw new Error("CEP não encontrado nos correios.");
-  return { cep: norm, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
+  const v = validarCep(cep);
+  if (!v.ok) throw new Error(v.mensagem);
+  try {
+    const r = await fetchComRetry(`https://viacep.com.br/ws/${v.cep.replace("-", "")}/json/`);
+    const j = await r.json();
+    if (!j || j.erro) throw new Error(`CEP ${v.cep} não encontrado nos Correios.`);
+    return { cep: v.cep, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o CEP. Verifique sua conexão.");
+    throw e;
+  }
 }
 
 function enderecoFromCep(info: CepInfo): string {
@@ -197,9 +212,20 @@ export async function fetchPrevisao5DiasPorCep(cep: string): Promise<{ local: st
 export async function detectarCepAutomaticamente(): Promise<CepInfo> {
   const pos = await fetchPosicao();
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}&addressdetails=1&zoom=18&accept-language=pt-BR`;
-  const r = await fetch(url, { headers: { "Accept": "application/json" } });
-  if (!r.ok) throw new Error("Não foi possível identificar o CEP da sua localização.");
-  const j = await r.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  let r: Response;
+  try {
+    r = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o serviço de geolocalização (Nominatim).");
+    throw new Error("Falha ao contatar o serviço de geolocalização (Nominatim). Verifique sua conexão.");
+  } finally {
+    clearTimeout(timer);
+  }
+  if (r.status === 429) throw new Error("Limite do Nominatim atingido. Tente novamente em alguns instantes.");
+  if (!r.ok) throw new Error(`Nominatim retornou erro (${r.status}). Tente novamente.`);
+  const j = await r.json().catch(() => null);
   const postcode: string | undefined = j?.address?.postcode;
   if (!postcode) throw new Error("Nenhum CEP encontrado para sua localização atual.");
   return fetchCepInfo(postcode);
