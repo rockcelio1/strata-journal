@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function fmtBytes(n: number): string {
   if (!n || n < 0) return "0 B";
