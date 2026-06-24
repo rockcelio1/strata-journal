@@ -22,7 +22,7 @@ import {
   ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
-import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
+import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, fetchClimaPorCep, fetchPrevisao5DiasPorCep, detectarCepAutomaticamente, normalizeCep, diffPrevisoes, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
 import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
