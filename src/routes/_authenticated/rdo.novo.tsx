@@ -670,7 +670,7 @@ function NovoRdoPage() {
               const invalid = !isUuid(it.mao_de_obra_id);
               const errId = `rdo-mao_de_obra-${i}-err`;
               return (
-              <Card key={i} id={`rdo-mao_de_obra-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-mao_de_obra-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "mao_de_obra" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Pessoa</Label>
                   <Select value={it.mao_de_obra_id} onValueChange={(v) => upd("mao_de_obra", i, "mao_de_obra_id", v)}>
                     <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
