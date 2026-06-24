@@ -590,6 +590,70 @@ export type Database = {
           },
         ]
       }
+      rdo_assinaturas: {
+        Row: {
+          assinado_em: string
+          empresa_id: string
+          geo: Json | null
+          hash_sha256: string | null
+          id: string
+          ip: string | null
+          rdo_id: string
+          storage_path: string
+          user_agent: string | null
+          user_id: string
+          via_grupo_id: string | null
+        }
+        Insert: {
+          assinado_em?: string
+          empresa_id: string
+          geo?: Json | null
+          hash_sha256?: string | null
+          id?: string
+          ip?: string | null
+          rdo_id: string
+          storage_path: string
+          user_agent?: string | null
+          user_id: string
+          via_grupo_id?: string | null
+        }
+        Update: {
+          assinado_em?: string
+          empresa_id?: string
+          geo?: Json | null
+          hash_sha256?: string | null
+          id?: string
+          ip?: string | null
+          rdo_id?: string
+          storage_path?: string
+          user_agent?: string | null
+          user_id?: string
+          via_grupo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_assinaturas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_assinaturas_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_assinaturas_via_grupo_id_fkey"
+            columns: ["via_grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rdo_atividades: {
         Row: {
           created_at: string
@@ -802,6 +866,51 @@ export type Database = {
             columns: ["tipo_ocorrencia_id"]
             isOneToOne: false
             referencedRelation: "tipos_ocorrencia"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_signatarios_requeridos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          id: string
+          rdo_id: string
+          sujeito_id: string
+          sujeito_tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          id?: string
+          rdo_id: string
+          sujeito_id: string
+          sujeito_tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          id?: string
+          rdo_id?: string
+          sujeito_id?: string
+          sujeito_tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_signatarios_requeridos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_signatarios_requeridos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
             referencedColumns: ["id"]
           },
         ]
@@ -1086,6 +1195,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      rdo_signatarios_pendentes: {
+        Args: { _rdo_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_action:
@@ -1124,7 +1239,7 @@ export type Database = {
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
       rdo_acesso_nivel: "ver" | "editar" | "aprovar"
       rdo_acesso_sujeito: "user" | "grupo"
-      rdo_status: "rascunho" | "enviado" | "aprovado" | "reprovado"
+      rdo_status: "rascunho" | "enviado" | "aprovado" | "reprovado" | "assinado"
       severidade: "baixa" | "media" | "alta" | "critica"
     }
     CompositeTypes: {
@@ -1286,7 +1401,7 @@ export const Constants = {
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
       rdo_acesso_nivel: ["ver", "editar", "aprovar"],
       rdo_acesso_sujeito: ["user", "grupo"],
-      rdo_status: ["rascunho", "enviado", "aprovado", "reprovado"],
+      rdo_status: ["rascunho", "enviado", "aprovado", "reprovado", "assinado"],
       severidade: ["baixa", "media", "alta", "critica"],
     },
   },
