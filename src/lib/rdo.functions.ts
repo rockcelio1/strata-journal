@@ -48,6 +48,7 @@ export const getRdo = createServerFn({ method: "GET" })
     ]);
     if (rdo.error) throw rdo.error;
     if (!rdo.data) throw new Error("RDO não encontrado");
+    if ((rdo.data as any).deleted_at) throw new Error("Este RDO foi excluído");
     return {
       rdo: rdo.data,
       atividades: ativ.data ?? [],
