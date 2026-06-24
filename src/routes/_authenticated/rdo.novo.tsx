@@ -668,8 +668,8 @@ function NovoRdoPage() {
                   className="sm:max-w-[160px]"
                 />
                 <div className="flex gap-2 flex-wrap">
-                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || !cepInput} onClick={importarClimaPorCep}>
-                    <CloudSun size={16} className="mr-1" /> Consultar pelo CEP
+                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || cepDetecting || !cepInput} onClick={importarClimaPorCep}>
+                    <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando CEP…" : "Consultar pelo CEP"}
                   </Button>
                   <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
                     <MapPin size={16} className="mr-1" /> {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
