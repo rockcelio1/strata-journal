@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getRdo, submitRdo, approveRdo, deleteRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
@@ -574,31 +574,8 @@ function RdoDetailPage() {
 
 
       {/* Auditoria de Exclusões */}
-      {(() => {
-        const exclusoes = logs.filter((l: any) => l.acao === "rascunho_excluido" || /excluid/i.test(l.acao));
-        if (exclusoes.length === 0) return null;
-        return (
-          <Card className="p-4 mb-4 border-destructive/40">
-            <h3 className="font-serif text-lg flex items-center gap-2 mb-3 text-destructive">
-              <History className="h-4 w-4" /> Auditoria de exclusões ({exclusoes.length})
-            </h3>
-            <ul className="space-y-2 text-sm">
-              {exclusoes.map((l: any) => (
-                <li key={l.id} className="border border-destructive/20 rounded-md p-2 bg-destructive/5">
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(l.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                  </div>
-                  <div>
-                    <span className="font-medium">{l.autor?.nome ?? l.autor?.email ?? "Usuário"}</span>
-                    <span className="text-muted-foreground"> · ID: <code className="text-[11px]">{l.autor_id ?? "—"}</code></span>
-                  </div>
-                  {l.motivo && <div className="text-xs italic text-muted-foreground mt-1">"{l.motivo}"</div>}
-                </li>
-              ))}
-            </ul>
-          </Card>
-        );
-      })()}
+      <ExclusoesPanel logs={logs} />
+
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
@@ -665,6 +642,81 @@ function RdoDetailPage() {
       </Card>
 
     </div>
+  );
+}
+
+function ExclusoesPanel({ logs }: { logs: any[] }) {
+  const exclusoes = useMemo(
+    () => logs.filter((l: any) => l.acao === "rascunho_excluido" || /excluid/i.test(l.acao ?? "")),
+    [logs],
+  );
+  const usuarios = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of exclusoes) {
+      const id = l.autor_id ?? l.autor?.id;
+      if (id) m.set(id, l.autor?.nome ?? l.autor?.email ?? id.slice(0, 8));
+    }
+    return Array.from(m.entries());
+  }, [exclusoes]);
+  const [filtroUser, setFiltroUser] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const filtradas = useMemo(() => {
+    return exclusoes.filter((l: any) => {
+      const id = l.autor_id ?? l.autor?.id ?? "";
+      if (filtroUser && id !== filtroUser) return false;
+      const t = new Date(l.created_at).getTime();
+      if (from && t < new Date(`${from}T00:00:00-03:00`).getTime()) return false;
+      if (to && t > new Date(`${to}T23:59:59-03:00`).getTime()) return false;
+      return true;
+    });
+  }, [exclusoes, filtroUser, from, to]);
+  useEffect(() => { setPage(1); }, [filtroUser, from, to]);
+  if (exclusoes.length === 0) return null;
+  const totalPages = Math.max(1, Math.ceil(filtradas.length / pageSize));
+  const slice = filtradas.slice((page - 1) * pageSize, page * pageSize);
+  return (
+    <Card className="p-4 mb-4 border-destructive/40">
+      <h3 className="font-serif text-lg flex items-center gap-2 mb-3 text-destructive">
+        <History className="h-4 w-4" /> Auditoria de exclusões ({filtradas.length}/{exclusoes.length})
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+        <select className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+          value={filtroUser} onChange={(e) => setFiltroUser(e.target.value)}>
+          <option value="">Todos usuários</option>
+          {usuarios.map(([id, nome]) => <option key={id} value={id}>{nome}</option>)}
+        </select>
+        <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+          value={from} onChange={(e) => setFrom(e.target.value)} />
+        <input type="date" className="text-sm border border-border rounded-md px-2 py-1 bg-background"
+          value={to} onChange={(e) => setTo(e.target.value)} />
+      </div>
+      {slice.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma exclusão para o filtro.</p>
+      ) : (
+        <ul className="space-y-2 text-sm">
+          {slice.map((l: any) => (
+            <li key={l.id} className="border border-destructive/20 rounded-md p-2 bg-destructive/5">
+              <div className="text-xs text-muted-foreground">{fmtBR(l.created_at)}</div>
+              <div>
+                <span className="font-medium">{l.autor?.nome ?? l.autor?.email ?? "Usuário"}</span>
+                <span className="text-muted-foreground"> · ID: <code className="text-[11px]">{l.autor_id ?? "—"}</code></span>
+              </div>
+              {l.motivo && <div className="text-xs italic text-muted-foreground mt-1">"{l.motivo}"</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-3 text-xs">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
+          <span className="text-muted-foreground">Página {page} de {totalPages}</span>
+          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Próxima</Button>
+        </div>
+      )}
+    </Card>
   );
 }
 
