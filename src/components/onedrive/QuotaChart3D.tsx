@@ -190,11 +190,14 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         {bars.map((b) => (
           <li
             key={b.key}
-            className="relative rounded-xl p-3 overflow-hidden"
+            onMouseEnter={() => setActive(b.key)}
+            onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+            onClick={() => setActive((cur) => (cur === b.key ? null : b.key))}
+            className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5"
             style={{
               background: `linear-gradient(135deg, ${b.color}22, ${b.highlight}11)`,
-              border: `1px solid ${b.color}`,
-              boxShadow: `0 6px 18px ${b.shadow}`,
+              border: `${active === b.key ? 2 : 1}px solid ${b.color}`,
+              boxShadow: active === b.key ? `0 10px 28px ${b.shadow}` : `0 6px 18px ${b.shadow}`,
             }}
           >
             <div className="flex items-center gap-2">
