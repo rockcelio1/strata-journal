@@ -367,11 +367,11 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
           if (!tip) return null;
           const b = bars.find((x) => x.key === tip.key);
           if (!b) {
-            reportError("tooltip sem barra", { key: tip.key });
+            reportError("tooltip sem barra", { key: tip.key }, { chartId, empresa });
             return null;
           }
           if (!Number.isFinite(b.value) || !Number.isFinite(b.pct)) {
-            reportError("tooltip valores inválidos", { key: b.key, value: b.value, pct: b.pct });
+            reportError("tooltip valores inválidos", { value: b.value, pct: b.pct }, { chartId, empresa, barKey: b.key, barIndex: bars.indexOf(b) });
             return null;
           }
           const rect = stageRef.current?.getBoundingClientRect();
