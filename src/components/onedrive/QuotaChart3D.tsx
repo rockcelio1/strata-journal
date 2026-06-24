@@ -20,28 +20,83 @@ type SentryCtx = {
   empresa?: string;
   barIndex?: number;
   barKey?: string;
+  trigger?: "hover" | "touch" | "keyboard" | "legend" | "auto" | "system";
+  valor_atual?: number;
+  valor_prev?: number;
+  condicao_invalida?: string;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSentry(): any | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = typeof window !== "undefined" ? (window as any) : null;
+  return w?.Sentry ?? null;
+}
+
+function applyScope(s: unknown, scope: string, ctx: SentryCtx, payload: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sc = s as any;
+  sc.setTag("component", "QuotaChart3D");
+  sc.setTag("scope", scope);
+  if (ctx.chartId) sc.setTag("chart_id", ctx.chartId);
+  if (ctx.empresa) sc.setTag("empresa", ctx.empresa);
+  if (typeof ctx.barIndex === "number") sc.setTag("bar_index", String(ctx.barIndex));
+  if (ctx.barKey) sc.setTag("bar_key", ctx.barKey);
+  if (ctx.trigger) sc.setTag("trigger", ctx.trigger);
+  sc.setContext("quota_chart", {
+    valor_atual: ctx.valor_atual,
+    valor_prev: ctx.valor_prev,
+    condicao_invalida: ctx.condicao_invalida,
+    ...payload,
+    ...ctx,
+  });
+}
 
 function reportError(scope: string, payload: Record<string, unknown>, ctx: SentryCtx = {}) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = typeof window !== "undefined" ? (window as any) : null;
-    if (w?.Sentry?.withScope && w?.Sentry?.captureMessage) {
-      w.Sentry.withScope((s: any) => {
-        s.setTag("component", "QuotaChart3D");
-        s.setTag("scope", scope);
-        if (ctx.chartId) s.setTag("chart_id", ctx.chartId);
-        if (ctx.empresa) s.setTag("empresa", ctx.empresa);
-        if (typeof ctx.barIndex === "number") s.setTag("bar_index", String(ctx.barIndex));
-        if (ctx.barKey) s.setTag("bar_key", ctx.barKey);
-        s.setContext("quota_chart", { ...payload, ...ctx });
-        w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
+    const S = getSentry();
+    if (S?.withScope && S?.captureMessage) {
+      S.withScope((s: unknown) => {
+        applyScope(s, scope, ctx, payload);
+        S.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
       });
-    } else if (w?.Sentry?.captureMessage) {
-      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
+    } else if (S?.captureMessage) {
+      S.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
     }
   } catch { /* noop */ }
   console.warn(`[QuotaChart3D] ${scope}`, { ...payload, ...ctx });
+}
+
+function reportEvent(phase:
+  | "hover_start"
+  | "tooltip_rendered"
+  | "tooltip_closed_by_timeout"
+  | "tooltip_closed_by_pointerleave"
+  | "tooltip_closed_by_escape"
+  | "tooltip_closed_by_outside"
+  | "tooltip_closed_by_close_button"
+  | "tooltip_pinned_by_touch"
+  | "keyboard_open"
+, payload: Record<string, unknown> = {}, ctx: SentryCtx = {}) {
+  try {
+    const S = getSentry();
+    if (S?.addBreadcrumb) {
+      S.addBreadcrumb({
+        category: "quota_chart",
+        type: "info",
+        level: "info",
+        message: phase,
+        data: { ...payload, ...ctx, ts: Date.now() },
+      });
+    }
+    if (phase === "tooltip_rendered" && S?.withScope && S?.captureMessage && payload.sample === true) {
+      S.withScope((s: unknown) => {
+        applyScope(s, phase, ctx, payload);
+        S.captureMessage(`[QuotaChart3D] ${phase}`, "info");
+      });
+    }
+  } catch { /* noop */ }
+  if (typeof console !== "undefined") console.debug(`[QuotaChart3D:${phase}]`, { ...payload, ...ctx });
 }
 
 type Props = {
@@ -90,11 +145,14 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
     return () => mq.removeEventListener?.("change", apply);
   }, []);
   const [, forceTick] = useState(0);
+  const [focusKey, setFocusKey] = useState<string>("used");
   const stageRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
   const barRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const legendRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverStartRef = useRef<{ key: string; t: number } | null>(null);
 
   // Log dados inválidos uma única vez por mudança.
   useEffect(() => {
@@ -121,7 +179,13 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
   function armAutoClose() {
     if (tipTimer.current) clearTimeout(tipTimer.current);
     tipTimer.current = setTimeout(() => {
-      setTip((t) => (t && !t.pinned ? null : t));
+      setTip((t) => {
+        if (t && !t.pinned) {
+          reportEvent("tooltip_closed_by_timeout", { duration_ms: 3000 }, { chartId, empresa, barKey: t.key, trigger: "auto" });
+          return null;
+        }
+        return t;
+      });
     }, 3000);
   }
   useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
@@ -143,47 +207,64 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
     };
   }, []);
 
+  // Telemetria de render do tooltip (tempo desde hover_start).
+  useEffect(() => {
+    if (!tip) return;
+    const start = hoverStartRef.current;
+    const t_to_render_ms = start && start.key === tip.key
+      ? Math.max(0, Math.round(performance.now() - start.t))
+      : null;
+    reportEvent("tooltip_rendered", { t_to_render_ms, pinned: !!tip.pinned },
+      { chartId, empresa, barKey: tip.key });
+  }, [tip?.key, tip?.pinned, chartId, empresa]);
+
   useEffect(() => {
     if (!tip?.pinned) return;
     function onDocDown(e: PointerEvent) {
       const t = e.target as Node | null;
       if (stageRef.current && t && stageRef.current.contains(t)) return;
       if (tipRef.current && t && tipRef.current.contains(t)) return;
+      const k = tip?.key;
+      reportEvent("tooltip_closed_by_outside", {}, { chartId, empresa, barKey: k, trigger: "touch" });
       setTip(null);
     }
     document.addEventListener("pointerdown", onDocDown, true);
     return () => document.removeEventListener("pointerdown", onDocDown, true);
-  }, [tip?.pinned]);
+  }, [tip?.pinned, tip?.key, chartId, empresa]);
 
   // Esc fecha o tooltip e devolve foco à barra (sem armadilha de foco).
-  const closeTipAndRefocus = useCallback(() => {
+  const closeTipAndRefocus = useCallback((reason: "escape" | "close_button" = "escape") => {
     const k = tip?.key;
     setTip(null);
     setActive(null);
+    reportEvent(reason === "escape" ? "tooltip_closed_by_escape" : "tooltip_closed_by_close_button",
+      {}, { chartId, empresa, barKey: k, trigger: "keyboard" });
     if (k && barRefs.current[k]) {
       requestAnimationFrame(() => barRefs.current[k]?.focus());
     }
-  }, [tip?.key]);
+  }, [tip?.key, chartId, empresa]);
 
   useEffect(() => {
     if (!tip) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
-        closeTipAndRefocus();
+        closeTipAndRefocus("escape");
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [tip, closeTipAndRefocus]);
 
-  function openTipForKey(key: string, pinned = true) {
+  function openTipForKey(key: string, pinned = true, trigger: SentryCtx["trigger"] = "keyboard") {
     const rect = stageRef.current?.getBoundingClientRect();
     const barEl = barRefs.current[key];
     if (!rect || !barEl) return;
     const br = barEl.getBoundingClientRect();
     const x = br.left - rect.left + br.width / 2;
     const y = br.top - rect.top + br.height / 2;
+    hoverStartRef.current = { key, t: performance.now() };
+    reportEvent("keyboard_open", {}, { chartId, empresa, barKey: key, trigger });
     setTip({ key, x, y, pinned });
     setActive(key);
     armAutoClose();
@@ -223,14 +304,42 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
   const ryNorm = ((ry % 360) + 360) % 360;
   const rxNorm = ((rx % 360) + 360) % 360;
 
-  const onBarKey = useCallback((e: React.KeyboardEvent, key: string) => {
+  const orderedKeys = bars.map((b) => b.key);
+
+  function moveFocus(currentKey: string, delta: number | "home" | "end", group: "bar" | "legend") {
+    const i = orderedKeys.indexOf(currentKey);
+    if (i < 0) return;
+    const n = orderedKeys.length;
+    const next = delta === "home" ? 0 : delta === "end" ? n - 1 : (i + delta + n) % n;
+    const k = orderedKeys[next];
+    setFocusKey(k);
+    requestAnimationFrame(() => {
+      const el = group === "bar" ? barRefs.current[k] : legendRefs.current[k];
+      el?.focus();
+    });
+  }
+
+  const onBarKey = useCallback((e: React.KeyboardEvent, key: string, group: "bar" | "legend" = "bar") => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openTipForKey(key, true);
+      openTipForKey(key, true, "keyboard");
     } else if (e.key === "Escape") {
       setTip(null);
       setActive(null);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      moveFocus(key, 1, group);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveFocus(key, -1, group);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      moveFocus(key, "home", group);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      moveFocus(key, "end", group);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -297,25 +406,40 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
                 className="flex flex-col items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-md"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
                 role="button"
-                tabIndex={0}
+                tabIndex={focusKey === b.key ? 0 : -1}
                 aria-label={`${b.label}: ${fmtBytes(b.value)}, ${b.pct.toFixed(1)} por cento`}
                 aria-describedby={tip?.key === b.key ? "quota-tooltip" : undefined}
-                onKeyDown={(e) => onBarKey(e, b.key)}
+                onFocus={() => setFocusKey(b.key)}
+                onKeyDown={(e) => onBarKey(e, b.key, "bar")}
                 onPointerEnter={(e) => {
                   try {
                     setActive(b.key);
                     const rect = stageRef.current?.getBoundingClientRect();
                     if (!rect) return;
+                    hoverStartRef.current = { key: b.key, t: performance.now() };
+                    reportEvent("hover_start", { pointerType: e.pointerType },
+                      { chartId, empresa, barIndex, barKey: b.key, trigger: e.pointerType === "touch" ? "touch" : "hover", valor_atual: b.value });
                     setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
+                    if (e.pointerType === "touch") {
+                      reportEvent("tooltip_pinned_by_touch", {}, { chartId, empresa, barIndex, barKey: b.key, trigger: "touch" });
+                    }
                     armAutoClose();
                   } catch (err) {
-                    reportError("hover error", { value: b.value, err: String(err) }, { chartId, empresa, barIndex, barKey: b.key });
+                    reportError("hover error", { value: b.value, err: String(err) },
+                      { chartId, empresa, barIndex, barKey: b.key, trigger: "hover", valor_atual: b.value, condicao_invalida: "exception" });
                   }
                 }}
                 onPointerLeave={(e) => {
                   if (e.pointerType === "touch") return;
                   setActive((cur) => (cur === b.key ? null : cur));
-                  setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
+                  setTip((t) => {
+                    if (t?.key === b.key && !t.pinned) {
+                      reportEvent("tooltip_closed_by_pointerleave", {},
+                        { chartId, empresa, barIndex, barKey: b.key, trigger: "hover" });
+                      return null;
+                    }
+                    return t;
+                  });
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -440,7 +564,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
                   <button
                     type="button"
                     aria-label="Fechar tooltip"
-                    onClick={(e) => { e.stopPropagation(); closeTipAndRefocus(); }}
+                    onClick={(e) => { e.stopPropagation(); closeTipAndRefocus("close_button"); }}
                     className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
                   >×</button>
                 )}
@@ -502,18 +626,20 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
         {bars.map((b) => (
           <li
             key={b.key}
-            onMouseEnter={() => { setActive(b.key); openTipForKey(b.key, false); }}
+            ref={(el) => { legendRefs.current[b.key] = el; }}
+            onMouseEnter={() => { setActive(b.key); openTipForKey(b.key, false, "legend"); }}
             onMouseLeave={() => {
               setActive((cur) => (cur === b.key ? null : cur));
               setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
             }}
             onClick={() => {
               setActive((cur) => (cur === b.key ? null : b.key));
-              openTipForKey(b.key, true);
+              openTipForKey(b.key, true, "legend");
             }}
             className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/70 outline-none"
-            tabIndex={0}
-            onKeyDown={(e) => onBarKey(e, b.key)}
+            tabIndex={focusKey === b.key ? 0 : -1}
+            onFocus={() => setFocusKey(b.key)}
+            onKeyDown={(e) => onBarKey(e, b.key, "legend")}
             role="button"
             aria-label={`Destacar ${b.label}`}
             style={{
