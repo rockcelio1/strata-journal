@@ -188,7 +188,7 @@ function DashboardPage() {
           value={data.rdos_total}
           sub="todos os RDOs emitidos"
           tone="brand"
-          onClick={() => navigate({ to: "/rdo", search: { status: "todos" } })}
+          onClick={() => navigate({ to: "/rdo", search: { status: undefined } })}
         />
         <StatCard
           icon={CheckCircle2}

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listRdos, createRdo } from "@/lib/rdo.functions";
@@ -61,6 +61,7 @@ function RdoListPage() {
   const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
 
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string>(() => {
     const s = search.status;
     return s && (statusFilters as readonly string[]).includes(s) ? s : "todos";
@@ -69,6 +70,18 @@ function RdoListPage() {
     const s = search.status;
     if (s && (statusFilters as readonly string[]).includes(s)) setStatus(s);
   }, [search.status]);
+
+  // Contadores reais por status (a partir do mesmo cache que alimenta a lista).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { todos: rdos.length, rascunho: 0, enviado: 0, aprovado: 0, reprovado: 0 };
+    for (const r of rdos as any[]) if (c[r.status] !== undefined) c[r.status]++;
+    return c;
+  }, [rdos]);
+
+  function selectStatus(s: string) {
+    setStatus(s);
+    navigate({ to: "/rdo", search: { status: s === "todos" ? undefined : s }, replace: true });
+  }
   const [obraId, setObraId] = useState<string>("todas");
   const [contrato, setContrato] = useState<string>("");
   const [autorId, setAutorId] = useState<string>("todos");
@@ -338,13 +351,35 @@ function RdoListPage() {
       </Card>
 
       <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <div className="flex gap-1 border-b border-border overflow-x-auto">
-          {statusFilters.map((s) => (
-            <button key={s} onClick={() => setStatus(s)}
-              className={`px-3 py-2 text-sm border-b-2 transition-colors whitespace-nowrap ${status === s ? "border-brand text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-              {s === "todos" ? "Todos" : rdoStatusMeta[s as keyof typeof rdoStatusMeta].label}
-            </button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto" role="tablist" aria-label="Filtrar por status">
+          {statusFilters.map((s) => {
+            const isActive = status === s;
+            const label = s === "todos" ? "Totais" : rdoStatusMeta[s as keyof typeof rdoStatusMeta].label;
+            return (
+              <button
+                key={s}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => selectStatus(s)}
+                className={
+                  "px-3 py-1.5 text-sm rounded-full border inline-flex items-center gap-2 transition-colors whitespace-nowrap " +
+                  (isActive
+                    ? "bg-brand text-brand-foreground border-brand shadow-sm"
+                    : "bg-background text-muted-foreground border-border hover:text-foreground hover:bg-muted")
+                }
+              >
+                <span>{label}</span>
+                <span
+                  className={
+                    "min-w-[1.5rem] text-center text-[11px] font-semibold rounded-full px-1.5 py-0.5 " +
+                    (isActive ? "bg-brand-foreground/20 text-brand-foreground" : "bg-muted text-foreground")
+                  }
+                >
+                  {counts[s] ?? 0}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <div className="inline-flex rounded-md border border-border overflow-hidden">
           <button onClick={() => setView("lista")} className={`px-3 py-1.5 text-sm inline-flex items-center gap-1 ${view === "lista" ? "bg-muted" : "hover:bg-muted/50"}`}>
