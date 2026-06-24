@@ -405,8 +405,13 @@ function NovoRdoPage() {
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => {
+      const msg = e?.message ?? "Falha ao concluir RDO";
+      setSubmitError(msg);
+      toast.error(msg);
+    },
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
 
