@@ -28,11 +28,43 @@ export const listRdos = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("rdos")
-      .select("id, numero, data, status, created_at, obras(id, nome)")
+      .select(`
+        id, numero, data, status, created_at, autor_id, aprovado_por, disabled_at,
+        obras(id, nome, codigo, cliente),
+        autor:profiles!rdos_autor_id_profiles_fkey(id, nome, email),
+        aprovador:profiles!rdos_aprovado_por_profiles_fkey(id, nome, email),
+        rdo_assinaturas(user_id, signatario:profiles!rdo_assinaturas_user_id_profiles_fkey(id, nome, email))
+      `)
       .is("deleted_at", null)
       .order("data", { ascending: false });
     if (error) throw error;
     return data;
+  });
+
+export const adminDeleteRdo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.rpc("admin_soft_delete_rdo", { _rdo_id: data.id });
+    if (error) {
+      if (error.code === "42501") throw new Error("Apenas administrador ou master podem excluir qualquer RDO.");
+      if (error.code === "P0002") throw new Error("RDO não encontrado ou já excluído.");
+      throw new Error(`Falha ao excluir RDO: ${error.message}`);
+    }
+    return { ok: true };
+  });
+
+export const adminDisableRdo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; disable: boolean }) =>
+    z.object({ id: z.string().uuid(), disable: z.boolean() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.rpc("admin_disable_rdo", { _rdo_id: data.id, _disable: data.disable });
+    if (error) {
+      if (error.code === "42501") throw new Error("Apenas administrador ou master podem desabilitar RDO.");
+      throw new Error(`Falha ao desabilitar RDO: ${error.message}`);
+    }
+    return { ok: true };
   });
 
 export const getRdo = createServerFn({ method: "GET" })
