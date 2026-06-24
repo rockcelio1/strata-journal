@@ -628,6 +628,8 @@ function RdoDetailPage() {
       {/* Auditoria de Exclusões */}
       <ExclusoesPanel logs={logs} />
 
+      {/* Linha do tempo: eventos administrativos do RDO */}
+      <EventosRdoPanel logs={logs} />
 
       {/* Trilha de auditoria */}
       <Card className="p-4 mb-4">
