@@ -110,7 +110,7 @@ describe("assertRowsValid (backend: nunca aceita burla de UI)", () => {
       assertRowsValid({
         equipamentos: [{ equipamento_id: "FAKE" }],
       }),
-    ).toThrow(/equipamentos\[0\]/);
+    ).toThrow(/Equipamentos/);
   });
 
   it("rejeita ocorrência com descrição vazia", () => {
@@ -118,10 +118,10 @@ describe("assertRowsValid (backend: nunca aceita burla de UI)", () => {
       assertRowsValid({
         ocorrencias: [{ descricao: "" }],
       }),
-    ).toThrow(/ocorrencias\[0\]/);
+    ).toThrow(/Ocorrências/);
   });
 
-  it("erros são mapeados por linha (múltiplos)", () => {
+  it("erros são agrupados por etapa do wizard (múltiplos)", () => {
     try {
       assertRowsValid({
         equipamentos: [{ equipamento_id: GOOD }, { equipamento_id: "x" }],
@@ -130,11 +130,13 @@ describe("assertRowsValid (backend: nunca aceita burla de UI)", () => {
       throw new Error("deveria ter falhado");
     } catch (e: any) {
       expect(e.code).toBe("RDO_INVALID_ROWS");
-      expect(e.rows).toEqual(
+      expect(e.byStep["Etapa 5 · Equipamentos"]).toEqual(
+        expect.arrayContaining(["linha 2: selecione o equipamento"]),
+      );
+      expect(e.byStep["Etapa 6 · Ocorrências"]).toEqual(
         expect.arrayContaining([
-          "equipamentos[1]: equipamento_id inválido",
-          "ocorrencias[0]: descrição obrigatória",
-          "ocorrencias[2]: descrição obrigatória",
+          "linha 1: descrição obrigatória",
+          "linha 3: descrição obrigatória",
         ]),
       );
     }

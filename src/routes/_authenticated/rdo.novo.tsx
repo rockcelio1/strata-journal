@@ -376,8 +376,17 @@ function NovoRdoPage() {
     };
   }
 
+  type LogEntry = { at: string; kind: "start" | "ok" | "erro" | "offline"; mensagem: string; etapa?: string };
+  const [submitLog, setSubmitLog] = useState<LogEntry[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [flashRow, setFlashRow] = useState<{ key: string; idx: number } | null>(null);
+  function pushLog(e: Omit<LogEntry, "at">) {
+    setSubmitLog((l) => [{ at: new Date().toISOString(), ...e }, ...l].slice(0, 30));
+  }
+
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
+      pushLog({ kind: "start", mensagem: enviar ? "Iniciando envio do RDO…" : "Salvando rascunho…" });
       const { sane: cleaned } = sanitizeRdoPayload(form);
       const payload = { ...cleaned, enviar };
       const sigManifest = await buildSignatureManifest(payload);
@@ -385,13 +394,17 @@ function NovoRdoPage() {
 
       if (!navigator.onLine) {
         toast.info("Salvo offline. Será sincronizado quando voltar a conexão.");
+        pushLog({ kind: "offline", mensagem: "Sem conexão — RDO enfileirado para sincronizar." });
         return { offline: true as const, local_id: queued.local_id };
       }
       try {
         const rdo: any = await createFn({ data: payload });
         if ((fotos.length || assinaturaBlob) && me?.profile?.empresa_id) {
           try { await uploadAttachments(rdo.id, me.profile.empresa_id, sigManifest); }
-          catch (e: any) { toast.error("Anexos: " + (e.message ?? "falha")); }
+          catch (e: any) {
+            toast.error("Anexos: " + (e.message ?? "falha"));
+            pushLog({ kind: "erro", etapa: "Anexos", mensagem: e?.message ?? "Falha ao enviar anexos" });
+          }
         }
         await markQueued(queued.local_id, { status: "sincronizado", remote_id: rdo.id });
         return { offline: false as const, rdo };
@@ -402,16 +415,18 @@ function NovoRdoPage() {
     },
     onSuccess: (r: any) => {
       clearDraft(draftKey);
+      pushLog({ kind: "ok", mensagem: r.offline ? "RDO em fila offline" : `RDO ${r.rdo?.numero ?? ""} sincronizado` });
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
     onError: (e: any) => {
       const msg = e?.message ?? "Falha ao concluir RDO";
+      const etapa = e?.rows?.[0]?.split(":")?.[0] ?? e?.code;
       setSubmitError(msg);
       toast.error(msg);
+      pushLog({ kind: "erro", etapa, mensagem: msg });
     },
   });
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
 
@@ -423,6 +438,8 @@ function NovoRdoPage() {
 
   function scrollToRow(key: "equipamentos" | "ocorrencias" | "mao_de_obra", idx: number, targetStep: number) {
     setStepIdx(targetStep);
+    setFlashRow({ key, idx });
+    setTimeout(() => setFlashRow(null), 2500);
     setTimeout(() => {
       const el = document.getElementById(`rdo-${key}-${idx}`);
       if (el) {
@@ -430,6 +447,21 @@ function NovoRdoPage() {
         (el.querySelector("[data-row-focus]") as HTMLElement | null)?.focus?.();
       }
     }, 50);
+  }
+
+  function gotoStep(step: number) {
+    setSubmitError(null);
+    if (step === 3 && maoInvalidIdx[0] != null) return scrollToRow("mao_de_obra", maoInvalidIdx[0], 3);
+    if (step === 4 && equipInvalidIdx[0] != null) return scrollToRow("equipamentos", equipInvalidIdx[0], 4);
+    if (step === 5 && ocInvalidIdx[0] != null) return scrollToRow("ocorrencias", ocInvalidIdx[0], 5);
+    setStepIdx(step);
+    if (step === 6) {
+      const idx = legendas.findIndex((l, i) => i < fotos.length && !(l ?? "").trim());
+      const target = idx >= 0 ? idx : lowResIdxs[0];
+      if (target != null) setTimeout(() => {
+        document.getElementById(`rdo-foto-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+    }
   }
 
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
@@ -638,7 +670,7 @@ function NovoRdoPage() {
               const invalid = !isUuid(it.mao_de_obra_id);
               const errId = `rdo-mao_de_obra-${i}-err`;
               return (
-              <Card key={i} id={`rdo-mao_de_obra-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-mao_de_obra-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "mao_de_obra" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Pessoa</Label>
                   <Select value={it.mao_de_obra_id} onValueChange={(v) => upd("mao_de_obra", i, "mao_de_obra_id", v)}>
                     <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
@@ -667,7 +699,7 @@ function NovoRdoPage() {
               const invalid = !isUuid(it.equipamento_id);
               const errId = `rdo-equipamentos-${i}-err`;
               return (
-              <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "equipamentos" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Equipamento</Label>
                   <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
                     <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
@@ -696,7 +728,7 @@ function NovoRdoPage() {
               const invalid = !it.descricao?.trim();
               const errId = `rdo-ocorrencias-${i}-err`;
               return (
-              <Card key={i} id={`rdo-ocorrencias-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive")}>
+              <Card key={i} id={`rdo-ocorrencias-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "ocorrencias" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Tipo</Label>
                   <Select value={it.tipo_ocorrencia_id ?? ""} onValueChange={(v) => upd("ocorrencias", i, "tipo_ocorrencia_id", v || null)}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -779,8 +811,12 @@ function NovoRdoPage() {
                     >Limpar tudo</button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {fotos.map((f, i) => (
-                      <div key={i} className="space-y-1.5">
+                    {fotos.map((f, i) => {
+                      const semLegenda = !(legendas[i] ?? "").trim();
+                      const baixa = lowResIdxs.includes(i);
+                      const realce = flashRow?.key === "foto" && flashRow.idx === i;
+                      return (
+                      <div key={i} id={`rdo-foto-${i}`} className={cn("space-y-1.5 rounded-md transition-shadow", (semLegenda || baixa) && "ring-1 ring-destructive/60", realce && "ring-4 ring-destructive animate-pulse")}>
                         <div className="relative aspect-square overflow-hidden rounded-md border border-border">
                           <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
                           <span className="absolute top-1 left-1 bg-background/80 text-[10px] font-medium rounded px-1.5 py-0.5">#{i + 1}</span>
@@ -826,7 +862,8 @@ function NovoRdoPage() {
                           {lowResIdxs.includes(i) && <span className="text-destructive">⚠ baixa resolução</span>}
                         </p>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -940,7 +977,7 @@ function NovoRdoPage() {
                           <strong>Etapa {iss.step + 1} · {iss.label}:</strong> {iss.message}
                         </span>
                         {iss.step !== 7 && (
-                          <Button size="sm" variant="outline" onClick={() => { setSubmitError(null); setStepIdx(iss.step); }}>
+                          <Button size="sm" variant="outline" onClick={() => gotoStep(iss.step)}>
                             Corrigir <ArrowRight size={12} className="ml-1" />
                           </Button>
                         )}
@@ -948,6 +985,38 @@ function NovoRdoPage() {
                     ))}
                   </ul>
                 )}
+              </Card>
+            )}
+
+            {save.isPending && (
+              <Card className="p-4 space-y-2">
+                <p className="text-sm font-medium">Enviando RDO…</p>
+                <div className="h-2 w-full bg-muted rounded overflow-hidden">
+                  <div className="h-full bg-brand animate-pulse" style={{ width: "75%" }} />
+                </div>
+                <p className="text-xs text-muted-foreground">Não feche esta tela. Aguardando confirmação do servidor.</p>
+              </Card>
+            )}
+
+            {submitLog.length > 0 && (
+              <Card className="p-4 space-y-2">
+                <h4 className="font-medium text-sm">Histórico de envio</h4>
+                <ul className="space-y-1 max-h-56 overflow-auto text-xs font-mono">
+                  {submitLog.map((l, i) => (
+                    <li key={i} className={cn(
+                      "flex gap-2 items-start border-l-2 pl-2",
+                      l.kind === "ok" && "border-emerald-500 text-emerald-700",
+                      l.kind === "erro" && "border-destructive text-destructive",
+                      l.kind === "offline" && "border-amber-500 text-amber-700",
+                      l.kind === "start" && "border-muted-foreground/40 text-muted-foreground",
+                    )}>
+                      <span className="shrink-0">{new Date(l.at).toLocaleTimeString("pt-BR")}</span>
+                      <span className="uppercase text-[10px] shrink-0">{l.kind}</span>
+                      {l.etapa && <span className="shrink-0">[{l.etapa}]</span>}
+                      <span className="break-all">{l.mensagem}</span>
+                    </li>
+                  ))}
+                </ul>
               </Card>
             )}
           </>

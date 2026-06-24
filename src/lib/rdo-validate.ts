@@ -99,34 +99,59 @@ export function sanitizeRdoPayload<T extends RdoFormLike>(
 }
 
 /** Validação backend: garante que cada linha tenha UUID válido / descrição
- *  preenchida e produz uma mensagem mapeada por índice. Bloqueia tentativas
- *  de burlar a UI mesmo se o cliente enviar JSON manualmente. */
+ *  preenchida e produz uma mensagem mapeada por etapa do wizard. Bloqueia
+ *  tentativas de burlar a UI mesmo se o cliente enviar JSON manualmente. */
 export function assertRowsValid(data: any): void {
-  const errors: string[] = [];
-  (data?.equipamentos ?? []).forEach((e: any, i: number) => {
-    if (!e || typeof e.equipamento_id !== "string" || !UUID_RE.test(e.equipamento_id)) {
-      errors.push(`equipamentos[${i}]: equipamento_id inválido`);
+  const byStep: Record<string, string[]> = {};
+  const push = (etapa: string, msg: string) => {
+    (byStep[etapa] ??= []).push(msg);
+  };
+
+  if (data?.obra_id && typeof data.obra_id === "string" && !UUID_RE.test(data.obra_id)) {
+    push("Etapa 1 · Obra", "obra_id inválido");
+  }
+  if (data?.data && typeof data.data !== "string") {
+    push("Etapa 2 · Clima", "data do RDO inválida");
+  }
+  (data?.atividades ?? []).forEach((a: any, i: number) => {
+    if (!a || typeof a.descricao !== "string" || !a.descricao.trim()) {
+      push("Etapa 3 · Atividades", `linha ${i + 1}: descrição obrigatória`);
     }
-  });
-  (data?.ocorrencias ?? []).forEach((o: any, i: number) => {
-    if (!o || typeof o.descricao !== "string" || !o.descricao.trim()) {
-      errors.push(`ocorrencias[${i}]: descrição obrigatória`);
+    if (a && a.pct_executado != null && (a.pct_executado < 0 || a.pct_executado > 100)) {
+      push("Etapa 3 · Atividades", `linha ${i + 1}: % executado deve estar entre 0 e 100`);
     }
   });
   (data?.mao_de_obra ?? []).forEach((m: any, i: number) => {
     if (!m || typeof m.mao_de_obra_id !== "string" || !UUID_RE.test(m.mao_de_obra_id)) {
-      errors.push(`mao_de_obra[${i}]: mao_de_obra_id inválido`);
+      push("Etapa 4 · Mão de obra", `linha ${i + 1}: selecione a pessoa`);
+    }
+    if (m && m.horas != null && (m.horas < 0 || m.horas > 24)) {
+      push("Etapa 4 · Mão de obra", `linha ${i + 1}: horas devem estar entre 0 e 24`);
     }
   });
-  (data?.atividades ?? []).forEach((a: any, i: number) => {
-    if (!a || typeof a.descricao !== "string" || !a.descricao.trim()) {
-      errors.push(`atividades[${i}]: descrição obrigatória`);
+  (data?.equipamentos ?? []).forEach((e: any, i: number) => {
+    if (!e || typeof e.equipamento_id !== "string" || !UUID_RE.test(e.equipamento_id)) {
+      push("Etapa 5 · Equipamentos", `linha ${i + 1}: selecione o equipamento`);
+    }
+    if (e && e.horas_uso != null && (e.horas_uso < 0 || e.horas_uso > 24)) {
+      push("Etapa 5 · Equipamentos", `linha ${i + 1}: horas de uso devem estar entre 0 e 24`);
     }
   });
-  if (errors.length) {
-    const err: any = new Error("RDO_INVALID_ROWS: " + errors.join("; "));
+  (data?.ocorrencias ?? []).forEach((o: any, i: number) => {
+    if (!o || typeof o.descricao !== "string" || !o.descricao.trim()) {
+      push("Etapa 6 · Ocorrências", `linha ${i + 1}: descrição obrigatória`);
+    }
+  });
+
+  const stepsWithErrors = Object.keys(byStep);
+  if (stepsWithErrors.length) {
+    const message =
+      "RDO_INVALID_ROWS: " +
+      stepsWithErrors.map((s) => `${s} — ${byStep[s].join("; ")}`).join(" | ");
+    const err: any = new Error(message);
     err.code = "RDO_INVALID_ROWS";
-    err.rows = errors;
+    err.byStep = byStep;
+    err.rows = stepsWithErrors.flatMap((s) => byStep[s].map((m) => `${s}: ${m}`));
     throw err;
   }
 }
