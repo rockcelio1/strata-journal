@@ -438,6 +438,8 @@ function NovoRdoPage() {
 
   function scrollToRow(key: "equipamentos" | "ocorrencias" | "mao_de_obra", idx: number, targetStep: number) {
     setStepIdx(targetStep);
+    setFlashRow({ key, idx });
+    setTimeout(() => setFlashRow(null), 2500);
     setTimeout(() => {
       const el = document.getElementById(`rdo-${key}-${idx}`);
       if (el) {
@@ -445,6 +447,21 @@ function NovoRdoPage() {
         (el.querySelector("[data-row-focus]") as HTMLElement | null)?.focus?.();
       }
     }, 50);
+  }
+
+  function gotoStep(step: number) {
+    setSubmitError(null);
+    if (step === 3 && maoInvalidIdx[0] != null) return scrollToRow("mao_de_obra", maoInvalidIdx[0], 3);
+    if (step === 4 && equipInvalidIdx[0] != null) return scrollToRow("equipamentos", equipInvalidIdx[0], 4);
+    if (step === 5 && ocInvalidIdx[0] != null) return scrollToRow("ocorrencias", ocInvalidIdx[0], 5);
+    setStepIdx(step);
+    if (step === 6) {
+      const idx = legendas.findIndex((l, i) => i < fotos.length && !(l ?? "").trim());
+      const target = idx >= 0 ? idx : lowResIdxs[0];
+      if (target != null) setTimeout(() => {
+        document.getElementById(`rdo-foto-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+    }
   }
 
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
