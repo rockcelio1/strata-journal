@@ -163,7 +163,7 @@ function GaleriaPage() {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
                         return (
-                          <Card key={it.id} className="overflow-hidden group">
+                          <Card key={it.id} className="facom-glow overflow-hidden group cursor-pointer">
                             <button onClick={() => setPreview(it)} className="block relative aspect-square w-full bg-muted overflow-hidden">
                               {it.tipo === "imagem" && it.url ? (
                                 <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
