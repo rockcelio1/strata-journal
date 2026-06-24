@@ -288,6 +288,18 @@ function NovoRdoPage() {
     const pushHist = (entry: { name: string; status: UpStatus; provider?: string; error?: string }) =>
       setUploadHistory((h) => [{ at: new Date().toISOString(), ...entry }, ...h].slice(0, 50));
 
+    const waitOnline = async (label: string, idx: number) => {
+      if (typeof navigator !== "undefined" && navigator.onLine) return;
+      setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "aguardando-rede" } : x));
+      toast.warning(`Sem conexão — aguardando rede para reenviar "${label}"`);
+      await new Promise<void>((resolve) => {
+        const onUp = () => { window.removeEventListener("online", onUp); resolve(); };
+        window.addEventListener("online", onUp);
+      });
+    };
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const MAX_ATTEMPTS = 4;
+
     for (let idx = 0; idx < all.length; idx++) {
       const a = all[idx];
       const size = (a.file as any).size ?? 0;
@@ -296,7 +308,9 @@ function NovoRdoPage() {
       setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "processando" } : x));
       let uploaded = false;
       let lastErr: any;
-      for (let attempt = 0; attempt < 2 && !uploaded; attempt++) {
+      for (let attempt = 0; attempt < MAX_ATTEMPTS && !uploaded; attempt++) {
+        await waitOnline(a.name, idx);
+        setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "enviando", attempt: attempt + 1 } : x));
         try {
           await uploadOneDriveFn({ data: {
             rdo_id: rdoId, nome: a.name, mime_type: a.mime, tamanho_bytes: size,
@@ -307,6 +321,7 @@ function NovoRdoPage() {
           lastErr = e;
           console.warn(`[rdo] OneDrive tentativa ${attempt + 1} falhou:`, e?.message);
           pushHist({ name: a.name, status: "erro", provider: "onedrive", error: `tentativa ${attempt + 1}: ${e?.message ?? "erro"}` });
+          if (attempt < MAX_ATTEMPTS - 1) await sleep(500 * Math.pow(2, attempt));
         }
       }
       if (uploaded) {
@@ -315,21 +330,30 @@ function NovoRdoPage() {
       } else {
         console.error("[rdo] OneDrive falhou após retentativas, usando Supabase Storage:", lastErr?.message);
         toast.warning("OneDrive indisponível, usando armazenamento alternativo", { description: lastErr?.message?.slice(0, 200) });
-        try {
-          const safe = a.name.replace(/[^\w.\-]+/g, "_");
-          const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
-          const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
-          if (up.error) throw up.error;
-          await registrarFn({ data: {
-            rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
-            storage_path: path, mime_type: a.mime, tamanho_bytes: size,
-          }});
-          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
-          pushHist({ name: a.name, status: "fallback", provider: "supabase" });
-        } catch (e: any) {
-          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: e?.message } : x));
-          pushHist({ name: a.name, status: "erro", provider: "supabase", error: e?.message });
-          throw e;
+        let sbDone = false; let sbErr: any;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS && !sbDone; attempt++) {
+          await waitOnline(a.name, idx);
+          try {
+            const safe = a.name.replace(/[^\w.\-]+/g, "_");
+            const path = `${empresaId}/${rdoId}/${Date.now()}-${safe}`;
+            const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
+            if (up.error) throw up.error;
+            await registrarFn({ data: {
+              rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+              storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+            }});
+            setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
+            pushHist({ name: a.name, status: "fallback", provider: "supabase" });
+            sbDone = true;
+          } catch (e: any) {
+            sbErr = e;
+            if (attempt < MAX_ATTEMPTS - 1) await sleep(500 * Math.pow(2, attempt));
+          }
+        }
+        if (!sbDone) {
+          setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "erro", error: sbErr?.message } : x));
+          pushHist({ name: a.name, status: "erro", provider: "supabase", error: sbErr?.message });
+          throw sbErr;
         }
       }
     }
