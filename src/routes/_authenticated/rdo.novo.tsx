@@ -175,14 +175,10 @@ function NovoRdoPage() {
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
   async function onAddFotos(files: FileList) {
-    setCompressing(true);
-    try {
-      const out: File[] = [];
-      for (const f of Array.from(files)) out.push(await compressImage(f, { maxBytes: 5 * 1024 * 1024 }));
-      setFotos((p) => [...p, ...out]);
-      setLegendas((p) => [...p, ...out.map(() => "")]);
-    } catch (e: any) { toast.error(e.message ?? "Falha ao processar imagem"); }
-    finally { setCompressing(false); }
+    // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
+    const out: File[] = Array.from(files);
+    setFotos((p) => [...p, ...out]);
+    setLegendas((p) => [...p, ...out.map(() => "")]);
   }
 
   async function blobToBase64(blob: Blob): Promise<string> {
