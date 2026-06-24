@@ -72,12 +72,14 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   return (
     <div className="space-y-3">
       <div
+        ref={stageRef}
         className="relative h-80 w-full rounded-2xl border border-border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 cursor-grab active:cursor-grabbing select-none overflow-hidden shadow-inner"
         style={{ perspective: "1100px" }}
         onPointerDown={onDown}
-        onPointerMove={onMove}
+        onPointerMove={(e) => { onMove(e); onHoverMove(e); }}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onPointerLeave={() => setTip(null)}
         title="Clique e arraste para girar 360°"
       >
         {/* brilho ambiente */}
