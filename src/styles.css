@@ -295,7 +295,9 @@
 @utility dash-card {
   position: relative;
   isolation: isolate;
-  transition: transform 180ms ease, box-shadow 280ms ease, filter 280ms ease;
+  transform: translateZ(0);
+  will-change: transform;
+  transition: transform 180ms ease, box-shadow 280ms ease;
   &::after {
     content: "";
     position: absolute;
@@ -320,14 +322,13 @@
     pointer-events: none;
     transition: opacity 180ms ease;
     z-index: 2;
+    will-change: opacity, transform;
   }
   &:hover, &:focus-visible {
     box-shadow:
       0 0 0 1px rgba(255, 138, 51, 0.45),
       0 0 24px 4px rgba(255, 122, 26, 0.45),
-      0 0 60px 12px rgba(255, 102, 0, 0.28),
-      inset 0 0 28px rgba(255, 170, 80, 0.18);
-    filter: brightness(1.06) saturate(1.08);
+      0 0 60px 12px rgba(255, 102, 0, 0.28);
     &::after {
       opacity: 1;
       animation: facom-border-spin 2.2s linear infinite;
@@ -335,24 +336,39 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dash-card::after { animation: none !important; }
+  .dash-card { transition: none !important; }
+  .dash-card::after { animation: none !important; transition: none !important; }
+  .dash-card:hover::after, .dash-card:focus-visible::after { opacity: 0.6; }
 }
 
-/* "Acender a luz" — glow no hover para cards e itens de menu */
+/* "Acender a luz" — glow no hover via pseudo-elemento (opacity-only, GPU-friendly) */
 @utility facom-glow {
   position: relative;
-  transition: box-shadow 260ms ease, background-color 260ms ease, color 200ms ease, filter 260ms ease;
-  &:hover, &:focus-visible {
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 220ms ease;
     box-shadow:
       0 0 0 1px rgba(255, 138, 51, 0.5),
       0 0 18px 2px rgba(255, 122, 26, 0.55),
       0 0 40px 8px rgba(255, 102, 0, 0.3);
-    filter: brightness(1.08) saturate(1.1);
+    will-change: opacity;
+  }
+  &:hover::before, &:focus-visible::before {
+    opacity: 1;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .facom-glow { transition: none !important; }
+  .facom-glow::before { transition: none !important; }
+  .facom-glow:hover::before, .facom-glow:focus-visible::before { opacity: 0.7; }
 }
+
 
 
 

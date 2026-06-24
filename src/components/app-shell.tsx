@@ -14,6 +14,7 @@ import {
   Images,
   Settings,
   Menu,
+  ArrowLeft,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useQuery } from "@tanstack/react-query";
@@ -152,6 +153,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </nav>
             </SheetContent>
           </Sheet>
+
+          {/* Botão voltar — esconde no dashboard (rota raiz) */}
+          {pathname !== "/dashboard" && (
+            <button
+              type="button"
+              onClick={() => window.history.length > 1 ? window.history.back() : navigate({ to: "/dashboard" })}
+              aria-label="Voltar"
+              title="Voltar"
+              className="facom-glow inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md bg-brand-foreground/10 ring-1 ring-brand-foreground/25 hover:bg-brand-foreground/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/70"
+            >
+              <ArrowLeft className="h-6 w-6" strokeWidth={3} />
+            </button>
+          )}
+
 
           <Link to="/dashboard" className="flex items-center gap-3 shrink-0 min-h-[44px]">
             <div className="h-12 w-12 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
