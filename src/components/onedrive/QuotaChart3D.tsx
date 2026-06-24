@@ -98,7 +98,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
 
   // Log dados inválidos uma única vez por mudança.
   useEffect(() => {
-    if (!dataValid) reportError("dados inválidos", { used, total, deleted });
+    if (!dataValid) reportError("dados inválidos", { used, total, deleted }, { chartId, empresa });
   }, [used, total, deleted, dataValid]);
 
   // Auto-rotate 360° com throttling (~30fps) e respeito a reduce-motion.
