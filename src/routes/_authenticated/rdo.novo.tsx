@@ -137,9 +137,56 @@ function NovoRdoPage() {
   }, [me?.profile?.id]);
   useEffect(() => {
     if (!draftLoaded) return;
-    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos }); }, 400);
+    const t = setTimeout(() => {
+      saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos });
+      channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: fotos.length });
+    }, 400);
     return () => clearTimeout(t);
   }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
+
+  // ---- BroadcastChannel: sincroniza rascunho entre abas
+  const channelRef = useRef<ReturnType<typeof createDraftChannel> | null>(null);
+  useEffect(() => {
+    if (!me?.profile?.id) return;
+    const ch = createDraftChannel(draftKey);
+    channelRef.current = ch;
+    ch.post({ type: "claim", tabId: ch.tabId });
+    const off = ch.on(async (m) => {
+      if (m.tabId === ch.tabId) return;
+      if (m.type === "claim") {
+        ch.post({ type: "ack", tabId: ch.tabId });
+        toast.warning("Outra aba está editando este RDO. Mudanças serão mescladas pela aba mais recente.");
+      } else if (m.type === "saved") {
+        const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number; fotos?: Blob[] }>(draftKey);
+        if (!d?.value) return;
+        setForm(d.value.form);
+        if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
+        if (Array.isArray(d.value.fotos)) {
+          setFotos(d.value.fotos.map((b, i) =>
+            b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
+          ));
+        }
+      }
+    });
+    return () => { off(); ch.close(); channelRef.current = null; };
+  }, [me?.profile?.id, draftKey]);
+
+  // ---- Detecta fotos de baixa resolução
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const low: number[] = [];
+      for (let i = 0; i < fotos.length; i++) {
+        try {
+          const { width, height } = await getImageDimensions(fotos[i]);
+          if (Math.min(width, height) < MIN_IMAGE_DIM) low.push(i);
+        } catch { /* ignora */ }
+      }
+      if (!cancelled) setLowResIdxs(low);
+    })();
+    return () => { cancelled = true; };
+  }, [fotos]);
+
 
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
