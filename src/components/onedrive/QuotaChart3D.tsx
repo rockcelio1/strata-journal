@@ -38,6 +38,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
 
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
+  const [active, setActive] = useState<string | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
 
   function onDown(e: React.PointerEvent) {
