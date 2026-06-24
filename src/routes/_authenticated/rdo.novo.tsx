@@ -790,8 +790,14 @@ function NovoRdoPage() {
                             ><ArrowDown size={12} /></button>
                           </div>
                         </div>
-                        <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                        <p className="text-[10px] text-muted-foreground">{Math.round(f.size / 1024)} KB</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
+                          <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground flex items-center justify-between">
+                          <span>{Math.round(f.size / 1024)} KB</span>
+                          {lowResIdxs.includes(i) && <span className="text-destructive">⚠ baixa resolução</span>}
+                        </p>
                       </div>
                     ))}
                   </div>
