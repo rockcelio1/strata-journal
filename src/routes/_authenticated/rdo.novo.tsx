@@ -602,6 +602,11 @@ function NovoRdoPage() {
                   />
                 </label>
               </div>
+              {fotosSemLegenda > 0 && (
+                <div role="alert" className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
+                  {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
+                </div>
+              )}
               {fotos.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. Imagens são comprimidas até ~5MB antes do envio.</p>
               ) : (
