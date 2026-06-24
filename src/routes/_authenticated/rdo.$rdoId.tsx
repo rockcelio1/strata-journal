@@ -30,6 +30,7 @@ import {
 
 import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
 import { SignaturesCard } from "@/components/rdo/SignaturesCard";
+import { AdminConfirmTwiceButton } from "@/components/rdo/AdminConfirmTwiceButton";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
