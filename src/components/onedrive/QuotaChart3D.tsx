@@ -39,7 +39,15 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
   const [active, setActive] = useState<string | null>(null);
+  const [tip, setTip] = useState<{ key: string; x: number; y: number } | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+
+  function onHoverMove(e: React.PointerEvent) {
+    if (!stageRef.current || !tip) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    setTip({ key: tip.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+  }
 
   function onDown(e: React.PointerEvent) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -72,12 +80,14 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   return (
     <div className="space-y-3">
       <div
+        ref={stageRef}
         className="relative h-80 w-full rounded-2xl border border-border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 cursor-grab active:cursor-grabbing select-none overflow-hidden shadow-inner"
         style={{ perspective: "1100px" }}
         onPointerDown={onDown}
-        onPointerMove={onMove}
+        onPointerMove={(e) => { onMove(e); onHoverMove(e); }}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onPointerLeave={() => setTip(null)}
         title="Clique e arraste para girar 360°"
       >
         {/* brilho ambiente */}
@@ -110,8 +120,12 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 key={b.key}
                 className="flex flex-col items-center cursor-pointer"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
-                onMouseEnter={() => setActive(b.key)}
-                onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+                onPointerEnter={(e) => {
+                  setActive(b.key);
+                  const rect = stageRef.current?.getBoundingClientRect();
+                  if (rect) setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                }}
+                onPointerLeave={() => { setActive((cur) => (cur === b.key ? null : cur)); setTip((t) => (t?.key === b.key ? null : t)); }}
                 onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
               >
                 <span
@@ -146,7 +160,55 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         <div className="absolute top-2 right-2 text-[10px] text-white/80 bg-white/10 backdrop-blur px-2 py-1 rounded-md border border-white/20">
           arraste para girar · X {rxNorm.toFixed(0)}° · Y {ryNorm.toFixed(0)}°
         </div>
+
+        {/* Tooltip flutuante responsivo */}
+        {(() => {
+          if (!tip) return null;
+          const b = bars.find((x) => x.key === tip.key);
+          if (!b) return null;
+          const stageW = stageRef.current?.clientWidth ?? 0;
+          const stageH = stageRef.current?.clientHeight ?? 0;
+          const tipW = Math.min(260, Math.max(180, stageW - 24));
+          const tipH = 130;
+          let x = tip.x + 14;
+          let y = tip.y + 14;
+          if (x + tipW > stageW - 8) x = Math.max(8, tip.x - tipW - 14);
+          if (y + tipH > stageH - 8) y = Math.max(8, tip.y - tipH - 14);
+          return (
+            <div
+              className="pointer-events-none absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md"
+              style={{
+                left: x,
+                top: y,
+                width: tipW,
+                maxWidth: "calc(100% - 16px)",
+                background: `linear-gradient(135deg, ${b.color}ee, ${b.highlight}dd)`,
+                color: "#fff",
+                border: `1px solid ${b.highlight}`,
+                boxShadow: `0 12px 32px ${b.shadow}, 0 0 0 1px rgba(255,255,255,0.15) inset`,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-3 w-3 rounded-full" style={{ background: "#fff", boxShadow: `0 0 8px #fff` }} />
+                <span className="font-bold text-sm">{b.label}</span>
+                <span className="ml-auto font-bold">{b.pct.toFixed(1)}%</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 opacity-95">
+                <span className="opacity-80">Tamanho</span><span className="font-semibold text-right">{fmtBytes(b.value)}</span>
+                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{b.value.toLocaleString("pt-BR")}</span>
+                <span className="opacity-80">Total</span><span className="font-semibold text-right">{fmtBytes(total)}</span>
+              </div>
+              <div className="mt-1 text-[10px] opacity-90 italic">
+                {b.key === "used" && "Espaço já ocupado por arquivos no OneDrive."}
+                {b.key === "free" && "Espaço ainda disponível para uploads."}
+                {b.key === "deleted" && "Itens na lixeira — contam até serem expurgados."}
+                {b.key === "total" && "Capacidade total contratada do repositório."}
+              </div>
+            </div>
+          );
+        })()}
       </div>
+
 
       {/* Detalhes da barra ativa */}
       {(() => {
