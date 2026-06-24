@@ -283,3 +283,14 @@
   .facom-flash::before { animation: none !important; }
 }
 
+/* Borda grossa laranja FACOM no hover (sem mover layout) */
+@utility dash-card {
+  transition: box-shadow 180ms ease, transform 180ms ease;
+  &:hover, &:focus-visible {
+    box-shadow:
+      0 0 0 4px rgba(255, 122, 26, 0.95),
+      0 10px 30px -10px rgba(255, 122, 26, 0.45);
+  }
+}
+
+
