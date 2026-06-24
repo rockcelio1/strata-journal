@@ -114,6 +114,54 @@ function OneDriveSettings() {
         </div>
       </header>
 
+      <section className="border border-border rounded-lg p-4 bg-card space-y-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h3 className="font-medium text-sm flex items-center gap-2">
+              <HardDrive className="h-4 w-4" /> Repositório OneDrive do sistema
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Conta: <strong>{ONEDRIVE_ACCOUNT}</strong> — abre direto, já com login sugerido.
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Plano com <strong>1 TB</strong> de espaço total disponível.
+            </p>
+          </div>
+          <a
+            href={ONEDRIVE_DIRECT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs inline-flex items-center gap-1 px-3 py-2 rounded bg-brand text-brand-foreground"
+          >
+            <ExternalLink className="h-3 w-3" /> Abrir OneDrive
+          </a>
+        </div>
+
+        {quota.isLoading ? (
+          <p className="text-xs text-muted-foreground">Carregando uso do repositório…</p>
+        ) : quota.data?.ok ? (
+          <>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+              <span><strong>Total:</strong> {fmtBytes(quota.data.total || TOTAL_QUOTA_HINT)}</span>
+              <span><strong>Usado:</strong> {fmtBytes(quota.data.used)}</span>
+              <span><strong>Disponível:</strong> {fmtBytes(quota.data.remaining)}</span>
+              {quota.data.state && <span className="text-muted-foreground">Estado: {quota.data.state}</span>}
+            </div>
+            <QuotaChart3D
+              used={quota.data.used}
+              total={quota.data.total || TOTAL_QUOTA_HINT}
+              deleted={quota.data.deleted}
+            />
+          </>
+        ) : (
+          <p className="text-xs text-destructive">
+            Não foi possível obter o uso: {(quota.data as any)?.error ?? (quota.error as any)?.message ?? "erro desconhecido"}
+          </p>
+        )}
+      </section>
+
+
+
       <section className="border border-border rounded-lg p-4 bg-card">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex items-center gap-2">
