@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
-  getRdo, submitRdo, approveRdo,
+  getRdo, submitRdo, approveRdo, deleteRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
 } from "@/lib/rdo.functions";
@@ -37,10 +37,12 @@ export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
 function RdoDetailPage() {
   const { rdoId } = Route.useParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const fn = useServerFn(getRdo);
   const meFn = useServerFn(getMe);
   const submitFn = useServerFn(submitRdo);
   const approveFn = useServerFn(approveRdo);
+  const deleteFn = useServerFn(deleteRdo);
   const logsFn = useServerFn(listRdoLogs);
   const anexosFn = useServerFn(listRdoAnexos);
   const registrarFn = useServerFn(registrarAnexo);
@@ -110,6 +112,16 @@ function RdoDetailPage() {
     mutationFn: (id: string) => removerFn({ data: { id } }),
     onSuccess: () => { toast.success("Anexo removido"); qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }); },
     onError: (e: any) => toast.error(`Falha ao remover anexo: ${e.message}. Verifique permissões no OneDrive/Storage.`),
+  });
+  const excluir = useMutation({
+    mutationFn: () => deleteFn({ data: { id: rdoId } }),
+    onSuccess: () => {
+      toast.success("RDO excluído");
+      qc.invalidateQueries({ queryKey: ["rdos"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      navigate({ to: "/rdo" });
+    },
+    onError: (e: any) => toast.error(`Falha ao excluir: ${e.message}`),
   });
 
   const fileToBase64 = (f: File) => new Promise<string>((resolve, reject) => {
@@ -189,6 +201,8 @@ function RdoDetailPage() {
   const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
   const canManageAccess = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master" || x === "gestor_acessos");
   const isAuthor = r.autor?.id === me?.profile?.id;
+  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
+  const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
@@ -227,8 +241,35 @@ function RdoDetailPage() {
               </AlertDialog>
             </>
           )}
+          {canDeleteRascunho && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive border-destructive" disabled={excluir.isPending}>
+                  <Trash2 className="h-4 w-4 mr-1" />Excluir rascunho
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir RDO rascunho?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Esta ação é permanente. Anexos e assinaturas vinculados serão removidos.
+                </p>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => excluir.mutate()}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </header>
+
 
       {r.status === "reprovado" && r.motivo_reprovacao && (
         <Card className="p-4 border-destructive/50 bg-destructive/5 mb-4">
