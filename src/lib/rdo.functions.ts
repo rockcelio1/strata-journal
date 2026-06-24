@@ -33,12 +33,32 @@ export const listRdos = createServerFn({ method: "GET" })
         obras(id, nome, codigo, cliente),
         autor:profiles!rdos_autor_id_profiles_fkey(id, nome, email),
         aprovador:profiles!rdos_aprovado_por_profiles_fkey(id, nome, email),
-        rdo_assinaturas(user_id, signatario:profiles!rdo_assinaturas_user_id_fkey(id, nome, email))
+        rdo_assinaturas(user_id)
       `)
       .is("deleted_at", null)
       .order("data", { ascending: false });
     if (error) throw error;
-    return data;
+
+    const signerIds = Array.from(new Set(
+      (data ?? []).flatMap((r: any) => (r.rdo_assinaturas ?? []).map((a: any) => a.user_id).filter(Boolean)),
+    ));
+
+    if (!signerIds.length) return data;
+
+    const { data: profiles, error: profilesError } = await context.supabase
+      .from("profiles")
+      .select("id, nome, email")
+      .in("id", signerIds);
+    if (profilesError) throw profilesError;
+
+    const profilesById = new Map((profiles ?? []).map((profile: any) => [profile.id, profile]));
+    return (data ?? []).map((rdo: any) => ({
+      ...rdo,
+      rdo_assinaturas: (rdo.rdo_assinaturas ?? []).map((assinatura: any) => ({
+        ...assinatura,
+        signatario: profilesById.get(assinatura.user_id) ?? null,
+      })),
+    }));
   });
 
 export const adminDeleteRdo = createServerFn({ method: "POST" })
