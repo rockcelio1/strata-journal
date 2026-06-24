@@ -39,7 +39,15 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
   const [active, setActive] = useState<string | null>(null);
+  const [tip, setTip] = useState<{ key: string; x: number; y: number } | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+
+  function onHoverMove(e: React.PointerEvent) {
+    if (!stageRef.current || !tip) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    setTip({ key: tip.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+  }
 
   function onDown(e: React.PointerEvent) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
