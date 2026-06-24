@@ -332,9 +332,11 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           type="button"
           onClick={() => setSpin((s) => !s)}
           aria-pressed={spin}
-          className="absolute top-2 left-28 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur"
+          disabled={reducedMotion}
+          title={reducedMotion ? "Desativado pela preferência 'reduzir movimento' do sistema" : undefined}
+          className="absolute top-2 left-28 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {spin ? "Parar giro" : "Girar 360°"}
+          {reducedMotion ? "Movimento reduzido" : spin ? "Parar giro" : "Girar 360°"}
         </button>
         <div className="absolute top-2 right-2 text-[10px] text-white/80 bg-white/10 backdrop-blur px-2 py-1 rounded-md border border-white/20">
           arraste para girar · X {rxNorm.toFixed(0)}° · Y {ryNorm.toFixed(0)}°
