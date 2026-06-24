@@ -258,9 +258,20 @@ function NovoRdoPage() {
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
+  function describeWeatherError(e: any, fallback: string): string {
+    if (e instanceof WeatherError) {
+      const slug = e.status ? `${e.code}:${e.status}` : e.code;
+      return `${e.message} [${slug}]`;
+    }
+    return e?.message ?? fallback;
+  }
+
   async function importarClimaPorCep() {
     const v = validarCep(cepInput);
-    if (!v.ok) { setClimaErro(v.mensagem); toast.error(v.mensagem); return; }
+    if (!v.ok) {
+      const msg = `${v.mensagem} [${v.code}]`;
+      setClimaErro(msg); toast.error(msg); return;
+    }
     setCepInput(v.cep);
     setClimaStatus("loading"); setClimaErro(null);
     try {
@@ -271,10 +282,7 @@ function NovoRdoPage() {
       setClimaStatus("success");
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
     } catch (e: any) {
-      const raw = e?.message ?? "Não foi possível obter o clima pelo CEP";
-      const msg = /não encontrado/i.test(raw) ? `${raw} Verifique o número digitado.`
-                : /Tempo esgotado|timeout/i.test(raw) ? "Tempo esgotado na consulta do CEP. Tente novamente."
-                : raw;
+      const msg = describeWeatherError(e, "Não foi possível obter o clima pelo CEP");
       setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
     }
   }
@@ -292,11 +300,7 @@ function NovoRdoPage() {
       setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
       setClimaStatus("success");
     } catch (e: any) {
-      const raw = e?.message ?? "Não foi possível detectar o CEP automaticamente";
-      const msg = /permission|denied|negad/i.test(raw) ? "Permissão de localização negada pelo navegador."
-                : /Nominatim|geolocaliza/i.test(raw) ? raw
-                : /Tempo esgotado|timeout/i.test(raw) ? "Tempo esgotado ao detectar o CEP. Tente novamente."
-                : raw;
+      const msg = describeWeatherError(e, "Não foi possível detectar o CEP automaticamente");
       setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
     } finally {
       setCepDetecting(false);
