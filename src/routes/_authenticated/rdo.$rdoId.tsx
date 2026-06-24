@@ -774,6 +774,51 @@ function ExclusoesPanel({ logs }: { logs: any[] }) {
   );
 }
 
+function EventosRdoPanel({ logs }: { logs: any[] }) {
+  // Mapeia ações relevantes em rótulos amigáveis e classes visuais.
+  const TIPOS: Record<string, { label: string; tone: string; match: RegExp }> = {
+    excluido:    { label: "Excluído",    tone: "bg-destructive/10 text-destructive border-destructive/30", match: /(excluid|rascunho_excluido|soft_delete|admin_excluiu)/i },
+    desabilitado:{ label: "Desabilitado",tone: "bg-amber-500/10 text-amber-700 border-amber-500/30",       match: /(desabilit|disable)/i },
+    reabilitado: { label: "Reabilitado", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30", match: /(reabilit|enable|restaurad)/i },
+    editado:     { label: "Editado",     tone: "bg-sky-500/10 text-sky-700 border-sky-500/30",             match: /(editad|atualizad|alterad|admin_update)/i },
+  };
+  const eventos = useMemo(() => {
+    return logs
+      .map((l: any) => {
+        const acao = String(l.acao ?? "");
+        const tipo = Object.entries(TIPOS).find(([, v]) => v.match.test(acao))?.[0] ?? null;
+        return tipo ? { ...l, _tipo: tipo } : null;
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [logs]);
+  if (eventos.length === 0) return null;
+  return (
+    <Card className="p-4 mb-4">
+      <h3 className="font-serif text-lg flex items-center gap-2 mb-3">
+        <History className="h-4 w-4" /> Eventos do RDO ({eventos.length})
+      </h3>
+      <ol className="relative border-l border-border ml-2">
+        {eventos.map((l: any) => {
+          const t = TIPOS[l._tipo];
+          return (
+            <li key={l.id} className="ml-4 pb-3">
+              <div className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-brand" />
+              <div className="text-xs text-muted-foreground">{fmtBR(l.created_at)}</div>
+              <div className="text-sm flex flex-wrap items-center gap-2">
+                <span className={`text-[11px] px-2 py-0.5 rounded-full border ${t.tone}`}>{t.label}</span>
+                <span className="text-muted-foreground">por</span>
+                <span className="font-medium">{l.autor?.nome ?? l.autor?.email ?? l.autor_id?.slice(0, 8) ?? "—"}</span>
+              </div>
+              {l.motivo && <div className="text-xs italic text-muted-foreground mt-1">"{l.motivo}"</div>}
+            </li>
+          );
+        })}
+      </ol>
+    </Card>
+  );
+}
+
 function SectionList({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {
   const isEmpty = !children || (Array.isArray(children) && children.length === 0);
   return (
