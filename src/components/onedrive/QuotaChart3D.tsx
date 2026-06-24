@@ -155,18 +155,27 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
     return () => document.removeEventListener("pointerdown", onDocDown, true);
   }, [tip?.pinned]);
 
-  // Esc fecha o tooltip
+  // Esc fecha o tooltip e devolve foco à barra (sem armadilha de foco).
+  const closeTipAndRefocus = useCallback(() => {
+    const k = tip?.key;
+    setTip(null);
+    setActive(null);
+    if (k && barRefs.current[k]) {
+      requestAnimationFrame(() => barRefs.current[k]?.focus());
+    }
+  }, [tip?.key]);
+
   useEffect(() => {
     if (!tip) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        setTip(null);
-        setActive(null);
+        e.stopPropagation();
+        closeTipAndRefocus();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [tip]);
+  }, [tip, closeTipAndRefocus]);
 
   function openTipForKey(key: string, pinned = true) {
     const rect = stageRef.current?.getBoundingClientRect();
