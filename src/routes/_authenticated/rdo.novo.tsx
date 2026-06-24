@@ -28,6 +28,7 @@ import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { CameraCapture } from "@/components/rdo/CameraCapture";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
@@ -89,6 +90,7 @@ function NovoRdoPage() {
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [legendas, setLegendas] = useState<string[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
   type UpStatus = "pending" | "enviando" | "processando" | "feito" | "erro" | "fallback";
   const [uploadProgress, setUploadProgress] = useState<Array<{ name: string; status: UpStatus; error?: string; provider?: "onedrive" | "supabase" }>>([]);
   const [uploadHistory, setUploadHistory] = useState<Array<{ at: string; name: string; status: UpStatus; provider?: string; error?: string }>>([]);
@@ -615,14 +617,28 @@ function NovoRdoPage() {
             <Card className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
-                <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                  <Camera size={16} /> {compressing ? "Comprimindo…" : "Tirar foto"}
-                  <input
-                    type="file" accept="image/*" capture="environment" multiple className="sr-only"
-                    onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
-                  />
-                </label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="default" onClick={() => setCameraOpen(true)}>
+                    <Camera size={14} className="mr-1" /> Abrir câmera
+                  </Button>
+                  <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
+                    <Camera size={14} /> {compressing ? "Comprimindo…" : "Galeria"}
+                    <input
+                      type="file" accept="image/*" multiple className="sr-only"
+                      onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
+                    />
+                  </label>
+                </div>
               </div>
+              <CameraCapture
+                open={cameraOpen}
+                onClose={() => setCameraOpen(false)}
+                onCapture={(files) => {
+                  const dt = new DataTransfer();
+                  files.forEach((f) => dt.items.add(f));
+                  onAddFotos(dt.files);
+                }}
+              />
               {fotosSemLegenda > 0 && (
                 <div role="alert" className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
                   {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
