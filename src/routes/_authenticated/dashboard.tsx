@@ -283,7 +283,7 @@ function DashboardPage() {
         </Card>
 
         {/* Últimos RDOs */}
-        <Card className="md:col-span-4 p-4 sm:p-6">
+        <Card className="dash-card md:col-span-4 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-serif text-xl">Últimos RDOs</h2>
             <Link to="/rdo" className="text-xs text-muted-foreground hover:underline flex items-center gap-1">
