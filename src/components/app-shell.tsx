@@ -212,6 +212,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      {/* Navegação contextual reutilizável: voltar + breadcrumb */}
+      <BackNav />
+
       {/* Conteúdo: sidebar só em /cadastros no desktop */}
       <div className="flex-1 flex">
         {isCadastros && (
