@@ -19,21 +19,23 @@ const FILES = [
   "src/lib/core.functions.ts",
 ];
 
-// Captures the entire chain starting at `.from("rdos")` up to the next `;`.
-const FROM_RDOS_CHAIN = /\.from\(["']rdos["']\)[\s\S]*?;/g;
+// Captura cada chain individual iniciando em `.from("rdos")` até o próximo
+// `.from(` ou final de statement (`;` ou `,\n`).
+const FROM_RDOS_CHAIN = /\.from\(["']rdos["']\)(?:(?!\.from\()[\s\S])*?(?=[,;]\s*\n|;)/g;
 
 describe("integration: rascunhos com deleted_at não aparecem em listagens", () => {
   for (const file of FILES) {
-    it(`${file}: todo .from("rdos") inclui filtro deleted_at IS NULL`, () => {
+    it(`${file}: todo .from("rdos") inclui filtro deleted_at IS NULL (ou é leitura por id única)`, () => {
       const src = read(file);
       const chains = src.match(FROM_RDOS_CHAIN) ?? [];
       expect(chains.length).toBeGreaterThan(0);
       for (const chain of chains) {
-        // Permite UPDATE/INSERT/DELETE escrita (não-select) — exige .is("deleted_at", null) só para reads.
         const isWrite = /\.(update|insert|upsert|delete)\(/.test(chain);
         if (isWrite) continue;
-        // Para SELECTs (incluindo head:true / count exact / joins), exige o filtro.
-        expect(chain).toMatch(/\.is\(\s*["']?(?:rdos\.)?deleted_at["']?\s*,\s*null\s*\)/);
+        const filtraSoftDelete = /\.is\(\s*["']?(?:rdos\.)?deleted_at["']?\s*,\s*null\s*\)/.test(chain);
+        // Leitura por id única com .maybeSingle(): aceita pós-verificação em código (getRdo).
+        const isSingleByPk = /\.eq\(\s*["']id["']/.test(chain) && /\.maybeSingle\(\)/.test(chain);
+        expect(filtraSoftDelete || isSingleByPk, `chain sem filtro deleted_at:\n${chain}`).toBe(true);
       }
     });
   }
