@@ -179,7 +179,13 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
   function armAutoClose() {
     if (tipTimer.current) clearTimeout(tipTimer.current);
     tipTimer.current = setTimeout(() => {
-      setTip((t) => (t && !t.pinned ? null : t));
+      setTip((t) => {
+        if (t && !t.pinned) {
+          reportEvent("tooltip_closed_by_timeout", { duration_ms: 3000 }, { chartId, empresa, barKey: t.key, trigger: "auto" });
+          return null;
+        }
+        return t;
+      });
     }, 3000);
   }
   useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
