@@ -385,21 +385,33 @@
   }
 }
 
-/* Seta voltar — acende na cor da logomarca no hover/focus */
+/* Seta voltar — sempre visível na cor da logomarca, com movimento sutil
+ * vai-e-vem. No hover/focus, acende ainda mais (saturação + glow). */
+@keyframes brand-arrow-nudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-3px); }
+}
 @utility brand-arrow {
-  color: var(--color-brand-foreground);
+  color: rgb(var(--facom-glow-rgb));
+  filter: drop-shadow(0 0 2px rgba(var(--facom-glow-rgb), 0.45));
   transition: color var(--facom-glow-duration) var(--facom-glow-ease),
-              transform var(--facom-glow-duration) var(--facom-glow-ease);
+              filter var(--facom-glow-duration) var(--facom-glow-ease);
+  & svg {
+    animation: brand-arrow-nudge 1.8s ease-in-out infinite;
+    will-change: transform;
+  }
   &:hover,
   &:focus-visible {
-    color: rgb(var(--facom-glow-rgb));
+    color: rgb(var(--facom-glow-rgb-deep));
+    filter: drop-shadow(0 0 10px rgba(var(--facom-glow-rgb), 1))
+            drop-shadow(0 0 18px rgba(var(--facom-glow-rgb-deep), 0.7));
   }
   &:hover svg,
   &:focus-visible svg {
-    transform: translateX(-2px);
-    filter: drop-shadow(0 0 6px rgba(var(--facom-glow-rgb), 0.85));
+    animation-duration: 0.9s;
   }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .facom-glow::before,
