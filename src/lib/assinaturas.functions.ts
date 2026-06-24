@@ -20,7 +20,7 @@ export const listSignatarios = createServerFn({ method: "GET" })
         .eq("rdo_id", data.rdo_id),
       supabase
         .from("rdo_assinaturas")
-        .select("id, user_id, via_grupo_id, storage_path, assinado_em, profiles:profiles!rdo_assinaturas_user_id_fkey(id, nome, email)")
+        .select("id, user_id, via_grupo_id, storage_path, assinado_em")
         .eq("rdo_id", data.rdo_id),
     ]);
     if (e1) throw e1;
@@ -29,16 +29,28 @@ export const listSignatarios = createServerFn({ method: "GET" })
     const userIds = (reqs ?? []).filter((r) => r.sujeito_tipo === "user").map((r) => r.sujeito_id);
     const grupoIds = (reqs ?? []).filter((r) => r.sujeito_tipo === "grupo").map((r) => r.sujeito_id);
 
-    const [users, grupos] = await Promise.all([
+    const [users, grupos, membros] = await Promise.all([
       userIds.length
         ? supabase.from("profiles").select("id, nome, email").in("id", userIds)
         : Promise.resolve({ data: [] as any[], error: null }),
       grupoIds.length
-        ? supabase.from("grupos").select("id, nome, grupo_membros(user_id, profiles:profiles!inner(id, nome, email))").in("id", grupoIds)
+        ? supabase.from("grupos").select("id, nome").in("id", grupoIds)
+        : Promise.resolve({ data: [] as any[], error: null }),
+      grupoIds.length
+        ? supabase.from("grupo_membros").select("grupo_id, user_id").in("grupo_id", grupoIds)
         : Promise.resolve({ data: [] as any[], error: null }),
     ]);
     if (users.error) throw users.error;
     if (grupos.error) throw grupos.error;
+    if (membros.error) throw membros.error;
+
+    const membroUserIds = Array.from(new Set((membros.data ?? []).map((m: any) => m.user_id).filter(Boolean)));
+    const membroProfiles = membroUserIds.length
+      ? await supabase.from("profiles").select("id, nome, email").in("id", membroUserIds)
+      : { data: [] as any[], error: null };
+    if (membroProfiles.error) throw membroProfiles.error;
+
+    const profilesById = new Map([...(users.data ?? []), ...(membroProfiles.data ?? [])].map((p: any) => [p.id, p]));
 
     const assinPorUser = new Map<string, any>();
     for (const a of assin ?? []) assinPorUser.set(a.user_id, a);
@@ -56,17 +68,17 @@ export const listSignatarios = createServerFn({ method: "GET" })
         };
       }
       const g = (grupos.data ?? []).find((x: any) => x.id === r.sujeito_id);
-      const membros = (g?.grupo_membros ?? []).map((m: any) => ({
+      const grupoMembros = (membros.data ?? []).filter((m: any) => m.grupo_id === r.sujeito_id).map((m: any) => ({
         user_id: m.user_id,
-        nome: m.profiles?.nome ?? "—",
+        nome: profilesById.get(m.user_id)?.nome ?? "—",
         assinado: !!assinPorUser.get(m.user_id),
       }));
       return {
         ...r,
         nome: g?.nome ?? "—",
         email: null,
-        membros,
-        assinado: membros.length > 0 && membros.every((m: any) => m.assinado),
+        membros: grupoMembros,
+        assinado: grupoMembros.length > 0 && grupoMembros.every((m: any) => m.assinado),
         assinatura: null,
       };
     });
