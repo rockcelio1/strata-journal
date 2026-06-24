@@ -107,6 +107,8 @@ function NovoRdoPage() {
   const [previsao5, setPrevisao5] = useState<DiaPrevisao[] | null>(null);
   const [previsaoLocal, setPrevisaoLocal] = useState<string | null>(null);
   const [previsaoAt, setPrevisaoAt] = useState<string | null>(null);
+  const [cepInput, setCepInput] = useState("");
+  const [cepDetecting, setCepDetecting] = useState(false);
   const climaLoading = climaStatus === "loading";
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
