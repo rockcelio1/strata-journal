@@ -440,7 +440,7 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
                   <button
                     type="button"
                     aria-label="Fechar tooltip"
-                    onClick={(e) => { e.stopPropagation(); setTip(null); }}
+                    onClick={(e) => { e.stopPropagation(); closeTipAndRefocus(); }}
                     className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
                   >×</button>
                 )}
