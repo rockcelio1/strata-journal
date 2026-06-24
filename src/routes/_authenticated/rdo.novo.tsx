@@ -318,6 +318,7 @@ function NovoRdoPage() {
       }
     },
     onSuccess: (r: any) => {
+      clearDraft(draftKey);
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
