@@ -92,11 +92,12 @@ function GaleriaPage() {
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Stat label="Fotos" value={totals.imagem} icon={ImageIcon} />
-        <Stat label="Vídeos" value={totals.video} icon={FilmStrip} />
-        <Stat label="PDFs" value={totals.pdf} icon={FilePdf} />
-        <Stat label="Outros" value={totals.outro} icon={FileText} />
+        <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
+        <Stat label="Vídeos" value={totals.video}  icon={FilmStrip} active={tipo === "video"}  onClick={() => setTipo(tipo === "video"  ? "" : "video")} />
+        <Stat label="PDFs"   value={totals.pdf}    icon={FilePdf}   active={tipo === "pdf"}    onClick={() => setTipo(tipo === "pdf"    ? "" : "pdf")} />
+        <Stat label="Outros" value={totals.outro}  icon={FileText}  active={tipo === "outro"}  onClick={() => setTipo(tipo === "outro"  ? "" : "outro")} />
       </div>
+
 
       <Card className="p-3 mb-4 flex flex-wrap gap-2 items-end">
         <div className="flex-1 min-w-[180px]">
@@ -162,7 +163,7 @@ function GaleriaPage() {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
                         return (
-                          <Card key={it.id} className="overflow-hidden group">
+                          <Card key={it.id} className="facom-glow overflow-hidden group cursor-pointer">
                             <button onClick={() => setPreview(it)} className="block relative aspect-square w-full bg-muted overflow-hidden">
                               {it.tipo === "imagem" && it.url ? (
                                 <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -241,14 +242,20 @@ function GaleriaPage() {
   );
 }
 
-function Stat({ label, value, icon: Icon }: { label: string; value: number; icon: any }) {
+function Stat({ label, value, icon: Icon, active, onClick }: { label: string; value: number; icon: any; active?: boolean; onClick?: () => void }) {
   return (
-    <Card className="p-3 flex items-center gap-3">
-      <div className="h-9 w-9 rounded-md bg-brand/10 text-brand grid place-items-center"><Icon size={18} /></div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`facom-glow w-full text-left rounded-lg border bg-card p-3 flex items-center gap-3 transition-colors ${active ? "border-brand ring-2 ring-brand/40" : "border-border hover:bg-accent/40"}`}
+    >
+      <div className={`h-9 w-9 rounded-md grid place-items-center ${active ? "bg-brand text-brand-foreground" : "bg-brand/10 text-brand"}`}><Icon size={18} /></div>
       <div>
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-xl font-semibold tabular-nums">{value}</div>
       </div>
-    </Card>
+    </button>
   );
 }
+
