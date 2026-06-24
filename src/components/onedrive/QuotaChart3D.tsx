@@ -145,11 +145,14 @@ export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quo
     return () => mq.removeEventListener?.("change", apply);
   }, []);
   const [, forceTick] = useState(0);
+  const [focusKey, setFocusKey] = useState<string>("used");
   const stageRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
   const barRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const legendRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverStartRef = useRef<{ key: string; t: number } | null>(null);
 
   // Log dados inválidos uma única vez por mudança.
   useEffect(() => {
