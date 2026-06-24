@@ -165,12 +165,32 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 className="flex flex-col items-center cursor-pointer"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
                 onPointerEnter={(e) => {
-                  setActive(b.key);
-                  const rect = stageRef.current?.getBoundingClientRect();
-                  if (rect) setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                  try {
+                    setActive(b.key);
+                    const rect = stageRef.current?.getBoundingClientRect();
+                    if (!rect) return;
+                    setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
+                    armAutoClose();
+                  } catch (err) {
+                    console.warn("[QuotaChart3D] hover error", { key: b.key, value: b.value, err });
+                  }
                 }}
-                onPointerLeave={() => { setActive((cur) => (cur === b.key ? null : cur)); setTip((t) => (t?.key === b.key ? null : t)); }}
-                onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
+                onPointerLeave={(e) => {
+                  if (e.pointerType === "touch") return; // toque mantém aberto até tocar fora
+                  setActive((cur) => (cur === b.key ? null : cur));
+                  setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActive((cur) => (cur === b.key ? null : b.key));
+                  // Em toque, fixa o tooltip; clique do mouse só alterna o destaque.
+                  setTip((t) => {
+                    const rect = stageRef.current?.getBoundingClientRect();
+                    if (!rect) return t;
+                    if (t?.key === b.key) return null;
+                    return { key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: true };
+                  });
+                }}
               >
                 <span
                   className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
