@@ -33,7 +33,7 @@ export const listRdos = createServerFn({ method: "GET" })
         obras(id, nome, codigo, cliente),
         autor:profiles!rdos_autor_id_profiles_fkey(id, nome, email),
         aprovador:profiles!rdos_aprovado_por_profiles_fkey(id, nome, email),
-        rdo_assinaturas(user_id, signatario:profiles!rdo_assinaturas_user_id_profiles_fkey(id, nome, email))
+        rdo_assinaturas(user_id, signatario:profiles!rdo_assinaturas_user_id_fkey(id, nome, email))
       `)
       .is("deleted_at", null)
       .order("data", { ascending: false });
