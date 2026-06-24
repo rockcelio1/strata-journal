@@ -1,12 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function toNum(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  return Number.isFinite(v) && v >= 0 ? v : 0;
+}
 
 function fmtBytes(n: number): string {
-  if (!n || n < 0) return "0 B";
+  const v0 = toNum(n);
+  if (v0 === 0) return "0 B";
   const u = ["B", "KB", "MB", "GB", "TB", "PB"];
   let i = 0;
-  let v = n;
+  let v = v0;
   while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
   return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${u[i]}`;
+}
+
+function reportError(scope: string, payload: Record<string, unknown>) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = typeof window !== "undefined" ? (window as any) : null;
+    if (w?.Sentry?.captureMessage) {
+      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: payload });
+    }
+  } catch { /* noop */ }
+  console.warn(`[QuotaChart3D] ${scope}`, payload);
 }
 
 type Props = {
@@ -20,33 +37,54 @@ type BarDef = {
   label: string;
   value: number;
   pct: number;
-  color: string;       // cor base, vívida
-  highlight: string;   // brilho/topo
-  shadow: string;      // sombra colorida (glow)
+  color: string;
+  highlight: string;
+  shadow: string;
 };
 
-/**
- * Gráfico 3D em barras (CSS perspective). Arraste para girar 360° em qualquer eixo,
- * inclusive a legenda dentro do palco (fica solidária ao giro).
- */
 export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
-  const safeTotal = Math.max(total, 1);
-  const free = Math.max(total - used, 0);
-  const pctUsed = Math.min(100, (used / safeTotal) * 100);
+  const usedSafe = toNum(used);
+  const totalSafe = toNum(total);
+  const deletedSafe = toNum(deleted);
+  const safeTotal = Math.max(totalSafe, 1);
+  const free = Math.max(totalSafe - usedSafe, 0);
+  const pctUsed = Math.min(100, (usedSafe / safeTotal) * 100);
   const pctFree = Math.min(100, (free / safeTotal) * 100);
-  const pctDel = Math.min(100, (deleted / safeTotal) * 100);
+  const pctDel = Math.min(100, (deletedSafe / safeTotal) * 100);
+  const dataValid = Number.isFinite(used) && Number.isFinite(total);
 
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
   const [active, setActive] = useState<string | null>(null);
   const [tip, setTip] = useState<{ key: string; x: number; y: number; pinned?: boolean } | null>(null);
-  const [, forceTick] = useState(0); // força re-render em resize/zoom
+  const [spin, setSpin] = useState(false);
+  const [, forceTick] = useState(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
+  const barRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-fechamento por inatividade (3s) — exceto se "pinned" por toque/clique.
+  // Log dados inválidos uma única vez por mudança.
+  useEffect(() => {
+    if (!dataValid) reportError("dados inválidos", { used, total, deleted });
+  }, [used, total, deleted, dataValid]);
+
+  // Auto-rotate 360°
+  useEffect(() => {
+    if (!spin) return;
+    let raf = 0;
+    let last = performance.now();
+    const loop = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setRy((r) => r + dt * 36);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [spin]);
+
   function armAutoClose() {
     if (tipTimer.current) clearTimeout(tipTimer.current);
     tipTimer.current = setTimeout(() => {
@@ -55,7 +93,6 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   }
   useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
 
-  // Re-render no resize/zoom para o tooltip re-clampar com o novo rect.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onResize = () => forceTick((n) => n + 1);
@@ -73,7 +110,6 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     };
   }, []);
 
-  // Fecha ao tocar/clicar fora (mobile + desktop).
   useEffect(() => {
     if (!tip?.pinned) return;
     function onDocDown(e: PointerEvent) {
@@ -85,6 +121,31 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     document.addEventListener("pointerdown", onDocDown, true);
     return () => document.removeEventListener("pointerdown", onDocDown, true);
   }, [tip?.pinned]);
+
+  // Esc fecha o tooltip
+  useEffect(() => {
+    if (!tip) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setTip(null);
+        setActive(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tip]);
+
+  function openTipForKey(key: string, pinned = true) {
+    const rect = stageRef.current?.getBoundingClientRect();
+    const barEl = barRefs.current[key];
+    if (!rect || !barEl) return;
+    const br = barEl.getBoundingClientRect();
+    const x = br.left - rect.left + br.width / 2;
+    const y = br.top - rect.top + br.height / 2;
+    setTip({ key, x, y, pinned });
+    setActive(key);
+    armAutoClose();
+  }
 
   function onHoverMove(e: React.PointerEvent) {
     if (!stageRef.current || !tip || tip.pinned) return;
@@ -101,42 +162,71 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     if (!drag.current) return;
     const dx = e.clientX - drag.current.x;
     const dy = e.clientY - drag.current.y;
-    // 360° livre nos dois eixos
     setRy(drag.current.ry + dx * 0.6);
     setRx(drag.current.rx - dy * 0.6);
   }
   function onUp(e: React.PointerEvent) {
     drag.current = null;
-    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
   }
   function resetView() { setRx(-18); setRy(-28); }
 
   const bars: BarDef[] = [
-    { key: "used",    label: "Usado",      value: used,    pct: pctUsed, color: "#2563eb", highlight: "#60a5fa", shadow: "rgba(37,99,235,0.55)" },
-    { key: "free",    label: "Disponível", value: free,    pct: pctFree, color: "#10b981", highlight: "#6ee7b7", shadow: "rgba(16,185,129,0.55)" },
-    { key: "deleted", label: "Lixeira",    value: deleted, pct: pctDel,  color: "#f59e0b", highlight: "#fcd34d", shadow: "rgba(245,158,11,0.55)" },
-    { key: "total",   label: "Total",      value: total,   pct: 100,     color: "#8b5cf6", highlight: "#c4b5fd", shadow: "rgba(139,92,246,0.55)" },
+    { key: "used",    label: "Usado",      value: usedSafe,    pct: pctUsed, color: "#2563eb", highlight: "#60a5fa", shadow: "rgba(37,99,235,0.65)" },
+    { key: "free",    label: "Disponível", value: free,        pct: pctFree, color: "#10b981", highlight: "#6ee7b7", shadow: "rgba(16,185,129,0.65)" },
+    { key: "deleted", label: "Lixeira",    value: deletedSafe, pct: pctDel,  color: "#f59e0b", highlight: "#fcd34d", shadow: "rgba(245,158,11,0.65)" },
+    { key: "total",   label: "Total",      value: totalSafe,   pct: 100,     color: "#8b5cf6", highlight: "#c4b5fd", shadow: "rgba(139,92,246,0.65)" },
   ];
 
   const ryNorm = ((ry % 360) + 360) % 360;
   const rxNorm = ((rx % 360) + 360) % 360;
 
+  const onBarKey = useCallback((e: React.KeyboardEvent, key: string) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openTipForKey(key, true);
+    } else if (e.key === "Escape") {
+      setTip(null);
+      setActive(null);
+    }
+  }, []);
+
   return (
     <div className="space-y-3">
       <div
         ref={stageRef}
-        className="relative h-80 w-full rounded-2xl border border-border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 cursor-grab active:cursor-grabbing select-none overflow-hidden shadow-inner"
-        style={{ perspective: "1100px" }}
+        className="relative h-80 w-full rounded-2xl border border-white/10 cursor-grab active:cursor-grabbing select-none overflow-hidden"
+        style={{
+          perspective: "1100px",
+          background:
+            "radial-gradient(ellipse at 25% 15%, rgba(99,102,241,0.25), transparent 55%)," +
+            "radial-gradient(ellipse at 80% 90%, rgba(16,185,129,0.20), transparent 55%)," +
+            "linear-gradient(135deg, #0b1220 0%, #111827 50%, #0b1220 100%)",
+          boxShadow:
+            "inset 0 0 80px rgba(99,102,241,0.20)," +
+            "inset 0 0 0 1px rgba(255,255,255,0.06)," +
+            "0 30px 60px -20px rgba(0,0,0,0.6)",
+          backdropFilter: "blur(8px)",
+        }}
         onPointerDown={onDown}
         onPointerMove={(e) => { onMove(e); onHoverMove(e); }}
         onPointerUp={onUp}
         onPointerCancel={onUp}
         onPointerLeave={() => setTip((t) => (t?.pinned ? t : null))}
         title="Clique e arraste para girar 360°"
+        role="group"
+        aria-label="Gráfico 3D de uso do repositório OneDrive"
       >
-        {/* brilho ambiente */}
-        <div className="pointer-events-none absolute inset-0 opacity-40"
-          style={{ background: "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), transparent 60%)" }} />
+        {/* Vidro / reflexo */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.08), transparent 35%)",
+        }} />
+
+        {!dataValid && (
+          <div className="absolute inset-0 grid place-items-center text-xs text-white/80">
+            Dados indisponíveis no momento.
+          </div>
+        )}
 
         <div
           className="absolute inset-0 flex items-end justify-center gap-10 pb-10"
@@ -145,7 +235,6 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
             transform: `rotateX(${rx}deg) rotateY(${ry}deg)`,
           }}
         >
-          {/* "Chão" arredondado */}
           <div
             className="absolute left-1/2 bottom-8"
             style={{
@@ -162,8 +251,14 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
             return (
               <div
                 key={b.key}
-                className="flex flex-col items-center cursor-pointer"
+                ref={(el) => { barRefs.current[b.key] = el; }}
+                className="flex flex-col items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-md"
                 style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${b.label}: ${fmtBytes(b.value)}, ${b.pct.toFixed(1)} por cento`}
+                aria-describedby={tip?.key === b.key ? "quota-tooltip" : undefined}
+                onKeyDown={(e) => onBarKey(e, b.key)}
                 onPointerEnter={(e) => {
                   try {
                     setActive(b.key);
@@ -172,18 +267,17 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                     setTip({ key: b.key, x: e.clientX - rect.left, y: e.clientY - rect.top, pinned: e.pointerType === "touch" });
                     armAutoClose();
                   } catch (err) {
-                    console.warn("[QuotaChart3D] hover error", { key: b.key, value: b.value, err });
+                    reportError("hover error", { key: b.key, value: b.value, err: String(err) });
                   }
                 }}
                 onPointerLeave={(e) => {
-                  if (e.pointerType === "touch") return; // toque mantém aberto até tocar fora
+                  if (e.pointerType === "touch") return;
                   setActive((cur) => (cur === b.key ? null : cur));
                   setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setActive((cur) => (cur === b.key ? null : b.key));
-                  // Em toque, fixa o tooltip; clique do mouse só alterna o destaque.
                   setTip((t) => {
                     const rect = stageRef.current?.getBoundingClientRect();
                     if (!rect) return t;
@@ -194,7 +288,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
               >
                 <span
                   className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
-                  style={{ color: "#fff", background: b.color, boxShadow: `0 0 12px ${b.shadow}` }}
+                  style={{ color: "#fff", background: b.color, boxShadow: `0 0 14px ${b.shadow}, 0 0 2px #fff inset` }}
                 >
                   {b.pct.toFixed(1)}%
                 </span>
@@ -204,7 +298,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                   style={{
                     color: "#fff",
                     background: `linear-gradient(135deg, ${b.color}, ${b.highlight})`,
-                    boxShadow: `0 4px 14px ${b.shadow}`,
+                    boxShadow: `0 4px 14px ${b.shadow}, 0 0 12px ${b.shadow}`,
                   }}
                 >
                   {b.label}
@@ -217,61 +311,90 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         <button
           type="button"
           onClick={resetView}
-          className="absolute top-2 left-2 text-[10px] bg-background/80 hover:bg-background text-foreground px-2 py-1 rounded-md border border-border"
+          className="absolute top-2 left-2 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur"
         >
           Resetar vista
+        </button>
+        <button
+          type="button"
+          onClick={() => setSpin((s) => !s)}
+          aria-pressed={spin}
+          className="absolute top-2 left-28 text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-md border border-white/20 backdrop-blur"
+        >
+          {spin ? "Parar giro" : "Girar 360°"}
         </button>
         <div className="absolute top-2 right-2 text-[10px] text-white/80 bg-white/10 backdrop-blur px-2 py-1 rounded-md border border-white/20">
           arraste para girar · X {rxNorm.toFixed(0)}° · Y {ryNorm.toFixed(0)}°
         </div>
 
-        {/* Tooltip flutuante responsivo */}
+        {/* Tooltip flutuante com posicionamento inteligente (flip horizontal/vertical) */}
         {(() => {
           if (!tip) return null;
           const b = bars.find((x) => x.key === tip.key);
           if (!b) {
-            console.warn("[QuotaChart3D] tooltip key sem barra correspondente", tip.key);
+            reportError("tooltip sem barra", { key: tip.key });
             return null;
           }
           if (!Number.isFinite(b.value) || !Number.isFinite(b.pct)) {
-            console.warn("[QuotaChart3D] valores inválidos para tooltip", { key: b.key, value: b.value, pct: b.pct });
+            reportError("tooltip valores inválidos", { key: b.key, value: b.value, pct: b.pct });
             return null;
           }
           const rect = stageRef.current?.getBoundingClientRect();
           const stageW = rect?.width ?? stageRef.current?.clientWidth ?? 0;
           const stageH = rect?.height ?? stageRef.current?.clientHeight ?? 0;
           const tipW = Math.min(260, Math.max(160, stageW - 24));
-          const tipH = Math.min(180, Math.max(110, stageH * 0.55));
-          // Clamp considerando bordas reais; recalculado a cada render (resize/zoom).
-          let x = tip.x + 14;
-          let y = tip.y + 14;
-          if (x + tipW > stageW - 8) x = tip.x - tipW - 14;
-          if (y + tipH > stageH - 8) y = tip.y - tipH - 14;
+          const tipH = Math.min(190, Math.max(120, stageH * 0.55));
+          const gap = 14;
+
+          // Decisão de lado: prefere o lado com mais espaço
+          const spaceRight = stageW - tip.x;
+          const spaceLeft = tip.x;
+          const spaceBottom = stageH - tip.y;
+          const spaceTop = tip.y;
+
+          let x = spaceRight >= tipW + gap || spaceRight >= spaceLeft
+            ? tip.x + gap
+            : tip.x - tipW - gap;
+          let y = spaceBottom >= tipH + gap || spaceBottom >= spaceTop
+            ? tip.y + gap
+            : tip.y - tipH - gap;
+
+          // Clamp final
           x = Math.max(8, Math.min(x, Math.max(8, stageW - tipW - 8)));
           y = Math.max(8, Math.min(y, Math.max(8, stageH - tipH - 8)));
+
           return (
             <div
               ref={tipRef}
-              className={`absolute z-10 rounded-xl p-3 text-[11px] backdrop-blur-md ${tip.pinned ? "" : "pointer-events-none"}`}
+              id="quota-tooltip"
+              role="tooltip"
+              aria-live="polite"
+              className={`absolute z-10 rounded-2xl p-3 text-[11px] ${tip.pinned ? "" : "pointer-events-none"}`}
               style={{
                 left: x,
                 top: y,
                 width: tipW,
                 maxWidth: "calc(100% - 16px)",
-                background: `linear-gradient(135deg, ${b.color}ee, ${b.highlight}dd)`,
+                background:
+                  `linear-gradient(135deg, ${b.color}cc, ${b.highlight}aa)`,
                 color: "#fff",
                 border: `1px solid ${b.highlight}`,
-                boxShadow: `0 12px 32px ${b.shadow}, 0 0 0 1px rgba(255,255,255,0.15) inset`,
+                boxShadow:
+                  `0 12px 32px ${b.shadow},` +
+                  `0 0 24px ${b.shadow},` +
+                  `0 0 0 1px rgba(255,255,255,0.18) inset`,
+                backdropFilter: "blur(14px) saturate(140%)",
+                WebkitBackdropFilter: "blur(14px) saturate(140%)",
               }}
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="h-3 w-3 rounded-full" style={{ background: "#fff", boxShadow: `0 0 8px #fff` }} />
+                <span className="h-3 w-3 rounded-full" style={{ background: "#fff", boxShadow: `0 0 10px #fff` }} />
                 <span className="font-bold text-sm">{b.label}</span>
                 <span className="ml-auto font-bold">{b.pct.toFixed(1)}%</span>
                 {tip.pinned && (
                   <button
                     type="button"
-                    aria-label="Fechar"
+                    aria-label="Fechar tooltip"
                     onClick={(e) => { e.stopPropagation(); setTip(null); }}
                     className="ml-1 text-white/90 hover:text-white text-sm leading-none px-1"
                   >×</button>
@@ -279,8 +402,8 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 opacity-95">
                 <span className="opacity-80">Tamanho</span><span className="font-semibold text-right">{fmtBytes(b.value)}</span>
-                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{Number.isFinite(b.value) ? b.value.toLocaleString("pt-BR") : "—"}</span>
-                <span className="opacity-80">Total</span><span className="font-semibold text-right">{fmtBytes(total)}</span>
+                <span className="opacity-80">Bytes</span><span className="font-semibold text-right">{b.value.toLocaleString("pt-BR")}</span>
+                <span className="opacity-80">Total</span><span className="font-semibold text-right">{fmtBytes(totalSafe)}</span>
               </div>
               <div className="mt-1 text-[10px] opacity-90 italic">
                 {b.key === "used" && "Espaço já ocupado por arquivos no OneDrive."}
@@ -293,19 +416,17 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         })()}
       </div>
 
-
-
       {/* Detalhes da barra ativa */}
       {(() => {
         const b = bars.find((x) => x.key === active);
         if (!b) {
           return (
             <p className="text-[11px] text-muted-foreground italic">
-              Passe o mouse ou clique em uma barra (ou na legenda) para ver os detalhes.
+              Passe o mouse, clique ou use Enter/Espaço em uma barra (ou na legenda) para ver os detalhes. Esc fecha.
             </p>
           );
         }
-        const totalRef = Math.max(total, 1);
+        const totalRef = Math.max(totalSafe, 1);
         return (
           <div
             className="rounded-xl p-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
@@ -322,7 +443,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
             <span><span className="text-muted-foreground">Referência total:</span> <b>{fmtBytes(totalRef)}</b></span>
             <button
               type="button"
-              onClick={() => setActive(null)}
+              onClick={() => { setActive(null); setTip(null); }}
               className="ml-auto text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted"
             >
               Fechar
@@ -331,20 +452,31 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         );
       })()}
 
-      {/* Legenda colorida e destacada */}
-      <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-
+      {/* Legenda colorida — hover destaca a barra correspondente */}
+      <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" aria-label="Legenda do gráfico">
         {bars.map((b) => (
           <li
             key={b.key}
-            onMouseEnter={() => setActive(b.key)}
-            onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
-            onClick={() => setActive((cur) => (cur === b.key ? null : b.key))}
-            className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5"
+            onMouseEnter={() => { setActive(b.key); openTipForKey(b.key, false); }}
+            onMouseLeave={() => {
+              setActive((cur) => (cur === b.key ? null : cur));
+              setTip((t) => (t?.key === b.key && !t.pinned ? null : t));
+            }}
+            onClick={() => {
+              setActive((cur) => (cur === b.key ? null : b.key));
+              openTipForKey(b.key, true);
+            }}
+            className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-white/70 outline-none"
+            tabIndex={0}
+            onKeyDown={(e) => onBarKey(e, b.key)}
+            role="button"
+            aria-label={`Destacar ${b.label}`}
             style={{
               background: `linear-gradient(135deg, ${b.color}22, ${b.highlight}11)`,
               border: `${active === b.key ? 2 : 1}px solid ${b.color}`,
-              boxShadow: active === b.key ? `0 10px 28px ${b.shadow}` : `0 6px 18px ${b.shadow}`,
+              boxShadow: active === b.key
+                ? `0 10px 28px ${b.shadow}, 0 0 16px ${b.shadow}`
+                : `0 6px 18px ${b.shadow}`,
             }}
           >
             <div className="flex items-center gap-2">
@@ -352,7 +484,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
                 className="h-4 w-4 rounded-full"
                 style={{
                   background: `radial-gradient(circle at 30% 30%, ${b.highlight}, ${b.color})`,
-                  boxShadow: `0 0 8px ${b.shadow}`,
+                  boxShadow: `0 0 10px ${b.shadow}`,
                 }}
               />
               <span className="font-bold" style={{ color: b.color }}>{b.label}</span>
@@ -369,28 +501,32 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
 function Bar3D({ height, color, highlight, shadow, active }: { height: number; color: string; highlight: string; shadow: string; active?: boolean }) {
   const w = 56;
   const d = 56;
-  const radius = 14;
+  const radius = 16;
   const front = `linear-gradient(180deg, ${highlight} 0%, ${color} 55%, ${shade(color, -25)} 100%)`;
   const side  = `linear-gradient(180deg, ${shade(color, -10)} 0%, ${shade(color, -35)} 100%)`;
   const back  = `linear-gradient(180deg, ${shade(color, -20)} 0%, ${shade(color, -45)} 100%)`;
   const top   = `radial-gradient(circle at 35% 30%, ${shade(highlight, 25)}, ${color})`;
+  const glow  = active
+    ? `0 0 48px ${shadow}, 0 0 0 2px ${highlight}, 0 0 24px ${shadow} inset`
+    : `0 0 28px ${shadow}, 0 0 16px ${shadow} inset`;
   const baseStyle: React.CSSProperties = {
     position: "absolute",
     borderRadius: radius,
-    boxShadow: active ? `0 0 36px ${shadow}, 0 0 0 2px ${highlight}` : `0 0 22px ${shadow}`,
+    boxShadow: glow,
   };
   return (
     <div style={{ width: w, height, position: "relative", transformStyle: "preserve-3d" }}>
-      {/* frente */}
       <div style={{ ...baseStyle, inset: 0, background: front, transform: `translateZ(${d / 2}px)` }} />
-      {/* trás */}
       <div style={{ ...baseStyle, inset: 0, background: back, transform: `translateZ(${-d / 2}px) rotateY(180deg)` }} />
-      {/* direita */}
       <div style={{ ...baseStyle, top: 0, right: 0, width: d, height, background: side, transform: `rotateY(90deg) translateZ(${w / 2}px)`, transformOrigin: "right center" }} />
-      {/* esquerda */}
       <div style={{ ...baseStyle, top: 0, left: 0, width: d, height, background: side, transform: `rotateY(-90deg) translateZ(${w / 2}px)`, transformOrigin: "left center" }} />
-      {/* topo */}
       <div style={{ ...baseStyle, top: 0, left: 0, width: w, height: d, background: top, transform: `rotateX(90deg) translateZ(${d / 2}px)`, transformOrigin: "top center" }} />
+      {/* reflexo de vidro */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: radius, pointerEvents: "none",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0) 40%)",
+        transform: `translateZ(${d / 2 + 0.1}px)`,
+      }} />
     </div>
   );
 }
