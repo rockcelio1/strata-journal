@@ -383,7 +383,7 @@ function StatCard({ icon: Icon, label, value, sub, tone, onClick }: { icon: any;
     <button
       type="button"
       onClick={onClick}
-      className={`text-left group rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[120px] transition-all hover:-translate-y-0.5 hover:shadow-lg hover:ring-2 ${ring} focus:outline-none focus:ring-2 focus:ring-brand`}
+      className={`facom-flash text-left group rounded-xl border bg-card p-5 flex flex-col justify-between min-h-[120px] transition-all hover:-translate-y-0.5 hover:shadow-lg hover:ring-2 ${ring} focus:outline-none focus:ring-2 focus:ring-brand`}
     >
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
