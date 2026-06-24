@@ -816,6 +816,7 @@ function NovoRdoPage() {
                       : 100;
                     const color =
                       u.status === "erro" ? "bg-destructive"
+                      : u.status === "aguardando-rede" ? "bg-amber-400"
                       : u.status === "fallback" ? "bg-amber-500"
                       : u.status === "feito" ? "bg-emerald-500"
                       : "bg-brand";
@@ -823,7 +824,9 @@ function NovoRdoPage() {
                       <div key={i} className="text-[11px]">
                         <div className="flex justify-between gap-2">
                           <span className="truncate flex-1">{u.name}</span>
-                          <span className="text-muted-foreground">{u.status}{u.provider ? ` · ${u.provider}` : ""}</span>
+                          <span className="text-muted-foreground">
+                            {u.status}{u.attempt && u.attempt > 1 ? ` (tentativa ${u.attempt})` : ""}{u.provider ? ` · ${u.provider}` : ""}
+                          </span>
                         </div>
                         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className={cn("h-full transition-all", color)} style={{ width: `${pct}%` }} />
