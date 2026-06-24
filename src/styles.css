@@ -277,7 +277,7 @@
 }
 .facom-flash:hover::before,
 .facom-flash:focus-visible::before {
-  animation: facom-flash-sweep 850ms ease-out 1;
+  animation: facom-flash-sweep 2200ms ease-in-out 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .facom-flash::before { animation: none !important; }
