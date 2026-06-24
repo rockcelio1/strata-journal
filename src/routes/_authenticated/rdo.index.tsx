@@ -130,39 +130,68 @@ function RdoListPage() {
   async function descartar(id: string) { await removeQueued(id); await refreshQueue(); }
   async function retry(id: string) { await retryQueued(id); await refreshQueue(); sincronizar(); }
 
-  const filtered = useMemo(() => {
-    const q = busca.trim().toLowerCase();
+  // Conjuntos únicos para alimentar selects (autor/assinou/aprovou)
+  const autoresOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => { if (r.autor?.id) m.set(r.autor.id, r.autor.nome ?? r.autor.email ?? r.autor.id.slice(0, 8)); });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+  const signersOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => (r.rdo_assinaturas ?? []).forEach((a: any) => {
+      const s = a.signatario; if (s?.id) m.set(s.id, s.nome ?? s.email ?? s.id.slice(0, 8));
+    }));
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+  const aprovadoresOpts = useMemo(() => {
+    const m = new Map<string, string>();
+    (rdos as any[]).forEach((r) => { if (r.aprovador?.id) m.set(r.aprovador.id, r.aprovador.nome ?? r.aprovador.email ?? r.aprovador.id.slice(0, 8)); });
+    return Array.from(m.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [rdos]);
+
+  // Pré-filtro estrutural (status, obra, contrato, datas, pessoas) — depois aplica fuzzy.
+  const preFiltered = useMemo(() => {
+    const cn = normalizeForSearch(contrato);
     return (rdos as any[]).filter((r) => {
       if (status !== "todos" && r.status !== status) return false;
       if (obraId !== "todas" && r.obras?.id !== obraId) return false;
       if (from && r.data < from) return false;
       if (to && r.data > to) return false;
-      if (q) {
-        const hay = `${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+      if (autorId !== "todos" && r.autor?.id !== autorId) return false;
+      if (aprovadorId !== "todos" && r.aprovador?.id !== aprovadorId) return false;
+      if (signerId !== "todos") {
+        const ok = (r.rdo_assinaturas ?? []).some((a: any) => a.signatario?.id === signerId);
+        if (!ok) return false;
+      }
+      if (cn) {
+        const hayCon = normalizeForSearch(`${r.obras?.codigo ?? ""} ${r.obras?.cliente ?? ""}`);
+        if (fuzzyScore(hayCon, cn) === 0) return false;
       }
       if (view === "calendario" && calSelected) {
         if (r.data !== toISODate(calSelected)) return false;
       }
       return true;
     });
-  }, [rdos, status, obraId, busca, from, to, view, calSelected]);
+  }, [rdos, status, obraId, contrato, autorId, signerId, aprovadorId, from, to, view, calSelected]);
 
-  // Pontos do calendário (datas com RDOs já considerando filtros, exceto a data selecionada)
+  // Busca aproximada ignorando acentos/erros sobre os campos relevantes.
+  const filtered = useMemo(() => {
+    return fuzzyFilter(preFiltered, busca, (r: any) => [
+      r.numero, r.obras?.nome, r.obras?.codigo, r.obras?.cliente,
+      r.autor?.nome, r.aprovador?.nome,
+      (r.rdo_assinaturas ?? []).map((a: any) => a.signatario?.nome).filter(Boolean).join(" "),
+    ].filter(Boolean).join(" "));
+  }, [preFiltered, busca]);
+
   const diasComRdo = useMemo(() => {
     const set = new Set<string>();
-    const q = busca.trim().toLowerCase();
-    (rdos as any[]).forEach((r) => {
-      if (status !== "todos" && r.status !== status) return;
-      if (obraId !== "todas" && r.obras?.id !== obraId) return;
-      if (q && !`${r.numero} ${r.obras?.nome ?? ""}`.toLowerCase().includes(q)) return;
-      set.add(r.data);
-    });
+    preFiltered.forEach((r: any) => set.add(r.data));
     return set;
-  }, [rdos, status, obraId, busca]);
+  }, [preFiltered]);
 
   function limparFiltros() {
-    setStatus("todos"); setObraId("todas"); setBusca(""); setFrom(""); setTo(""); setCalSelected(undefined);
+    setStatus("todos"); setObraId("todas"); setContrato(""); setAutorId("todos"); setSignerId("todos");
+    setAprovadorId("todos"); setBusca(""); setFrom(""); setTo(""); setCalSelected(undefined);
   }
 
   return (
