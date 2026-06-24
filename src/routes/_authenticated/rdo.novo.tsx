@@ -27,6 +27,7 @@ import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
@@ -105,6 +106,29 @@ function NovoRdoPage() {
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
   useEffect(() => { if (me?.profile?.nome && !signer.nome) setSigner((s) => ({ ...s, nome: me.profile!.nome })); }, [me]);
 
+  // ---- Rascunho local (IndexedDB) — salva automaticamente e restaura ao reabrir
+  const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  useEffect(() => {
+    if (!me?.profile?.id || draftLoaded) return;
+    (async () => {
+      const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number }>(draftKey);
+      if (d?.value?.form) {
+        setForm(d.value.form);
+        if (Array.isArray(d.value.legendas)) setLegendas(d.value.legendas);
+        if (d.value.signer) setSigner(d.value.signer);
+        if (typeof d.value.stepIdx === "number") setStepIdx(d.value.stepIdx);
+        toast.info("Rascunho restaurado automaticamente.");
+      }
+      setDraftLoaded(true);
+    })();
+  }, [me?.profile?.id]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const t = setTimeout(() => { saveDraft(draftKey, { form, legendas, signer, stepIdx }); }, 400);
+    return () => clearTimeout(t);
+  }, [form, legendas, signer, stepIdx, draftLoaded, draftKey]);
+
   function applyTurnoClima(codigo: number) {
     const turno = new Date().getHours();
     const key = turno < 12 ? "clima_manha" : turno < 18 ? "clima_tarde" : "clima_noite";
@@ -174,14 +198,10 @@ function NovoRdoPage() {
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
   async function onAddFotos(files: FileList) {
-    setCompressing(true);
-    try {
-      const out: File[] = [];
-      for (const f of Array.from(files)) out.push(await compressImage(f, { maxBytes: 5 * 1024 * 1024 }));
-      setFotos((p) => [...p, ...out]);
-      setLegendas((p) => [...p, ...out.map(() => "")]);
-    } catch (e: any) { toast.error(e.message ?? "Falha ao processar imagem"); }
-    finally { setCompressing(false); }
+    // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
+    const out: File[] = Array.from(files);
+    setFotos((p) => [...p, ...out]);
+    setLegendas((p) => [...p, ...out.map(() => "")]);
   }
 
   async function blobToBase64(blob: Blob): Promise<string> {
@@ -298,6 +318,7 @@ function NovoRdoPage() {
       }
     },
     onSuccess: (r: any) => {
+      clearDraft(draftKey);
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
@@ -608,7 +629,7 @@ function NovoRdoPage() {
                 </div>
               )}
               {fotos.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. Imagens são comprimidas até ~5MB antes do envio.</p>
+                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {fotos.map((f, i) => (
