@@ -29,6 +29,9 @@ import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
+import { PhotoEditor } from "@/components/rdo/PhotoEditor";
+import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
+import { createDraftChannel } from "@/lib/draft-channel";
 
 const searchSchema = z.object({ obra: z.string().optional() });
 
