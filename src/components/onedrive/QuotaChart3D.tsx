@@ -81,20 +81,22 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
     if (!dataValid) reportError("dados inválidos", { used, total, deleted });
   }, [used, total, deleted, dataValid]);
 
-  // Auto-rotate 360°
+  // Auto-rotate 360° com throttling (~30fps) e respeito a reduce-motion.
   useEffect(() => {
-    if (!spin) return;
+    if (!spin || reducedMotion) return;
     let raf = 0;
     let last = performance.now();
     const loop = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      setRy((r) => r + dt * 36);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      if (dt >= 1 / 30) {
+        last = now;
+        setRy((r) => (r + dt * 36) % 360);
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [spin]);
+  }, [spin, reducedMotion]);
 
   function armAutoClose() {
     if (tipTimer.current) clearTimeout(tipTimer.current);
