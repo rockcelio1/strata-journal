@@ -811,8 +811,12 @@ function NovoRdoPage() {
                     >Limpar tudo</button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {fotos.map((f, i) => (
-                      <div key={i} className="space-y-1.5">
+                    {fotos.map((f, i) => {
+                      const semLegenda = !(legendas[i] ?? "").trim();
+                      const baixa = lowResIdxs.includes(i);
+                      const realce = flashRow?.key === "foto" && flashRow.idx === i;
+                      return (
+                      <div key={i} id={`rdo-foto-${i}`} className={cn("space-y-1.5 rounded-md transition-shadow", (semLegenda || baixa) && "ring-1 ring-destructive/60", realce && "ring-4 ring-destructive animate-pulse")}>
                         <div className="relative aspect-square overflow-hidden rounded-md border border-border">
                           <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
                           <span className="absolute top-1 left-1 bg-background/80 text-[10px] font-medium rounded px-1.5 py-0.5">#{i + 1}</span>
