@@ -15,21 +15,41 @@ function fmtBytes(n: number): string {
   return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${u[i]}`;
 }
 
-function reportError(scope: string, payload: Record<string, unknown>) {
+type SentryCtx = {
+  chartId?: string;
+  empresa?: string;
+  barIndex?: number;
+  barKey?: string;
+};
+
+function reportError(scope: string, payload: Record<string, unknown>, ctx: SentryCtx = {}) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = typeof window !== "undefined" ? (window as any) : null;
-    if (w?.Sentry?.captureMessage) {
-      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: payload });
+    if (w?.Sentry?.withScope && w?.Sentry?.captureMessage) {
+      w.Sentry.withScope((s: any) => {
+        s.setTag("component", "QuotaChart3D");
+        s.setTag("scope", scope);
+        if (ctx.chartId) s.setTag("chart_id", ctx.chartId);
+        if (ctx.empresa) s.setTag("empresa", ctx.empresa);
+        if (typeof ctx.barIndex === "number") s.setTag("bar_index", String(ctx.barIndex));
+        if (ctx.barKey) s.setTag("bar_key", ctx.barKey);
+        s.setContext("quota_chart", { ...payload, ...ctx });
+        w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, "warning");
+      });
+    } else if (w?.Sentry?.captureMessage) {
+      w.Sentry.captureMessage(`[QuotaChart3D] ${scope}`, { level: "warning", extra: { ...payload, ...ctx } });
     }
   } catch { /* noop */ }
-  console.warn(`[QuotaChart3D] ${scope}`, payload);
+  console.warn(`[QuotaChart3D] ${scope}`, { ...payload, ...ctx });
 }
 
 type Props = {
   used: number;
   total: number;
   deleted?: number;
+  chartId?: string;
+  empresa?: string;
 };
 
 type BarDef = {
@@ -42,7 +62,7 @@ type BarDef = {
   shadow: string;
 };
 
-export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
+export function QuotaChart3D({ used, total, deleted = 0, chartId = "onedrive-quota", empresa }: Props) {
   const usedSafe = toNum(used);
   const totalSafe = toNum(total);
   const deletedSafe = toNum(deleted);
