@@ -7,7 +7,7 @@ import {
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
 } from "@/lib/rdo.functions";
-import { usePermissoes } from "@/hooks/usePermissoes";
+
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
