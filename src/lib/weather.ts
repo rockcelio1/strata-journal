@@ -161,32 +161,61 @@ export interface CepInfo {
   uf?: string;
 }
 
+export type WeatherErrorCode =
+  | "CEP_VAZIO"
+  | "CEP_INVALIDO"
+  | "CEP_INCOMPLETO"
+  | "CEP_LONGO"
+  | "CEP_NAO_ENCONTRADO"
+  | "CEP_TIMEOUT"
+  | "NOMINATIM_TIMEOUT"
+  | "NOMINATIM_RATE_LIMIT"
+  | "NOMINATIM_ERRO"
+  | "NOMINATIM_SEM_CEP"
+  | "GEOLOCALIZACAO";
+
+export class WeatherError extends Error {
+  code: WeatherErrorCode;
+  status?: number;
+  constructor(code: WeatherErrorCode, message: string, status?: number) {
+    super(message);
+    this.name = "WeatherError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
 export function normalizeCep(input: string): string | null {
   const digits = (input ?? "").replace(/\D/g, "");
   if (digits.length !== 8) return null;
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }
 
-export function validarCep(input: string): { ok: true; cep: string } | { ok: false; mensagem: string } {
+export function validarCep(input: string):
+  | { ok: true; cep: string; digitos: string }
+  | { ok: false; code: WeatherErrorCode; mensagem: string }
+{
   const raw = (input ?? "").trim();
-  if (!raw) return { ok: false, mensagem: "Informe o CEP." };
+  if (!raw) return { ok: false, code: "CEP_VAZIO", mensagem: "Informe o CEP." };
+  if (/[^\d\s-]/.test(raw)) return { ok: false, code: "CEP_INVALIDO", mensagem: "CEP deve conter apenas números." };
   const digits = raw.replace(/\D/g, "");
-  if (digits.length === 0) return { ok: false, mensagem: "CEP deve conter apenas números." };
-  if (digits.length < 8) return { ok: false, mensagem: `CEP incompleto (${digits.length}/8 dígitos).` };
-  if (digits.length > 8) return { ok: false, mensagem: "CEP com dígitos demais. Use o formato 00000-000." };
-  return { ok: true, cep: `${digits.slice(0, 5)}-${digits.slice(5)}` };
+  if (digits.length === 0) return { ok: false, code: "CEP_INVALIDO", mensagem: "CEP deve conter apenas números." };
+  if (digits.length < 8) return { ok: false, code: "CEP_INCOMPLETO", mensagem: `CEP incompleto (${digits.length}/8 dígitos).` };
+  if (digits.length > 8) return { ok: false, code: "CEP_LONGO", mensagem: "CEP com dígitos demais. Use o formato 00000-000." };
+  return { ok: true, cep: `${digits.slice(0, 5)}-${digits.slice(5)}`, digitos: digits };
 }
 
 export async function fetchCepInfo(cep: string): Promise<CepInfo> {
   const v = validarCep(cep);
-  if (!v.ok) throw new Error(v.mensagem);
+  if (!v.ok) throw new WeatherError(v.code, v.mensagem);
   try {
-    const r = await fetchComRetry(`https://viacep.com.br/ws/${v.cep.replace("-", "")}/json/`);
+    const r = await fetchComRetry(`https://viacep.com.br/ws/${v.digitos}/json/`);
     const j = await r.json();
-    if (!j || j.erro) throw new Error(`CEP ${v.cep} não encontrado nos Correios.`);
+    if (!j || j.erro) throw new WeatherError("CEP_NAO_ENCONTRADO", `CEP ${v.cep} não encontrado nos Correios.`);
     return { cep: v.cep, logradouro: j.logradouro, bairro: j.bairro, localidade: j.localidade, uf: j.uf };
   } catch (e: any) {
-    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o CEP. Verifique sua conexão.");
+    if (e instanceof WeatherError) throw e;
+    if (e?.name === "AbortError") throw new WeatherError("CEP_TIMEOUT", "Tempo esgotado ao consultar o CEP. Verifique sua conexão.");
     throw e;
   }
 }
@@ -210,7 +239,12 @@ export async function fetchPrevisao5DiasPorCep(cep: string): Promise<{ local: st
 
 // AI-assisted CEP detection: tries geolocation → reverse-geocode (Nominatim) → extract CEP.
 export async function detectarCepAutomaticamente(): Promise<CepInfo> {
-  const pos = await fetchPosicao();
+  let pos: { latitude: number; longitude: number };
+  try {
+    pos = await fetchPosicao();
+  } catch (e: any) {
+    throw new WeatherError("GEOLOCALIZACAO", e?.message ?? "Não foi possível obter sua localização.");
+  }
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.latitude}&lon=${pos.longitude}&addressdetails=1&zoom=18&accept-language=pt-BR`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
@@ -218,16 +252,16 @@ export async function detectarCepAutomaticamente(): Promise<CepInfo> {
   try {
     r = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
   } catch (e: any) {
-    if (e?.name === "AbortError") throw new Error("Tempo esgotado ao consultar o serviço de geolocalização (Nominatim).");
-    throw new Error("Falha ao contatar o serviço de geolocalização (Nominatim). Verifique sua conexão.");
+    if (e?.name === "AbortError") throw new WeatherError("NOMINATIM_TIMEOUT", "Tempo esgotado ao consultar o serviço de geolocalização (Nominatim).");
+    throw new WeatherError("NOMINATIM_ERRO", "Falha ao contatar o serviço de geolocalização (Nominatim). Verifique sua conexão.");
   } finally {
     clearTimeout(timer);
   }
-  if (r.status === 429) throw new Error("Limite do Nominatim atingido. Tente novamente em alguns instantes.");
-  if (!r.ok) throw new Error(`Nominatim retornou erro (${r.status}). Tente novamente.`);
+  if (r.status === 429) throw new WeatherError("NOMINATIM_RATE_LIMIT", "Limite do Nominatim atingido. Tente novamente em alguns instantes.", 429);
+  if (!r.ok) throw new WeatherError("NOMINATIM_ERRO", `Nominatim retornou erro (${r.status}). Tente novamente.`, r.status);
   const j = await r.json().catch(() => null);
   const postcode: string | undefined = j?.address?.postcode;
-  if (!postcode) throw new Error("Nenhum CEP encontrado para sua localização atual.");
+  if (!postcode) throw new WeatherError("NOMINATIM_SEM_CEP", "Nenhum CEP encontrado para sua localização atual.");
   return fetchCepInfo(postcode);
 }
 
