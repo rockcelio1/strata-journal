@@ -405,8 +405,13 @@ function NovoRdoPage() {
       if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
       else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => {
+      const msg = e?.message ?? "Falha ao concluir RDO";
+      setSubmitError(msg);
+      toast.error(msg);
+    },
   });
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { equipInvalidIdx, ocInvalidIdx, maoInvalidIdx, valid: formValid } = validateRdoForm(form);
 
@@ -428,11 +433,33 @@ function NovoRdoPage() {
   }
 
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
+
+  // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
+  const stepIssues: { step: number; label: string; message: string }[] = [];
+  if (!form.obra_id) stepIssues.push({ step: 0, label: "Obra", message: "Selecione a obra do RDO." });
+  if ((form.atividades ?? []).length === 0)
+    stepIssues.push({ step: 2, label: "Atividades", message: "Adicione ao menos uma atividade." });
+  if (maoInvalidIdx.length > 0)
+    stepIssues.push({ step: 3, label: "Mão de obra", message: `${maoInvalidIdx.length} linha(s) sem pessoa selecionada.` });
+  if (equipInvalidIdx.length > 0)
+    stepIssues.push({ step: 4, label: "Equipamentos", message: `${equipInvalidIdx.length} equipamento(s) sem seleção.` });
+  if (ocInvalidIdx.length > 0)
+    stepIssues.push({ step: 5, label: "Ocorrências", message: `${ocInvalidIdx.length} ocorrência(s) sem descrição.` });
+  if (fotosSemLegenda > 0)
+    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) sem legenda.` });
+  if (lowResIdxs.length > 0)
+    stepIssues.push({ step: 6, label: "Fotos", message: `${lowResIdxs.length} foto(s) abaixo da resolução mínima (${MIN_IMAGE_DIM}px).` });
+  if (stepIdx === 7 && !signer.nome.trim())
+    stepIssues.push({ step: 7, label: "Assinatura", message: "Informe o nome do responsável." });
+  if (stepIdx === 7 && !assinaturaBlob)
+    stepIssues.push({ step: 7, label: "Assinatura", message: "Desenhe ou envie a assinatura." });
+
   const canNext =
     stepIdx === 0 ? !!form.obra_id
     : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
     : true;
   const isLast = stepIdx === steps.length - 1;
+  const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id;
 
   return (
     <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
@@ -896,6 +923,33 @@ function NovoRdoPage() {
                 <MapPin size={12} /> Ao enviar, capturamos data/hora, IP do dispositivo e localização (se permitido) e gravamos o hash do relatório como prova de integridade.
               </p>
             </Card>
+
+            {(stepIssues.length > 0 || submitError) && (
+              <Card className="p-4 border-destructive/40 bg-destructive/5 space-y-2">
+                <h4 className="font-medium text-destructive text-sm">Não é possível concluir o RDO</h4>
+                {submitError && (
+                  <div className="text-xs text-destructive border border-destructive/30 rounded p-2 bg-background">
+                    <strong>Erro no envio:</strong> {submitError}
+                  </div>
+                )}
+                {stepIssues.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {stepIssues.map((iss, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs">
+                        <span>
+                          <strong>Etapa {iss.step + 1} · {iss.label}:</strong> {iss.message}
+                        </span>
+                        {iss.step !== 7 && (
+                          <Button size="sm" variant="outline" onClick={() => { setSubmitError(null); setStepIdx(iss.step); }}>
+                            Corrigir <ArrowRight size={12} className="ml-1" />
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            )}
           </>
         )}
       </div>
@@ -910,19 +964,19 @@ function NovoRdoPage() {
           </Button>
         ) : (
           <div className="flex flex-col items-end gap-1">
-            {!formValid && (
+            {stepIssues.length > 0 && (
               <p className="text-xs text-destructive" role="alert">
-                Corrija {equipInvalidIdx.length > 0 ? `${equipInvalidIdx.length} equipamento(s) sem seleção` : ""}
-                {equipInvalidIdx.length > 0 && (ocInvalidIdx.length > 0 || maoInvalidIdx.length > 0) ? " · " : ""}
-                {ocInvalidIdx.length > 0 ? `${ocInvalidIdx.length} ocorrência(s) sem descrição` : ""}
-                {ocInvalidIdx.length > 0 && maoInvalidIdx.length > 0 ? " · " : ""}
-                {maoInvalidIdx.length > 0 ? `${maoInvalidIdx.length} mão de obra sem pessoa` : ""}.
+                {stepIssues.length} pendência(s) — veja a lista acima.
               </p>
             )}
             <div className="flex gap-2">
-              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => save.mutate(false)}>Rascunho</Button>
-              <Button className="bg-brand text-brand-foreground" disabled={!form.obra_id || !formValid || save.isPending} onClick={() => save.mutate(true)}>
-                <Check size={16} className="mr-1" /> Concluir
+              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => { setSubmitError(null); save.mutate(false); }}>Rascunho</Button>
+              <Button
+                className="bg-brand text-brand-foreground"
+                disabled={!canSubmit || save.isPending}
+                onClick={() => { setSubmitError(null); save.mutate(true); }}
+              >
+                <Check size={16} className="mr-1" /> {save.isPending ? "Enviando…" : "Concluir RDO"}
               </Button>
             </div>
           </div>
