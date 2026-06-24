@@ -673,13 +673,25 @@ function NovoRdoPage() {
                 />
                 <div className="flex gap-2 flex-wrap">
                   <Button type="button" size="sm" variant="outline" disabled={climaLoading || cepDetecting || !cepInput} onClick={importarClimaPorCep}>
-                    <CloudSun size={16} className="mr-1" /> {climaLoading ? "Consultando CEP…" : "Consultar pelo CEP"}
+                    {climaLoading
+                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
+                      : <CloudSun size={16} className="mr-1" />}
+                    {climaLoading ? "Consultando CEP…" : "Consultar pelo CEP"}
                   </Button>
                   <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
-                    <MapPin size={16} className="mr-1" /> {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
+                    {cepDetecting
+                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
+                      : <MapPin size={16} className="mr-1" />}
+                    {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
                   </Button>
                 </div>
               </div>
+              {(climaLoading || cepDetecting) && (
+                <div role="status" aria-live="polite" className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CircleNotch size={14} className="animate-spin" />
+                  {cepDetecting ? "Detectando CEP pela sua localização…" : "Consultando previsão pelo CEP…"}
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground">
                 Digite o CEP manualmente ou use a detecção automática (geolocalização + IA de reverse-geocoding).
               </p>
