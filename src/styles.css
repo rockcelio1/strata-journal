@@ -413,6 +413,119 @@
   .dash-card:focus-visible::after { opacity: 0.6; }
 }
 
+/* ============ Glow universal em menus clicáveis ============
+ * Aplica o efeito "acender a luz" em qualquer item de menu/nav do sistema
+ * sem precisar adicionar a classe `.facom-glow` manualmente.
+ * Cobre: navegação principal, sidebar, sheet/drawer, dropdown, command,
+ * menubar, context-menu, select, tabs, breadcrumb, bottom-tabbar e
+ * elementos com role="menuitem".
+ */
+:where(
+  nav a,
+  nav button,
+  aside a,
+  aside button,
+  [role="menu"] [role="menuitem"],
+  [role="menubar"] [role="menuitem"],
+  [role="listbox"] [role="option"],
+  [role="tablist"] [role="tab"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="context-menu-item"],
+  [data-slot="menubar-item"],
+  [data-slot="command-item"],
+  [data-slot="select-item"],
+  [data-slot="navigation-menu-link"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="breadcrumb-link"]
+) {
+  position: relative;
+  isolation: isolate;
+  transition: color var(--facom-glow-duration) var(--facom-glow-ease),
+              background-color var(--facom-glow-duration) var(--facom-glow-ease);
+}
+:where(
+  nav a,
+  nav button,
+  aside a,
+  aside button,
+  [role="menu"] [role="menuitem"],
+  [role="menubar"] [role="menuitem"],
+  [role="listbox"] [role="option"],
+  [role="tablist"] [role="tab"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="context-menu-item"],
+  [data-slot="menubar-item"],
+  [data-slot="command-item"],
+  [data-slot="select-item"],
+  [data-slot="navigation-menu-link"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="breadcrumb-link"]
+)::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity var(--facom-glow-duration) var(--facom-glow-ease);
+  box-shadow:
+    0 0 0 1px rgba(var(--facom-glow-rgb), 0.5),
+    0 0 var(--facom-glow-spread-sm) 2px rgba(var(--facom-glow-rgb), 0.55),
+    0 0 var(--facom-glow-spread-lg) 8px rgba(var(--facom-glow-rgb-deep), 0.3);
+  will-change: opacity;
+}
+:where(
+  nav a,
+  nav button,
+  aside a,
+  aside button,
+  [role="menu"] [role="menuitem"],
+  [role="menubar"] [role="menuitem"],
+  [role="listbox"] [role="option"],
+  [role="tablist"] [role="tab"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="context-menu-item"],
+  [data-slot="menubar-item"],
+  [data-slot="command-item"],
+  [data-slot="select-item"],
+  [data-slot="navigation-menu-link"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="breadcrumb-link"]
+):hover::before,
+:where(
+  nav a,
+  nav button,
+  aside a,
+  aside button,
+  [role="menu"] [role="menuitem"],
+  [role="menubar"] [role="menuitem"],
+  [role="listbox"] [role="option"],
+  [role="tablist"] [role="tab"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="context-menu-item"],
+  [data-slot="menubar-item"],
+  [data-slot="command-item"],
+  [data-slot="select-item"],
+  [data-slot="navigation-menu-link"],
+  [data-slot="sidebar-menu-button"],
+  [data-slot="breadcrumb-link"]
+):focus-visible::before,
+:where(
+  [data-slot="dropdown-menu-item"],
+  [data-slot="select-item"],
+  [data-slot="command-item"]
+)[data-highlighted]::before {
+  opacity: var(--facom-glow-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(nav a, nav button, aside a, aside button)::before {
+    transition: none !important;
+  }
+}
+
+
 
 
 
