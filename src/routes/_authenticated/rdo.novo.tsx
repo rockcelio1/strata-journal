@@ -605,7 +605,7 @@ function NovoRdoPage() {
                 </div>
               )}
               {fotos.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. Imagens são comprimidas até ~5MB antes do envio.</p>
+                <p className="text-xs text-muted-foreground">Nenhuma foto adicionada. As imagens são enviadas na qualidade original da câmera, sem limite de quantidade.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {fotos.map((f, i) => (
