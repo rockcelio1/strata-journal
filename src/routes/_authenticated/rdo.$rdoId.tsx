@@ -44,6 +44,9 @@ function RdoDetailPage() {
   const submitFn = useServerFn(submitRdo);
   const approveFn = useServerFn(approveRdo);
   const deleteFn = useServerFn(deleteRdo);
+  const adminDeleteFn = useServerFn(adminDeleteRdo);
+  const adminDisableFn = useServerFn(adminDisableRdo);
+  const { isMaster: isAdminOrMaster } = usePermissoes();
   const logsFn = useServerFn(listRdoLogs);
   const anexosFn = useServerFn(listRdoAnexos);
   const registrarFn = useServerFn(registrarAnexo);
