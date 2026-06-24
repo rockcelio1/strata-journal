@@ -38,6 +38,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
 
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
+  const [active, setActive] = useState<string | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
 
   function onDown(e: React.PointerEvent) {
@@ -103,19 +104,23 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
           />
           {bars.map((b) => {
             const h = Math.max(12, (b.pct / 100) * 210);
+            const isActive = active === b.key;
             return (
-              <div key={b.key} className="flex flex-col items-center" style={{ transformStyle: "preserve-3d" }}>
+              <div
+                key={b.key}
+                className="flex flex-col items-center cursor-pointer"
+                style={{ transformStyle: "preserve-3d", transform: isActive ? "translateY(-6px) scale(1.05)" : undefined, transition: "transform 200ms" }}
+                onMouseEnter={() => setActive(b.key)}
+                onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+                onClick={(e) => { e.stopPropagation(); setActive((cur) => (cur === b.key ? null : b.key)); }}
+              >
                 <span
                   className="text-[11px] font-semibold mb-1 px-2 py-0.5 rounded-full"
-                  style={{
-                    color: "#fff",
-                    background: b.color,
-                    boxShadow: `0 0 12px ${b.shadow}`,
-                  }}
+                  style={{ color: "#fff", background: b.color, boxShadow: `0 0 12px ${b.shadow}` }}
                 >
                   {b.pct.toFixed(1)}%
                 </span>
-                <Bar3D height={h} color={b.color} highlight={b.highlight} shadow={b.shadow} />
+                <Bar3D height={h} color={b.color} highlight={b.highlight} shadow={b.shadow} active={isActive} />
                 <span
                   className="text-[11px] mt-2 font-bold tracking-wide px-2 py-0.5 rounded-md"
                   style={{
@@ -143,16 +148,56 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
         </div>
       </div>
 
+      {/* Detalhes da barra ativa */}
+      {(() => {
+        const b = bars.find((x) => x.key === active);
+        if (!b) {
+          return (
+            <p className="text-[11px] text-muted-foreground italic">
+              Passe o mouse ou clique em uma barra (ou na legenda) para ver os detalhes.
+            </p>
+          );
+        }
+        const totalRef = Math.max(total, 1);
+        return (
+          <div
+            className="rounded-xl p-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
+            style={{
+              background: `linear-gradient(135deg, ${b.color}1a, ${b.highlight}0d)`,
+              border: `1px solid ${b.color}`,
+              boxShadow: `0 4px 16px ${b.shadow}`,
+            }}
+          >
+            <span className="font-bold" style={{ color: b.color }}>{b.label}</span>
+            <span><span className="text-muted-foreground">Tamanho:</span> <b>{fmtBytes(b.value)}</b></span>
+            <span><span className="text-muted-foreground">% do total:</span> <b>{b.pct.toFixed(2)}%</b></span>
+            <span><span className="text-muted-foreground">Bytes:</span> <b>{b.value.toLocaleString("pt-BR")}</b></span>
+            <span><span className="text-muted-foreground">Referência total:</span> <b>{fmtBytes(totalRef)}</b></span>
+            <button
+              type="button"
+              onClick={() => setActive(null)}
+              className="ml-auto text-[10px] px-2 py-0.5 rounded border border-border hover:bg-muted"
+            >
+              Fechar
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Legenda colorida e destacada */}
       <ul className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+
         {bars.map((b) => (
           <li
             key={b.key}
-            className="relative rounded-xl p-3 overflow-hidden"
+            onMouseEnter={() => setActive(b.key)}
+            onMouseLeave={() => setActive((cur) => (cur === b.key ? null : cur))}
+            onClick={() => setActive((cur) => (cur === b.key ? null : b.key))}
+            className="relative rounded-xl p-3 overflow-hidden cursor-pointer transition-transform hover:-translate-y-0.5"
             style={{
               background: `linear-gradient(135deg, ${b.color}22, ${b.highlight}11)`,
-              border: `1px solid ${b.color}`,
-              boxShadow: `0 6px 18px ${b.shadow}`,
+              border: `${active === b.key ? 2 : 1}px solid ${b.color}`,
+              boxShadow: active === b.key ? `0 10px 28px ${b.shadow}` : `0 6px 18px ${b.shadow}`,
             }}
           >
             <div className="flex items-center gap-2">
@@ -174,7 +219,7 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   );
 }
 
-function Bar3D({ height, color, highlight, shadow }: { height: number; color: string; highlight: string; shadow: string }) {
+function Bar3D({ height, color, highlight, shadow, active }: { height: number; color: string; highlight: string; shadow: string; active?: boolean }) {
   const w = 56;
   const d = 56;
   const radius = 14;
@@ -185,7 +230,7 @@ function Bar3D({ height, color, highlight, shadow }: { height: number; color: st
   const baseStyle: React.CSSProperties = {
     position: "absolute",
     borderRadius: radius,
-    boxShadow: `0 0 22px ${shadow}`,
+    boxShadow: active ? `0 0 36px ${shadow}, 0 0 0 2px ${highlight}` : `0 0 22px ${shadow}`,
   };
   return (
     <div style={{ width: w, height, position: "relative", transformStyle: "preserve-3d" }}>
