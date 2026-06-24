@@ -3,10 +3,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  getRdo, submitRdo, approveRdo, deleteRdo,
+  getRdo, submitRdo, approveRdo, deleteRdo, adminDeleteRdo, adminDisableRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
 } from "@/lib/rdo.functions";
+import { usePermissoes } from "@/hooks/usePermissoes";
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
