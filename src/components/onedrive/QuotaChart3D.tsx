@@ -39,14 +39,58 @@ export function QuotaChart3D({ used, total, deleted = 0 }: Props) {
   const [rx, setRx] = useState(-18);
   const [ry, setRy] = useState(-28);
   const [active, setActive] = useState<string | null>(null);
-  const [tip, setTip] = useState<{ key: string; x: number; y: number } | null>(null);
+  const [tip, setTip] = useState<{ key: string; x: number; y: number; pinned?: boolean } | null>(null);
+  const [, forceTick] = useState(0); // força re-render em resize/zoom
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const tipRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+  const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-fechamento por inatividade (3s) — exceto se "pinned" por toque/clique.
+  function armAutoClose() {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => {
+      setTip((t) => (t && !t.pinned ? null : t));
+    }, 3000);
+  }
+  useEffect(() => () => { if (tipTimer.current) clearTimeout(tipTimer.current); }, []);
+
+  // Re-render no resize/zoom para o tooltip re-clampar com o novo rect.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => forceTick((n) => n + 1);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    let ro: ResizeObserver | null = null;
+    if ("ResizeObserver" in window && stageRef.current) {
+      ro = new ResizeObserver(onResize);
+      ro.observe(stageRef.current);
+    }
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      ro?.disconnect();
+    };
+  }, []);
+
+  // Fecha ao tocar/clicar fora (mobile + desktop).
+  useEffect(() => {
+    if (!tip?.pinned) return;
+    function onDocDown(e: PointerEvent) {
+      const t = e.target as Node | null;
+      if (stageRef.current && t && stageRef.current.contains(t)) return;
+      if (tipRef.current && t && tipRef.current.contains(t)) return;
+      setTip(null);
+    }
+    document.addEventListener("pointerdown", onDocDown, true);
+    return () => document.removeEventListener("pointerdown", onDocDown, true);
+  }, [tip?.pinned]);
 
   function onHoverMove(e: React.PointerEvent) {
-    if (!stageRef.current || !tip) return;
+    if (!stageRef.current || !tip || tip.pinned) return;
     const rect = stageRef.current.getBoundingClientRect();
     setTip({ key: tip.key, x: e.clientX - rect.left, y: e.clientY - rect.top });
+    armAutoClose();
   }
 
   function onDown(e: React.PointerEvent) {
