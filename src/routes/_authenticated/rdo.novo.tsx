@@ -697,9 +697,9 @@ function NovoRdoPage() {
               </p>
             </div>
 
-            {climaErro && (
-              <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
-                {climaErro}
+            {climaErro && climaStatus !== "success" && climaStatus !== "loading" && (
+              <div role="status" className="text-xs text-muted-foreground border border-border bg-muted/30 rounded-md p-2">
+                Tentando obter a previsão automaticamente. Você pode reconsultar pelo endereço da obra ou pelo CEP.
               </div>
             )}
             {climaInfo && (
