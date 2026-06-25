@@ -477,8 +477,21 @@ function RdoListPage() {
                   {filtered.map((r: any) => {
                     const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
                     return (
-                      <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                        <td className="p-3 tabular-nums"><Link to="/rdo/$rdoId" params={{ rdoId: r.id }} className="font-medium hover:underline">#{r.numero}</Link></td>
+                      <tr
+                        key={r.id}
+                        onClick={() => navigate({ to: "/rdo/$rdoId", params: { rdoId: r.id } })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate({ to: "/rdo/$rdoId", params: { rdoId: r.id } });
+                          }
+                        }}
+                        tabIndex={0}
+                        role="link"
+                        aria-label={`Abrir RDO #${r.numero} — ${r.obras?.nome ?? ""}`}
+                        className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer focus:outline-none focus:bg-muted/60"
+                      >
+                        <td className="p-3 tabular-nums font-medium">#{r.numero}</td>
                         <td className="p-3">{r.obras?.nome}</td>
                         <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
                         <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
