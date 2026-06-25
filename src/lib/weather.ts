@@ -171,30 +171,7 @@ export function validarEnderecoParaGeocoding(endereco: string): { ok: true } | {
 export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnapshot & { local: string }> {
   const v = validarEnderecoParaGeocoding(endereco);
   if (!v.ok) throw new Error(v.mensagem);
-  let g = await geocodeEndereco(endereco);
-  if (!g) {
-    // Fallback 1: extrai CEP, busca cidade/UF no ViaCEP e geocodifica
-    const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
-    if (cep) {
-      try {
-        const info = await fetchCepInfo(cep);
-        if (info?.localidade && info?.uf) {
-          g = await geocodeEndereco(`${info.localidade}, ${info.uf}, Brasil`);
-        }
-      } catch { /* ignore */ }
-      if (!g) g = await geocodeEndereco(cep);
-    }
-  }
-  if (!g) {
-    // Fallback 2: extrai "Cidade - UF" do final do endereço
-    const m = endereco.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{2,})\s*[-/,]\s*([A-Z]{2})\b/);
-    if (m) g = await geocodeEndereco(`${m[1].trim()}, ${m[2]}, Brasil`);
-  }
-  if (!g) {
-    // Fallback 3: último segmento após vírgula + "Brasil"
-    const ultimo = endereco.split(",").map((s) => s.trim()).filter(Boolean).pop();
-    if (ultimo && ultimo.length >= 3) g = await geocodeEndereco(`${ultimo}, Brasil`);
-  }
+  const g = await resolveGeoBrasil(endereco);
   if (!g) {
     throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
   }
