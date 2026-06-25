@@ -639,7 +639,7 @@ function NovoRdoPage() {
                 >
                   {climaStatus === "loading" && "Carregando previsão…"}
                   {climaStatus === "success" && "Previsão atualizada"}
-                  {climaStatus === "error" && "Tentando novamente…"}
+                  {climaStatus === "error" && "Falha — toque em Tentar novamente"}
                   {climaStatus === "idle" && "Sem previsão"}
                 </span>
               </div>
