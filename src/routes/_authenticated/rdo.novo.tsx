@@ -258,6 +258,23 @@ function NovoRdoPage() {
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
+  // Auto-refresh da previsão a cada 10 min enquanto o usuário está em Novo RDO com obra selecionada
+  useEffect(() => {
+    if (!form.obra_id) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") carregarPrevisaoDaObra({ forcar: true });
+    }, 10 * 60 * 1000);
+    const onVis = () => {
+      if (document.visibilityState === "visible" && previsaoAt) {
+        const idade = Date.now() - new Date(previsaoAt).getTime();
+        if (idade > 10 * 60 * 1000) carregarPrevisaoDaObra({ forcar: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.obra_id, previsaoAt]);
+
   function describeWeatherError(e: any, fallback: string): string {
     if (e instanceof WeatherError) {
       const slug = e.status ? `${e.code}:${e.status}` : e.code;
