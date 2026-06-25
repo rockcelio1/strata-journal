@@ -101,6 +101,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
+      <GlobalHoverHints />
+
       {/* Header azul */}
       <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
         <div className="px-4 md:px-6 h-14 flex items-center gap-3 md:gap-6">
