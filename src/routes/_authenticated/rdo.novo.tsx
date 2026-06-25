@@ -258,6 +258,23 @@ function NovoRdoPage() {
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
+  // Auto-refresh da previsão a cada 10 min enquanto o usuário está em Novo RDO com obra selecionada
+  useEffect(() => {
+    if (!form.obra_id) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") carregarPrevisaoDaObra({ forcar: true });
+    }, 10 * 60 * 1000);
+    const onVis = () => {
+      if (document.visibilityState === "visible" && previsaoAt) {
+        const idade = Date.now() - new Date(previsaoAt).getTime();
+        if (idade > 10 * 60 * 1000) carregarPrevisaoDaObra({ forcar: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.obra_id, previsaoAt]);
+
   function describeWeatherError(e: any, fallback: string): string {
     if (e instanceof WeatherError) {
       const slug = e.status ? `${e.code}:${e.status}` : e.code;
@@ -726,8 +743,8 @@ function NovoRdoPage() {
             )}
             {previsao5 && previsao5.length > 0 && (
               <div>
-                <p className="text-xs font-medium mb-1.5">Previsão da semana (seg–sex)</p>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <p className="text-xs font-medium mb-1.5">Previsão da semana (7 dias) · atualiza a cada 10 min</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                   {previsao5.map((d) => (
                     <div key={d.data} className="border border-border rounded-md p-2 text-xs bg-muted/20">
                       <div className="font-medium">{d.dia_semana}</div>
