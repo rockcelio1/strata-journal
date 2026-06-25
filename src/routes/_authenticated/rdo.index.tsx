@@ -107,6 +107,36 @@ function RdoListPage() {
   const [calMonth, setCalMonth] = useState<Date>(new Date());
   const [calSelected, setCalSelected] = useState<Date | undefined>(undefined);
 
+  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
+  const myId = me?.profile?.id;
+
+  const excluir = useMutation({
+    mutationFn: ({ id, admin }: { id: string; admin: boolean }) =>
+      admin ? adminDeleteFn({ data: { id } }) : deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("RDO excluído e registrado na auditoria");
+      setConfirmDel(null);
+      qc.invalidateQueries({ queryKey: ["rdos"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir"),
+  });
+
+  // ESC limpa a busca quando o foco está no campo; "/" foca o campo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        buscaRef.current?.focus();
+      } else if (e.key === "Escape" && document.activeElement === buscaRef.current) {
+        setBusca("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const [queue, setQueue] = useState<QueuedRdo[]>([]);
   const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
   const [syncing, setSyncing] = useState(false);
