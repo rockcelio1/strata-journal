@@ -107,6 +107,11 @@ function NovoRdoPage() {
   const [previsao5, setPrevisao5] = useState<DiaPrevisao[] | null>(null);
   const [previsaoLocal, setPrevisaoLocal] = useState<string | null>(null);
   const [previsaoAt, setPrevisaoAt] = useState<string | null>(null);
+  const [refreshMin, setRefreshMin] = useState<1 | 5 | 10>(() => {
+    const v = Number(localStorage.getItem("rdo:weather-refresh-min"));
+    return (v === 1 || v === 5 || v === 10) ? (v as 1 | 5 | 10) : 10;
+  });
+  const [agoraTick, setAgoraTick] = useState(0); // re-render para "Atualizado há X"
   const [cepInput, setCepInput] = useState("");
   const [cepDetecting, setCepDetecting] = useState(false);
   const climaLoading = climaStatus === "loading";
