@@ -64,11 +64,17 @@ function RdoListPage() {
   const obrasFn = useServerFn(listObras);
   const createFn = useServerFn(createRdo);
   const qc = useQueryClient();
-  const { data: rdos = [] } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
+  const meFn = useServerFn(getMe);
+  const deleteFn = useServerFn(deleteRdo);
+  const adminDeleteFn = useServerFn(adminDeleteRdo);
+  const { data: rdos = [], isLoading } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
   const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
 
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const buscaRef = useRef<HTMLInputElement>(null);
+  const [confirmDel, setConfirmDel] = useState<{ id: string; numero: number; obra: string; admin: boolean } | null>(null);
   const [status, setStatus] = useState<string>(() => {
     const s = search.status;
     return s && (statusFilters as readonly string[]).includes(s) ? s : "todos";
