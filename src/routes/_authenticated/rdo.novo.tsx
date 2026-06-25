@@ -222,68 +222,85 @@ function NovoRdoPage() {
   async function carregarPrevisaoDaObra(opts: { forcar?: boolean } = {}) {
     const obra = (obras as any[]).find((o) => o.id === form.obra_id);
     if (!obra?.endereco) { toast.error("Selecione uma obra com endereço cadastrado"); return; }
-    setClimaStatus("loading"); setClimaErro(null);
+    const dedupeKey = `previsao:${obra.id}:${opts.forcar ? "f" : "c"}`;
     try {
-      // 1) Tenta cache no banco
-      if (!opts.forcar) {
+      return await dedupe(dedupeKey, async () => {
+        setClimaStatus("loading"); setClimaErro(null);
+        // 1) cache no banco
+        if (!opts.forcar) {
+          try {
+            const c = await measure("supabase:get_clima_cache", () => getClimaCacheFn({ data: { obra_id: obra.id } }), { obra_id: obra.id });
+            const at = c?.cache_at ? new Date(c.cache_at).getTime() : 0;
+            if (c?.cache && Date.now() - at < CACHE_TTL_MS) {
+              const cache = c.cache as { snapshot: ClimaSnapshot & { local: string }; dias: DiaPrevisao[] };
+              setClimaInfo(cache.snapshot); applyTurnoClima(cache.snapshot.codigo);
+              setPrevisao5(cache.dias); setPrevisaoLocal(cache.snapshot.local);
+              setPrevisaoAt(c.cache_at); setClimaStatus("success");
+              return;
+            }
+          } catch { /* segue para API */ }
+        }
+        // 2) Open-Meteo (current + previsão)
+        const snap = await measure("clima:atual_por_endereco", () => fetchClimaPorEndereco(obra.endereco));
+        const prev = await measure("clima:previsao_por_endereco", () => fetchPrevisao5DiasPorEndereco(obra.endereco));
+        const mudou = diffPrevisoes(previsao5, prev.dias);
+        setClimaInfo(snap); applyTurnoClima(snap.codigo);
+        setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
+        setClimaStatus("success");
+        // 3) persiste no banco
         try {
-          const c = await getClimaCacheFn({ data: { obra_id: obra.id } });
-          const at = c?.cache_at ? new Date(c.cache_at).getTime() : 0;
-          if (c?.cache && Date.now() - at < CACHE_TTL_MS) {
-            const cache = c.cache as { snapshot: ClimaSnapshot & { local: string }; dias: DiaPrevisao[] };
-            setClimaInfo(cache.snapshot); applyTurnoClima(cache.snapshot.codigo);
-            setPrevisao5(cache.dias); setPrevisaoLocal(cache.snapshot.local);
-            setPrevisaoAt(c.cache_at); setClimaStatus("success");
-            return;
-          }
-        } catch { /* segue para API */ }
-      }
-      // 2) Open-Meteo (current + 5 dias)
-      const snap = await fetchClimaPorEndereco(obra.endereco);
-      const prev = await fetchPrevisao5DiasPorEndereco(obra.endereco);
-      const mudou = diffPrevisoes(previsao5, prev.dias);
-      setClimaInfo(snap); applyTurnoClima(snap.codigo);
-      setPrevisao5(prev.dias); setPrevisaoLocal(prev.local);
-      setClimaStatus("success");
-      // 3) Persiste no banco
-      try {
-        await saveClimaCacheFn({ data: { obra_id: obra.id, cache: { snapshot: snap, dias: prev.dias } } });
-        setPrevisaoAt(new Date().toISOString());
-      } catch { /* não bloqueia UX */ }
-      toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
-      if (mudou.length > 0) {
-        toast.warning(`Previsão alterada para ${mudou.length} dia(s): ${mudou.map((d) => d.dia_semana).join(", ")}`,
-          { duration: 8000 });
-      }
+          await measure("supabase:save_clima_cache", () => saveClimaCacheFn({ data: { obra_id: obra.id, cache: { snapshot: snap, dias: prev.dias } } }));
+          setPrevisaoAt(new Date().toISOString());
+        } catch { /* não bloqueia UX */ }
+        if (!opts.forcar) toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
+        if (mudou.length > 0) {
+          toast.warning(`Previsão alterada para ${mudou.length} dia(s): ${mudou.map((d) => d.dia_semana).join(", ")}`, { duration: 8000 });
+        }
+      });
     } catch (e: any) {
-      const msg = e?.message ?? "Não foi possível obter o clima";
-      setClimaStatus("error"); setClimaErro(msg);
+      setClimaStatus("error"); setClimaErro(e?.message ?? "Não foi possível obter o clima");
     }
   }
 
   const importarClimaPorObra = () => carregarPrevisaoDaObra({ forcar: false });
   const atualizarPrevisao = () => carregarPrevisaoDaObra({ forcar: true });
 
-  // Auto-refresh da previsão a cada 10 min enquanto o usuário está em Novo RDO com obra selecionada
+  // Auto-refresh configurável (1/5/10 min) — dedupe garante que múltiplos
+  // gatilhos (interval + visibilitychange + clique) não disparem chamadas duplicadas.
   useEffect(() => {
     if (!form.obra_id) return;
+    const periodMs = refreshMin * 60 * 1000;
     const id = setInterval(() => {
       if (document.visibilityState === "visible") carregarPrevisaoDaObra({ forcar: true });
-    }, 10 * 60 * 1000);
+    }, periodMs);
     const onVis = () => {
-      if (document.visibilityState === "visible" && previsaoAt) {
-        const idade = Date.now() - new Date(previsaoAt).getTime();
-        if (idade > 10 * 60 * 1000) carregarPrevisaoDaObra({ forcar: true });
-      }
+      if (document.visibilityState !== "visible" || !previsaoAt) return;
+      const idade = Date.now() - new Date(previsaoAt).getTime();
+      if (idade > periodMs) carregarPrevisaoDaObra({ forcar: true });
     };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.obra_id, previsaoAt]);
+  }, [form.obra_id, previsaoAt, refreshMin]);
 
-  function describeWeatherError(e: any, fallback: string): string {
-    if (e instanceof WeatherError) {
-      const slug = e.status ? `${e.code}:${e.status}` : e.code;
+  // Tick a cada 30s para atualizar "atualizado há X" sem refazer requisição
+  useEffect(() => {
+    if (!previsaoAt) return;
+    const id = setInterval(() => setAgoraTick((t) => t + 1), 30 * 1000);
+    return () => clearInterval(id);
+  }, [previsaoAt]);
+
+  function tempoRelativo(iso: string | null): string {
+    if (!iso) return "—";
+    void agoraTick; // dep para re-render
+    const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+    if (s < 60) return `há ${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `há ${m} min`;
+    const h = Math.floor(m / 60);
+    return `há ${h}h`;
+  }
+
       return `${e.message} [${slug}]`;
     }
     return e?.message ?? fallback;
