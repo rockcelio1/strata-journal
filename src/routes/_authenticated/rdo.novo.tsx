@@ -743,8 +743,8 @@ function NovoRdoPage() {
             )}
             {previsao5 && previsao5.length > 0 && (
               <div>
-                <p className="text-xs font-medium mb-1.5">Previsão da semana (seg–sex)</p>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <p className="text-xs font-medium mb-1.5">Previsão da semana (7 dias) · atualiza a cada 10 min</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                   {previsao5.map((d) => (
                     <div key={d.data} className="border border-border rounded-md p-2 text-xs bg-muted/20">
                       <div className="font-medium">{d.dia_semana}</div>
