@@ -142,17 +142,23 @@ function OneDriveSettings() {
           <p className="text-xs text-muted-foreground">Carregando uso do repositório…</p>
         ) : quota.data?.ok ? (
           <>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-              <span><strong>Total:</strong> {fmtBytes(quota.data.total || TOTAL_QUOTA_HINT)}</span>
-              <span><strong>Usado:</strong> {fmtBytes(quota.data.used)}</span>
-              <span><strong>Disponível:</strong> {fmtBytes(quota.data.remaining)}</span>
-              {quota.data.state && <span className="text-muted-foreground">Estado: {quota.data.state}</span>}
-            </div>
-            <QuotaChart3D
+            <QuotaDashboard
               used={quota.data.used}
               total={quota.data.total || TOTAL_QUOTA_HINT}
               deleted={quota.data.deleted}
             />
+            <details className="mt-4 group">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground select-none">
+                Visualização 3D (avançada)
+              </summary>
+              <div className="mt-2">
+                <QuotaChart3D
+                  used={quota.data.used}
+                  total={quota.data.total || TOTAL_QUOTA_HINT}
+                  deleted={quota.data.deleted}
+                />
+              </div>
+            </details>
           </>
         ) : (
           <p className="text-xs text-destructive">
