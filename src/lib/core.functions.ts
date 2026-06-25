@@ -279,12 +279,15 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
+    const uid = context.userId;
+    // Rascunhos são pessoais: só o autor enxerga os próprios.
+    const rascunhoVisivel = `status.neq.rascunho,autor_id.eq.${uid}`;
     const [obras, rdosPendentes, rdosFull, ocorrenciasFull, recentRdos, equipamentos, maoDeObra, tiposOcorrencia, rdoEquip, rdoMao] = await Promise.all([
       supabase.from("obras").select("id, nome, status, avanco_pct"),
       supabase.from("rdos").select("id", { count: "exact", head: true }).eq("status", "enviado").is("deleted_at", null),
-      supabase.from("rdos").select("id, status, data, obra_id").is("deleted_at", null),
+      supabase.from("rdos").select("id, status, data, obra_id, autor_id").is("deleted_at", null).or(rascunhoVisivel),
       supabase.from("rdo_ocorrencias").select("id, created_at, rdo_id, tipo_ocorrencia_id, rdos!inner(obra_id, deleted_at)").is("rdos.deleted_at", null),
-      supabase.from("rdos").select("id, numero, data, status, obras(nome)").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+      supabase.from("rdos").select("id, numero, data, status, autor_id, obras(nome)").is("deleted_at", null).or(rascunhoVisivel).order("created_at", { ascending: false }).limit(6),
       supabase.from("equipamentos").select("id, nome"),
       supabase.from("mao_de_obra").select("id, nome"),
       supabase.from("tipos_ocorrencia").select("id, nome"),
