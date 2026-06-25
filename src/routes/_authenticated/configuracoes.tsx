@@ -45,7 +45,8 @@ function ConfiguracoesLayout() {
             <Link
               key={item.to}
               to={item.to as any}
-              className="group border border-border rounded-lg p-4 bg-card hover:border-brand transition-colors"
+              aria-label={item.label}
+              className="facom-glow group border border-border rounded-lg p-4 bg-card hover:border-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             >
               <div className="flex items-center gap-2 mb-2">
                 <item.icon className="h-4 w-4 text-brand" />
@@ -64,8 +65,10 @@ function ConfiguracoesLayout() {
                 <Link
                   key={item.to}
                   to={item.to as any}
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "px-3 py-2 rounded-md text-sm flex items-center gap-2 whitespace-nowrap",
+                    "facom-glow px-3 py-2 rounded-md text-sm flex items-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
                     active ? "bg-brand/10 text-brand" : "hover:bg-accent text-muted-foreground",
                   )}
                 >

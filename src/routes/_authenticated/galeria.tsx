@@ -248,7 +248,8 @@ function Stat({ label, value, icon: Icon, active, onClick }: { label: string; va
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`facom-glow w-full text-left rounded-lg border bg-card p-3 flex items-center gap-3 transition-colors ${active ? "border-brand ring-2 ring-brand/40" : "border-border hover:bg-accent/40"}`}
+      aria-label={`Filtrar por ${label} (${value} ${value === 1 ? "item" : "itens"})${active ? " — ativo" : ""}`}
+      className={`facom-glow w-full text-left rounded-lg border bg-card p-3 flex items-center gap-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${active ? "border-brand ring-2 ring-brand/40" : "border-border hover:bg-accent/40"}`}
     >
       <div className={`h-9 w-9 rounded-md grid place-items-center ${active ? "bg-brand text-brand-foreground" : "bg-brand/10 text-brand"}`}><Icon size={18} /></div>
       <div>
