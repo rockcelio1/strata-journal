@@ -6,6 +6,7 @@ import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, 
 import { toast } from "sonner";
 import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
+import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
