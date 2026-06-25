@@ -109,15 +109,63 @@ async function fetchComRetry(url: string, tentativas = 3, baseDelayMs = 400): Pr
   throw ultimaErro instanceof Error ? ultimaErro : new Error("Falha ao consultar serviço externo");
 }
 
+// ----------------- Métricas / logs -----------------
+function wlog(etapa: string, dados: Record<string, unknown> = {}) {
+  try { console.info(`[weather:${etapa}]`, { ts: new Date().toISOString(), ...dados }); } catch { /* noop */ }
+}
+function werr(etapa: string, erro: unknown, dados: Record<string, unknown> = {}) {
+  try { console.warn(`[weather:${etapa}:erro]`, { ts: new Date().toISOString(), erro: (erro as any)?.message ?? String(erro), ...dados }); } catch { /* noop */ }
+}
+
+// ----------------- Elevação (fallback de altitude) -----------------
+async function fetchElevacao(lat: number, lon: number): Promise<number | null> {
+  const key = `elev:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const cached = cacheGet<number | null>(key);
+  if (cached !== null) return cached;
+  try {
+    const r = await fetchComRetry(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`, 2, 300);
+    const j = await r.json();
+    const e = Array.isArray(j?.elevation) ? Number(j.elevation[0]) : null;
+    const val = Number.isFinite(e as number) ? (e as number) : null;
+    cacheSet(key, val, 24 * 60 * 60 * 1000);
+    wlog("elevacao", { lat, lon, elevacao_m: val });
+    return val;
+  } catch (e) {
+    werr("elevacao", e, { lat, lon });
+    cacheSet(key, null, 10 * 60 * 1000);
+    return null;
+  }
+}
+
 // ----------------- Clima -----------------
-export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapshot> {
+export async function fetchClima(lat: number, lon: number, elevacaoOverride?: number | null): Promise<ClimaSnapshot> {
+  const t0 = performance.now?.() ?? Date.now();
   const key = `clima:${lat.toFixed(3)},${lon.toFixed(3)}`;
   const cached = cacheGet<ClimaSnapshot>(key);
-  if (cached) return cached;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
-  const r = await fetchComRetry(url);
-  const j = await r.json();
-  const c = j.current;
+  if (cached) { wlog("clima:cache_hit", { lat, lon }); return cached; }
+
+  // Fallback de altitude: se não vier do GPS, busca elevação do terreno (melhora ajuste de temperatura)
+  let elev = elevacaoOverride ?? null;
+  if (elev === null || !Number.isFinite(elev)) {
+    elev = await fetchElevacao(lat, lon);
+  }
+  const elevParam = elev !== null ? `&elevation=${elev}` : "";
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}${elevParam}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
+  wlog("clima:request", { lat, lon, elevacao_m: elev });
+  let j: any;
+  try {
+    const r = await fetchComRetry(url);
+    j = await r.json();
+  } catch (e) {
+    werr("clima:request", e, { lat, lon });
+    throw e;
+  }
+  const c = j?.current;
+  if (!c || typeof c.temperature_2m !== "number") {
+    werr("clima:parse", new Error("payload sem current.temperature_2m"), { lat, lon, payload_keys: j ? Object.keys(j) : null });
+    throw new Error("Resposta de previsão inválida.");
+  }
   const snap: ClimaSnapshot = {
     temperatura_c: c.temperature_2m,
     vento_kmh: c.wind_speed_10m,
@@ -128,7 +176,8 @@ export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapsho
     longitude: lon,
     timestamp: c.time,
   };
-  cacheSet(key, snap, 10 * 60 * 1000); // 10 min
+  cacheSet(key, snap, 10 * 60 * 1000);
+  wlog("clima:ok", { lat, lon, dur_ms: Math.round((performance.now?.() ?? Date.now()) - t0), codigo: snap.codigo });
   return snap;
 }
 
@@ -416,43 +465,40 @@ async function geocodeCepBrasilAPI(cep: string): Promise<{ latitude: number; lon
 
 async function resolveGeoBrasil(endereco: string) {
   const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+  wlog("geocoding:start", { endereco_len: endereco.length, tem_cep: !!cep });
 
-  // 1) Endereço completo via Nominatim (rua + número, mais preciso)
   let g = await geocodeNominatim(`${endereco}, Brasil`);
-  if (g) return g;
+  if (g) { wlog("geocoding:ok", { etapa: "nominatim_endereco", lat: g.latitude, lon: g.longitude }); return g; }
 
-  // 2) CEP via BrasilAPI v2 (coordenadas precisas por CEP)
   if (cep) {
     g = await geocodeCepBrasilAPI(cep);
-    if (g) return g;
-    // 3) ViaCEP → cidade/UF → Nominatim/Open-Meteo
+    if (g) { wlog("geocoding:ok", { etapa: "brasilapi_cep", lat: g.latitude, lon: g.longitude }); return g; }
     try {
       const info = await fetchCepInfo(cep);
       if (info?.localidade && info?.uf) {
         const cidade = `${info.localidade}, ${info.uf}, Brasil`;
         g = await geocodeNominatim(cidade);
-        if (g) return g;
+        if (g) { wlog("geocoding:ok", { etapa: "viacep_nominatim", lat: g.latitude, lon: g.longitude }); return g; }
         g = await geocodeEndereco(`${info.localidade}, ${info.uf}`);
-        if (g) return g;
+        if (g) { wlog("geocoding:ok", { etapa: "viacep_openmeteo", lat: g.latitude, lon: g.longitude }); return g; }
       }
-    } catch { /* ignore */ }
+    } catch (e) { werr("geocoding:viacep", e, { cep }); }
   }
 
-  // 4) "Cidade - UF" no texto
   const m = endereco.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{2,})\s*[-/,]\s*([A-Z]{2})\b/);
   if (m) {
     g = await geocodeNominatim(`${m[1].trim()}, ${m[2]}, Brasil`);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "cidade_uf_nominatim", lat: g.latitude, lon: g.longitude }); return g; }
     g = await geocodeEndereco(`${m[1].trim()}, ${m[2]}`);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "cidade_uf_openmeteo", lat: g.latitude, lon: g.longitude }); return g; }
   }
 
-  // 5) Última vírgula como cidade
   const ultimo = endereco.split(",").map((s) => s.trim()).filter(Boolean).pop();
   if (ultimo && ultimo.length >= 3) {
     g = await geocodeEndereco(ultimo);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "ultimo_segmento", lat: g.latitude, lon: g.longitude }); return g; }
   }
+  werr("geocoding:falhou", new Error("nenhuma etapa retornou coordenadas"), { tem_cep: !!cep });
   return null;
 }
 

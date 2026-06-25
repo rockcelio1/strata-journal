@@ -639,7 +639,7 @@ function NovoRdoPage() {
                 >
                   {climaStatus === "loading" && "Carregando previsão…"}
                   {climaStatus === "success" && "Previsão atualizada"}
-                  {climaStatus === "error" && "Tentando novamente…"}
+                  {climaStatus === "error" && "Falha — toque em Tentar novamente"}
                   {climaStatus === "idle" && "Sem previsão"}
                 </span>
               </div>
@@ -697,9 +697,21 @@ function NovoRdoPage() {
               </p>
             </div>
 
-            {climaErro && climaStatus !== "success" && climaStatus !== "loading" && (
-              <div role="status" className="text-xs text-muted-foreground border border-border bg-muted/30 rounded-md p-2">
-                Tentando obter a previsão automaticamente. Você pode reconsultar pelo endereço da obra ou pelo CEP.
+            {climaStatus === "error" && (
+              <div role="alert" className="text-xs border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 rounded-md p-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">Não conseguimos atualizar a previsão agora.</p>
+                  <p className="opacity-80 mt-0.5">{climaErro ?? "Verifique o endereço da obra ou tente novamente em instantes."}</p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={atualizarPrevisao} disabled={climaLoading}>
+                  {climaLoading ? <CircleNotch size={14} className="mr-1 animate-spin" /> : <CloudSun size={14} className="mr-1" />}
+                  Tentar novamente
+                </Button>
+              </div>
+            )}
+            {climaStatus === "idle" && !climaInfo && (
+              <div className="text-xs text-muted-foreground border border-dashed border-border rounded-md p-3 bg-muted/20">
+                Sem previsão carregada. Use "Pelo endereço da obra", informe o CEP ou ative sua localização.
               </div>
             )}
             {climaInfo && (
