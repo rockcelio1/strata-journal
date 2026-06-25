@@ -206,7 +206,7 @@ function NovoRdoPage() {
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
     } catch (e: any) {
       const msg = e?.message ?? "Não foi possível obter o clima";
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -251,7 +251,7 @@ function NovoRdoPage() {
       }
     } catch (e: any) {
       const msg = e?.message ?? "Não foi possível obter o clima";
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -270,7 +270,7 @@ function NovoRdoPage() {
     const v = validarCep(cepInput);
     if (!v.ok) {
       const msg = `${v.mensagem} [${v.code}]`;
-      setClimaErro(msg); toast.error(msg); return;
+      setClimaErro(msg); return;
     }
     setCepInput(v.cep);
     setClimaStatus("loading"); setClimaErro(null);
@@ -283,7 +283,7 @@ function NovoRdoPage() {
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
     } catch (e: any) {
       const msg = describeWeatherError(e, "Não foi possível obter o clima pelo CEP");
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -301,7 +301,7 @@ function NovoRdoPage() {
       setClimaStatus("success");
     } catch (e: any) {
       const msg = describeWeatherError(e, "Não foi possível detectar o CEP automaticamente");
-      setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
+      setClimaErro(msg); setClimaStatus("error");
     } finally {
       setCepDetecting(false);
     }
@@ -633,13 +633,13 @@ function NovoRdoPage() {
                     "text-[11px] px-2 py-0.5 rounded-full border",
                     climaStatus === "loading" && "bg-muted text-muted-foreground border-border animate-pulse",
                     climaStatus === "success" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
-                    climaStatus === "error" && "bg-destructive/10 text-destructive border-destructive/30",
+                    climaStatus === "error" && "bg-muted text-muted-foreground border-border",
                     climaStatus === "idle" && "bg-muted/40 text-muted-foreground border-border",
                   )}
                 >
                   {climaStatus === "loading" && "Carregando previsão…"}
                   {climaStatus === "success" && "Previsão atualizada"}
-                  {climaStatus === "error" && "Falha ao obter previsão"}
+                  {climaStatus === "error" && "Tentando novamente…"}
                   {climaStatus === "idle" && "Sem previsão"}
                 </span>
               </div>
@@ -697,9 +697,9 @@ function NovoRdoPage() {
               </p>
             </div>
 
-            {climaErro && (
-              <div role="alert" className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
-                {climaErro}
+            {climaErro && climaStatus !== "success" && climaStatus !== "loading" && (
+              <div role="status" className="text-xs text-muted-foreground border border-border bg-muted/30 rounded-md p-2">
+                Tentando obter a previsão automaticamente. Você pode reconsultar pelo endereço da obra ou pelo CEP.
               </div>
             )}
             {climaInfo && (
