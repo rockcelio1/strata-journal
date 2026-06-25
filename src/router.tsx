@@ -10,7 +10,10 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: "intent",
-    defaultPreloadStaleTime: 30_000,
+    defaultPreloadDelay: 20, // hover/focus quase instantâneo dispara preload
+    defaultPreloadStaleTime: 0, // TanStack Query controla a frescura
+    defaultPendingMs: 200,
+    defaultPendingMinMs: 150,
   });
 
   return router;
