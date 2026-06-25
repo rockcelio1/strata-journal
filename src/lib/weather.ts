@@ -465,43 +465,40 @@ async function geocodeCepBrasilAPI(cep: string): Promise<{ latitude: number; lon
 
 async function resolveGeoBrasil(endereco: string) {
   const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+  wlog("geocoding:start", { endereco_len: endereco.length, tem_cep: !!cep });
 
-  // 1) Endereço completo via Nominatim (rua + número, mais preciso)
   let g = await geocodeNominatim(`${endereco}, Brasil`);
-  if (g) return g;
+  if (g) { wlog("geocoding:ok", { etapa: "nominatim_endereco", lat: g.latitude, lon: g.longitude }); return g; }
 
-  // 2) CEP via BrasilAPI v2 (coordenadas precisas por CEP)
   if (cep) {
     g = await geocodeCepBrasilAPI(cep);
-    if (g) return g;
-    // 3) ViaCEP → cidade/UF → Nominatim/Open-Meteo
+    if (g) { wlog("geocoding:ok", { etapa: "brasilapi_cep", lat: g.latitude, lon: g.longitude }); return g; }
     try {
       const info = await fetchCepInfo(cep);
       if (info?.localidade && info?.uf) {
         const cidade = `${info.localidade}, ${info.uf}, Brasil`;
         g = await geocodeNominatim(cidade);
-        if (g) return g;
+        if (g) { wlog("geocoding:ok", { etapa: "viacep_nominatim", lat: g.latitude, lon: g.longitude }); return g; }
         g = await geocodeEndereco(`${info.localidade}, ${info.uf}`);
-        if (g) return g;
+        if (g) { wlog("geocoding:ok", { etapa: "viacep_openmeteo", lat: g.latitude, lon: g.longitude }); return g; }
       }
-    } catch { /* ignore */ }
+    } catch (e) { werr("geocoding:viacep", e, { cep }); }
   }
 
-  // 4) "Cidade - UF" no texto
   const m = endereco.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{2,})\s*[-/,]\s*([A-Z]{2})\b/);
   if (m) {
     g = await geocodeNominatim(`${m[1].trim()}, ${m[2]}, Brasil`);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "cidade_uf_nominatim", lat: g.latitude, lon: g.longitude }); return g; }
     g = await geocodeEndereco(`${m[1].trim()}, ${m[2]}`);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "cidade_uf_openmeteo", lat: g.latitude, lon: g.longitude }); return g; }
   }
 
-  // 5) Última vírgula como cidade
   const ultimo = endereco.split(",").map((s) => s.trim()).filter(Boolean).pop();
   if (ultimo && ultimo.length >= 3) {
     g = await geocodeEndereco(ultimo);
-    if (g) return g;
+    if (g) { wlog("geocoding:ok", { etapa: "ultimo_segmento", lat: g.latitude, lon: g.longitude }); return g; }
   }
+  werr("geocoding:falhou", new Error("nenhuma etapa retornou coordenadas"), { tem_cep: !!cep });
   return null;
 }
 
