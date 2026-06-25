@@ -633,13 +633,13 @@ function NovoRdoPage() {
                     "text-[11px] px-2 py-0.5 rounded-full border",
                     climaStatus === "loading" && "bg-muted text-muted-foreground border-border animate-pulse",
                     climaStatus === "success" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
-                    climaStatus === "error" && "bg-destructive/10 text-destructive border-destructive/30",
+                    climaStatus === "error" && "bg-muted text-muted-foreground border-border",
                     climaStatus === "idle" && "bg-muted/40 text-muted-foreground border-border",
                   )}
                 >
                   {climaStatus === "loading" && "Carregando previsão…"}
                   {climaStatus === "success" && "Previsão atualizada"}
-                  {climaStatus === "error" && "Falha ao obter previsão"}
+                  {climaStatus === "error" && "Tentando novamente…"}
                   {climaStatus === "idle" && "Sem previsão"}
                 </span>
               </div>
