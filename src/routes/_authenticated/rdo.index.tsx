@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { listRdos, createRdo } from "@/lib/rdo.functions";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { listRdos, createRdo, deleteRdo, adminDeleteRdo } from "@/lib/rdo.functions";
+import { getMe } from "@/lib/core.functions";
 import { listObras } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Plus, FileText, CloudArrowUp, WifiSlash, CheckCircle, WarningCircle,
-  ArrowClockwise, X, MagnifyingGlass, DownloadSimple, ListBullets, CalendarBlank,
+  ArrowClockwise, X, MagnifyingGlass, DownloadSimple, ListBullets, CalendarBlank, Trash,
 } from "@phosphor-icons/react";
 import { rdoStatusMeta } from "@/components/status";
+import { Highlight } from "@/components/Highlight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
@@ -57,11 +64,17 @@ function RdoListPage() {
   const obrasFn = useServerFn(listObras);
   const createFn = useServerFn(createRdo);
   const qc = useQueryClient();
-  const { data: rdos = [] } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
+  const meFn = useServerFn(getMe);
+  const deleteFn = useServerFn(deleteRdo);
+  const adminDeleteFn = useServerFn(adminDeleteRdo);
+  const { data: rdos = [], isLoading } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
   const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
 
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const buscaRef = useRef<HTMLInputElement>(null);
+  const [confirmDel, setConfirmDel] = useState<{ id: string; numero: number; obra: string; admin: boolean } | null>(null);
   const [status, setStatus] = useState<string>(() => {
     const s = search.status;
     return s && (statusFilters as readonly string[]).includes(s) ? s : "todos";
@@ -93,6 +106,36 @@ function RdoListPage() {
   const [view, setView] = useState<"lista" | "calendario">("lista");
   const [calMonth, setCalMonth] = useState<Date>(new Date());
   const [calSelected, setCalSelected] = useState<Date | undefined>(undefined);
+
+  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
+  const myId = me?.profile?.id;
+
+  const excluir = useMutation({
+    mutationFn: ({ id, admin }: { id: string; admin: boolean }) =>
+      admin ? adminDeleteFn({ data: { id } }) : deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("RDO excluído e registrado na auditoria");
+      setConfirmDel(null);
+      qc.invalidateQueries({ queryKey: ["rdos"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao excluir"),
+  });
+
+  // ESC limpa a busca quando o foco está no campo; "/" foca o campo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        buscaRef.current?.focus();
+      } else if (e.key === "Escape" && document.activeElement === buscaRef.current) {
+        setBusca("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const [queue, setQueue] = useState<QueuedRdo[]>([]);
   const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
@@ -291,9 +334,24 @@ function RdoListPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
           <div className="md:col-span-5 relative">
             <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)}
-              placeholder="Busca aproximada (ignora acento e erros): número, obra, autor, assinatura, aprovador…"
-              className="pl-8" />
+            <Input
+              ref={buscaRef}
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setBusca(""); (e.target as HTMLInputElement).blur(); } }}
+              placeholder='Busca aproximada (ignora acento/erros) — pressione "/" para focar, Esc para limpar'
+              aria-label="Buscar RDOs"
+              className="pl-8 pr-9" />
+            {busca && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => { setBusca(""); buscaRef.current?.focus(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded p-1"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
           <div className="md:col-span-3">
             <Select value={obraId} onValueChange={setObraId}>
@@ -439,10 +497,47 @@ function RdoListPage() {
       )}
 
       {view === "lista" && (
-        filtered.length === 0 ? (
+        isLoading ? (
+          <Card className="hidden md:block overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="p-3 font-medium">#</th>
+                  <th className="p-3 font-medium">Obra</th>
+                  <th className="p-3 font-medium">Data</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium w-10" aria-label="Ações" />
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="p-3"><Skeleton className="h-4 w-10" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-56" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="p-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-4" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <FileText size={40} className="mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhum RDO neste filtro.</p>
+            <p className="font-medium">
+              {busca ? `Nada encontrado para “${busca}”.` : "Nenhum RDO neste filtro."}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {busca
+                ? "Tente termos mais curtos ou ignore acentos — a busca tolera erros de digitação."
+                : "Ajuste os filtros acima ou crie um novo RDO."}
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              {busca && <Button variant="outline" size="sm" onClick={() => setBusca("")}>Limpar busca</Button>}
+              <Button variant="outline" size="sm" onClick={limparFiltros}>Limpar filtros</Button>
+              <Link to="/rdo/novo"><Button size="sm" className="bg-brand text-brand-foreground"><Plus size={14} className="mr-1" />Novo RDO</Button></Link>
+            </div>
           </Card>
         ) : (
           <>
@@ -450,13 +545,13 @@ function RdoListPage() {
               {filtered.map((r: any) => {
                 const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
                 return (
-                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }}>
+                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
                     <Card className="p-3 active:bg-muted/50">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium tabular-nums">#{r.numero}</span>
+                        <span className="font-medium tabular-nums">#<Highlight text={String(r.numero)} query={busca} /></span>
                         <Badge variant="outline" className={m.className}>{m.label}</Badge>
                       </div>
-                      <div className="mt-1 text-sm truncate">{r.obras?.nome}</div>
+                      <div className="mt-1 text-sm truncate"><Highlight text={r.obras?.nome} query={busca} /></div>
                       <div className="text-xs text-muted-foreground">{new Date(r.data).toLocaleDateString("pt-BR")}</div>
                     </Card>
                   </Link>
@@ -471,11 +566,14 @@ function RdoListPage() {
                     <th className="p-3 font-medium">Obra</th>
                     <th className="p-3 font-medium">Data</th>
                     <th className="p-3 font-medium">Status</th>
+                    <th className="p-3 font-medium w-10 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((r: any) => {
                     const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                    const isAuthor = r.autor?.id === myId;
+                    const canDelete = (r.status === "rascunho" && (isAuthor || isAdminOrMaster)) || isAdminOrMaster;
                     return (
                       <tr
                         key={r.id}
@@ -489,12 +587,27 @@ function RdoListPage() {
                         tabIndex={0}
                         role="link"
                         aria-label={`Abrir RDO #${r.numero} — ${r.obras?.nome ?? ""}`}
-                        className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer focus:outline-none focus:bg-muted/60"
+                        className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
                       >
-                        <td className="p-3 tabular-nums font-medium">#{r.numero}</td>
-                        <td className="p-3">{r.obras?.nome}</td>
+                        <td className="p-3 tabular-nums font-medium">#<Highlight text={String(r.numero)} query={busca} /></td>
+                        <td className="p-3"><Highlight text={r.obras?.nome} query={busca} /></td>
                         <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
                         <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
+                        <td className="p-3 text-right">
+                          {canDelete && (
+                            <button
+                              type="button"
+                              aria-label={`Excluir RDO #${r.numero}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDel({ id: r.id, numero: r.numero, obra: r.obras?.nome ?? "—", admin: r.status !== "rascunho" || !isAuthor });
+                              }}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -504,6 +617,41 @@ function RdoListPage() {
           </>
         )
       )}
+
+      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir RDO #{confirmDel?.numero}?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Você está prestes a excluir o RDO <strong>#{confirmDel?.numero}</strong> — <em>{confirmDel?.obra}</em>.
+                </p>
+                <p className="text-destructive">
+                  <strong>Consequências:</strong> a exclusão é permanente pela interface, remove o RDO de listagens e relatórios,
+                  e <strong>não pode ser desfeita</strong>. Anexos e assinaturas vinculados deixarão de aparecer no app.
+                </p>
+                <p className="text-muted-foreground">
+                  O evento (autor, data/hora e ação) será registrado no <strong>log de auditoria</strong> para rastreabilidade.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDel) excluir.mutate({ id: confirmDel.id, admin: confirmDel.admin });
+              }}
+              disabled={excluir.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {excluir.isPending ? "Excluindo…" : "Excluir permanentemente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
