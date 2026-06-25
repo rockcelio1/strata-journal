@@ -167,11 +167,16 @@ function ObraDetail() {
                   )}
                 </Card>
 
-                <Card className="p-0 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <Card className="p-0 overflow-hidden transition-colors hover:bg-muted/30 hover:ring-1 hover:ring-brand/30 focus-within:ring-2 focus-within:ring-ring">
+                  <Link
+                    to="/galeria"
+                    aria-label="Abrir galeria de fotos"
+                    className="flex items-center justify-between px-4 py-3 border-b border-border hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/50"
+                  >
                     <h3 className="text-brand font-medium">Fotos recentes</h3>
-                    <Link to="/galeria" className="text-xs text-brand hover:underline">Ver tudo</Link>
-                  </div>
+                    <span className="text-xs text-brand hover:underline">Ver tudo</span>
+                  </Link>
+
                   {fotos.length === 0 ? (
                     <div className="p-8 text-center text-sm text-muted-foreground">
                       <ImageIcon size={28} className="mx-auto mb-2 opacity-60" />
