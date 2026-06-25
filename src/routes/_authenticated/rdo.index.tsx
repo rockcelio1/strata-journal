@@ -497,10 +497,47 @@ function RdoListPage() {
       )}
 
       {view === "lista" && (
-        filtered.length === 0 ? (
+        isLoading ? (
+          <Card className="hidden md:block overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted-foreground">
+                  <th className="p-3 font-medium">#</th>
+                  <th className="p-3 font-medium">Obra</th>
+                  <th className="p-3 font-medium">Data</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium w-10" aria-label="Ações" />
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="p-3"><Skeleton className="h-4 w-10" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-56" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="p-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                    <td className="p-3"><Skeleton className="h-4 w-4" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <FileText size={40} className="mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhum RDO neste filtro.</p>
+            <p className="font-medium">
+              {busca ? `Nada encontrado para “${busca}”.` : "Nenhum RDO neste filtro."}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {busca
+                ? "Tente termos mais curtos ou ignore acentos — a busca tolera erros de digitação."
+                : "Ajuste os filtros acima ou crie um novo RDO."}
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              {busca && <Button variant="outline" size="sm" onClick={() => setBusca("")}>Limpar busca</Button>}
+              <Button variant="outline" size="sm" onClick={limparFiltros}>Limpar filtros</Button>
+              <Link to="/rdo/novo"><Button size="sm" className="bg-brand text-brand-foreground"><Plus size={14} className="mr-1" />Novo RDO</Button></Link>
+            </div>
           </Card>
         ) : (
           <>
@@ -508,13 +545,13 @@ function RdoListPage() {
               {filtered.map((r: any) => {
                 const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
                 return (
-                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }}>
+                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
                     <Card className="p-3 active:bg-muted/50">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium tabular-nums">#{r.numero}</span>
+                        <span className="font-medium tabular-nums">#<Highlight text={String(r.numero)} query={busca} /></span>
                         <Badge variant="outline" className={m.className}>{m.label}</Badge>
                       </div>
-                      <div className="mt-1 text-sm truncate">{r.obras?.nome}</div>
+                      <div className="mt-1 text-sm truncate"><Highlight text={r.obras?.nome} query={busca} /></div>
                       <div className="text-xs text-muted-foreground">{new Date(r.data).toLocaleDateString("pt-BR")}</div>
                     </Card>
                   </Link>
@@ -529,11 +566,14 @@ function RdoListPage() {
                     <th className="p-3 font-medium">Obra</th>
                     <th className="p-3 font-medium">Data</th>
                     <th className="p-3 font-medium">Status</th>
+                    <th className="p-3 font-medium w-10 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((r: any) => {
                     const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
+                    const isAuthor = r.autor?.id === myId;
+                    const canDelete = (r.status === "rascunho" && (isAuthor || isAdminOrMaster)) || isAdminOrMaster;
                     return (
                       <tr
                         key={r.id}
@@ -547,12 +587,27 @@ function RdoListPage() {
                         tabIndex={0}
                         role="link"
                         aria-label={`Abrir RDO #${r.numero} — ${r.obras?.nome ?? ""}`}
-                        className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer focus:outline-none focus:bg-muted/60"
+                        className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
                       >
-                        <td className="p-3 tabular-nums font-medium">#{r.numero}</td>
-                        <td className="p-3">{r.obras?.nome}</td>
+                        <td className="p-3 tabular-nums font-medium">#<Highlight text={String(r.numero)} query={busca} /></td>
+                        <td className="p-3"><Highlight text={r.obras?.nome} query={busca} /></td>
                         <td className="p-3">{new Date(r.data).toLocaleDateString("pt-BR")}</td>
                         <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
+                        <td className="p-3 text-right">
+                          {canDelete && (
+                            <button
+                              type="button"
+                              aria-label={`Excluir RDO #${r.numero}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDel({ id: r.id, numero: r.numero, obra: r.obras?.nome ?? "—", admin: r.status !== "rascunho" || !isAuthor });
+                              }}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -562,6 +617,41 @@ function RdoListPage() {
           </>
         )
       )}
+
+      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir RDO #{confirmDel?.numero}?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Você está prestes a excluir o RDO <strong>#{confirmDel?.numero}</strong> — <em>{confirmDel?.obra}</em>.
+                </p>
+                <p className="text-destructive">
+                  <strong>Consequências:</strong> a exclusão é permanente pela interface, remove o RDO de listagens e relatórios,
+                  e <strong>não pode ser desfeita</strong>. Anexos e assinaturas vinculados deixarão de aparecer no app.
+                </p>
+                <p className="text-muted-foreground">
+                  O evento (autor, data/hora e ação) será registrado no <strong>log de auditoria</strong> para rastreabilidade.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={excluir.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDel) excluir.mutate({ id: confirmDel.id, admin: confirmDel.admin });
+              }}
+              disabled={excluir.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {excluir.isPending ? "Excluindo…" : "Excluir permanentemente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
