@@ -36,6 +36,8 @@ export const listRdos = createServerFn({ method: "GET" })
         rdo_assinaturas(user_id)
       `)
       .is("deleted_at", null)
+      // Rascunhos só aparecem para o próprio autor; demais status seguem a RLS da empresa.
+      .or(`status.neq.rascunho,autor_id.eq.${context.userId}`)
       .order("data", { ascending: false });
     if (error) throw error;
 
