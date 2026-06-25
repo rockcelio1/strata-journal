@@ -6,6 +6,7 @@ import {
   getRdo, submitRdo, approveRdo, deleteRdo, adminDeleteRdo, adminDisableRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
+  updateRdoClimaRascunho,
 } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
@@ -342,7 +343,7 @@ function RdoDetailPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
         {(["manha", "tarde", "noite"] as const).map((p) => (
           <Card key={p} className="p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Cloud className="h-3 w-3" /> {p === "manha" ? "Manhã" : p === "tarde" ? "Tarde" : "Noite"}</div>
@@ -350,6 +351,15 @@ function RdoDetailPage() {
           </Card>
         ))}
       </div>
+      {r.status === "rascunho" && isAuthor && (
+        <div className="mb-4">
+          <EditarClimaRascunho
+            rdoId={rdoId}
+            atual={{ clima_manha: r.clima_manha, clima_tarde: r.clima_tarde, clima_noite: r.clima_noite }}
+            onSaved={refresh}
+          />
+        </div>
+      )}
 
       <ClimaRelatorio
         rdoId={rdoId}
@@ -1092,5 +1102,110 @@ function ClimaRelatorio({
         <p className="text-xs text-muted-foreground">Sem dados meteorológicos disponíveis para o período.</p>
       )}
     </Card>
+  );
+}
+
+type ClimaVal = "ensolarado" | "nublado" | "chuvoso" | "chuva_forte" | "impraticavel" | null;
+
+function EditarClimaRascunho({
+  rdoId,
+  atual,
+  onSaved,
+}: {
+  rdoId: string;
+  atual: { clima_manha: ClimaVal; clima_tarde: ClimaVal; clima_noite: ClimaVal };
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [manha, setManha] = useState<ClimaVal>(atual.clima_manha ?? null);
+  const [tarde, setTarde] = useState<ClimaVal>(atual.clima_tarde ?? null);
+  const [noite, setNoite] = useState<ClimaVal>(atual.clima_noite ?? null);
+  const [justificativa, setJustificativa] = useState("");
+  const fn = useServerFn(updateRdoClimaRascunho);
+  const qc = useQueryClient();
+
+  const mut = useMutation({
+    mutationFn: () => fn({ data: {
+      rdo_id: rdoId,
+      clima_manha: manha,
+      clima_tarde: tarde,
+      clima_noite: noite,
+      justificativa: justificativa.trim(),
+    } }),
+    onSuccess: () => {
+      toast.success("Previsão atualizada e registrada na auditoria");
+      setOpen(false);
+      setJustificativa("");
+      qc.invalidateQueries({ queryKey: ["rdo", rdoId] });
+      qc.invalidateQueries({ queryKey: ["rdo-logs", rdoId] });
+      qc.invalidateQueries({ queryKey: ["rdo-audit", rdoId] });
+      onSaved();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar previsão"),
+  });
+
+  const opcoes: { value: Exclude<ClimaVal, null>; label: string }[] = [
+    { value: "ensolarado", label: "Ensolarado" },
+    { value: "nublado", label: "Nublado" },
+    { value: "chuvoso", label: "Chuvoso" },
+    { value: "chuva_forte", label: "Chuva forte" },
+    { value: "impraticavel", label: "Impraticável" },
+  ];
+
+  const Selector = ({ label, value, onChange }: { label: string; value: ClimaVal; onChange: (v: ClimaVal) => void }) => (
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-muted-foreground uppercase tracking-wider">{label}</span>
+      <select
+        className="border rounded-md px-2 py-1.5 text-sm bg-background"
+        value={value ?? ""}
+        onChange={(e) => onChange((e.target.value || null) as ClimaVal)}
+      >
+        <option value="">—</option>
+        {opcoes.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Cloud className="h-4 w-4 mr-1" /> Editar previsão do tempo
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="max-w-lg">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Editar previsão do tempo (rascunho)</AlertDialogTitle>
+        </AlertDialogHeader>
+        <div className="space-y-3 text-sm">
+          <p className="text-muted-foreground text-xs">
+            A alteração ficará registrada na auditoria e aparecerá no relatório (PDF) com o valor anterior, o novo valor e a justificativa.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <Selector label="Manhã" value={manha} onChange={setManha} />
+            <Selector label="Tarde" value={tarde} onChange={setTarde} />
+            <Selector label="Noite" value={noite} onChange={setNoite} />
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Justificativa (obrigatória)</span>
+            <Textarea
+              value={justificativa}
+              onChange={(e) => setJustificativa(e.target.value)}
+              placeholder="Ex.: corrigindo previsão após observação no canteiro às 14h."
+              rows={3}
+            />
+          </label>
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={mut.isPending}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => { e.preventDefault(); mut.mutate(); }}
+            disabled={mut.isPending || justificativa.trim().length < 5}
+          >
+            {mut.isPending ? "Salvando…" : "Salvar e registrar"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

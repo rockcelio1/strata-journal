@@ -440,6 +440,73 @@ export const logRdoClimaUpdate = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateRdoClimaRascunho = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    rdo_id: string;
+    clima_manha?: string | null;
+    clima_tarde?: string | null;
+    clima_noite?: string | null;
+    justificativa: string;
+  }) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      clima_manha: climaEnum,
+      clima_tarde: climaEnum,
+      clima_noite: climaEnum,
+      justificativa: z.string().trim().min(5, "Justificativa obrigatória (mín. 5 caracteres)").max(1000),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const cur = await context.supabase
+      .from("rdos")
+      .select("id, empresa_id, status, autor_id, clima_manha, clima_tarde, clima_noite")
+      .eq("id", data.rdo_id)
+      .maybeSingle();
+    if (cur.error) throw cur.error;
+    if (!cur.data) throw new Error("RDO não encontrado");
+    if (cur.data.status !== "rascunho") {
+      throw new Error("Somente RDOs em rascunho podem ter a previsão do tempo editada.");
+    }
+    if (cur.data.autor_id !== context.userId) {
+      throw new Error("Apenas o autor pode editar a previsão do tempo do próprio rascunho.");
+    }
+
+    const before = {
+      clima_manha: cur.data.clima_manha ?? null,
+      clima_tarde: cur.data.clima_tarde ?? null,
+      clima_noite: cur.data.clima_noite ?? null,
+    };
+    const after = {
+      clima_manha: data.clima_manha ?? null,
+      clima_tarde: data.clima_tarde ?? null,
+      clima_noite: data.clima_noite ?? null,
+    };
+
+    const { error: upErr } = await context.supabase
+      .from("rdos")
+      .update({ ...after, updated_at: new Date().toISOString() })
+      .eq("id", data.rdo_id);
+    if (upErr) throw upErr;
+
+    const motivo = JSON.stringify({
+      justificativa: data.justificativa.trim(),
+      antes: before,
+      depois: after,
+      ts: new Date().toISOString(),
+    });
+
+    await context.supabase.from("rdo_audit_logs").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: cur.data.empresa_id,
+      autor_id: context.userId,
+      acao: "clima_editado_rascunho",
+      motivo,
+    });
+
+    return { ok: true };
+  });
+
 export const getRdoAuditSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
