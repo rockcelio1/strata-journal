@@ -334,9 +334,24 @@ function RdoListPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end">
           <div className="md:col-span-5 relative">
             <MagnifyingGlass size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)}
-              placeholder="Busca aproximada (ignora acento e erros): número, obra, autor, assinatura, aprovador…"
-              className="pl-8" />
+            <Input
+              ref={buscaRef}
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setBusca(""); (e.target as HTMLInputElement).blur(); } }}
+              placeholder='Busca aproximada (ignora acento/erros) — pressione "/" para focar, Esc para limpar'
+              aria-label="Buscar RDOs"
+              className="pl-8 pr-9" />
+            {busca && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => { setBusca(""); buscaRef.current?.focus(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded p-1"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
           <div className="md:col-span-3">
             <Select value={obraId} onValueChange={setObraId}>
