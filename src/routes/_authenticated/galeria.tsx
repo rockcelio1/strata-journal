@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast } from "@phosphor-icons/react";
+import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/galeria")({
@@ -63,6 +63,24 @@ function GaleriaPage() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [me?.profile?.empresa_id, qc]);
+
+  const flatItens = useMemo(() => (itens as any[]) ?? [], [itens]);
+  const previewIdx = useMemo(
+    () => (preview ? flatItens.findIndex((i) => i.id === preview.id) : -1),
+    [preview, flatItens],
+  );
+  const goPrev = () => { if (previewIdx > 0) setPreview(flatItens[previewIdx - 1]); };
+  const goNext = () => { if (previewIdx >= 0 && previewIdx < flatItens.length - 1) setPreview(flatItens[previewIdx + 1]); };
+
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [preview, previewIdx, flatItens]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 5000);
@@ -201,34 +219,73 @@ function GaleriaPage() {
       )}
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+        <DialogContent
+          className="max-w-5xl p-0 overflow-hidden"
+          aria-label={preview ? `Visualizando ${preview.legenda || preview.nome}` : "Lightbox"}
+        >
           {preview && (
-            <div className="bg-black">
+            <div className="bg-black relative">
+              {flatItens.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    disabled={previewIdx <= 0}
+                    aria-label="Mídia anterior (seta esquerda)"
+                    className="facom-glow absolute left-2 top-1/2 -translate-y-1/2 z-10 h-11 w-11 grid place-items-center rounded-full bg-background/80 text-foreground hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  >
+                    <CaretLeft size={22} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={previewIdx >= flatItens.length - 1}
+                    aria-label="Próxima mídia (seta direita)"
+                    className="facom-glow absolute right-2 top-1/2 -translate-y-1/2 z-10 h-11 w-11 grid place-items-center rounded-full bg-background/80 text-foreground hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  >
+                    <CaretRight size={22} weight="bold" />
+                  </button>
+                  <div className="absolute top-2 left-2 z-10 text-xs px-2 py-1 rounded bg-background/80 text-foreground tabular-nums">
+                    {previewIdx + 1} / {flatItens.length}
+                  </div>
+                </>
+              )}
               {preview.tipo === "imagem" && preview.url && (
-                <img src={preview.url} alt={preview.nome} className="w-full max-h-[75vh] object-contain bg-black" />
+                <img src={preview.url} alt={preview.legenda || preview.nome} className="w-full max-h-[80vh] object-contain bg-black" />
               )}
               {preview.tipo === "video" && preview.url && (
-                <video src={preview.url} controls autoPlay className="w-full max-h-[75vh] bg-black" />
+                <video src={preview.url} controls autoPlay className="w-full max-h-[80vh] bg-black" />
               )}
               {preview.tipo === "pdf" && preview.url && (
-                <iframe src={preview.url} title={preview.nome} className="w-full h-[75vh] bg-white" />
+                <iframe src={preview.url} title={preview.nome} className="w-full h-[80vh] bg-white" />
               )}
               {preview.tipo === "outro" && (
                 <div className="h-40 grid place-items-center text-white">Prévia indisponível para este tipo.</div>
               )}
               <div className="bg-background text-foreground p-3 flex items-center justify-between gap-3 flex-wrap">
-                <div className="text-sm">
-                  <div className="font-medium">{preview.legenda || preview.nome}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="text-sm min-w-0">
+                  <div className="font-medium truncate">{preview.legenda || preview.nome}</div>
+                  <div className="text-xs text-muted-foreground truncate">
                     {preview.rdos?.obras?.nome} · RDO #{preview.rdos?.numero} · {preview.autor?.nome ?? "—"} · {new Date(preview.created_at).toLocaleString("pt-BR")}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {preview.url && (
                     <>
-                      <Button size="sm" variant="outline" onClick={() => copyUrl(preview.url)}><Copy size={14} className="mr-1" /> URL</Button>
+                      {preview.tipo === "pdf" && (
+                        <a href={preview.url} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" aria-label="Abrir PDF em nova aba">
+                            <ArrowSquareOut size={14} className="mr-1" /> Abrir
+                          </Button>
+                        </a>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => copyUrl(preview.url)} aria-label="Copiar URL da mídia">
+                        <Copy size={14} className="mr-1" /> URL
+                      </Button>
                       <a href={preview.url} download={preview.nome}>
-                        <Button size="sm"><DownloadSimple size={14} className="mr-1" /> Baixar</Button>
+                        <Button size="sm" aria-label={`Baixar ${preview.nome}`}>
+                          <DownloadSimple size={14} className="mr-1" /> Baixar
+                        </Button>
                       </a>
                     </>
                   )}
