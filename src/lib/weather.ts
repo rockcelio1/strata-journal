@@ -383,18 +383,20 @@ function isDiaUtil(yyyyMmDd: string): boolean {
   return dow >= 1 && dow <= 5;
 }
 
-export async function fetchPrevisao5Dias(lat: number, lon: number): Promise<DiaPrevisao[]> {
-  const key = `prev5:${lat.toFixed(3)},${lon.toFixed(3)}`;
+export async function fetchPrevisao5Dias(lat: number, lon: number, opts: { dias?: number; apenasDiasUteis?: boolean } = {}): Promise<DiaPrevisao[]> {
+  const dias = Math.max(1, Math.min(opts.dias ?? 7, 14));
+  const apenasUteis = opts.apenasDiasUteis ?? false;
+  const key = `prev:${apenasUteis ? "u" : "s"}${dias}:${lat.toFixed(3)},${lon.toFixed(3)}`;
   const cached = cacheGet<DiaPrevisao[]>(key);
   if (cached) return cached;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=10`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=14`;
   const r = await fetchComRetry(url);
   const j = await r.json();
   const d = j.daily;
   const out: DiaPrevisao[] = [];
-  for (let i = 0; i < d.time.length && out.length < 5; i++) {
+  for (let i = 0; i < d.time.length && out.length < dias; i++) {
     const dia = d.time[i] as string;
-    if (!isDiaUtil(dia)) continue;
+    if (apenasUteis && !isDiaUtil(dia)) continue;
     const dow = new Date(`${dia}T12:00:00-03:00`).getDay();
     const codigo = d.weather_code[i];
     out.push({
@@ -408,7 +410,7 @@ export async function fetchPrevisao5Dias(lat: number, lon: number): Promise<DiaP
       descricao: codes[codigo] ?? `Código ${codigo}`,
     });
   }
-  cacheSet(key, out, 30 * 60 * 1000); // 30 min
+  cacheSet(key, out, 15 * 60 * 1000); // 15 min — atualiza em quase-tempo-real
   return out;
 }
 
