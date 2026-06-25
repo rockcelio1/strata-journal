@@ -57,3 +57,24 @@ export function fuzzyFilter<T>(items: T[], query: string, getHay: (item: T) => s
     .sort((a, b) => b.score - a.score);
   return scored.map((s) => s.item);
 }
+
+// Retorna pares [start,end] dos trechos do texto original que casam com a busca.
+// Marca tokens contíguos cuja versão normalizada bate (include/startsWith/levenshtein).
+export function fuzzyMatchRanges(original: string, query: string): Array<[number, number]> {
+  const q = normalizeForSearch(query);
+  if (!q || !original) return [];
+  const ranges: Array<[number, number]> = [];
+  // Token regex no texto original (preserva índices reais).
+  const re = /[\p{Letter}\p{Number}]+/gu;
+  let m: RegExpExecArray | null;
+  const tol = Math.max(1, Math.floor(q.length / 4));
+  while ((m = re.exec(original)) !== null) {
+    const tok = m[0];
+    const norm = normalizeForSearch(tok);
+    if (!norm) continue;
+    if (norm === q || norm.startsWith(q) || norm.includes(q) || levenshtein(norm, q) <= tol) {
+      ranges.push([m.index, m.index + tok.length]);
+    }
+  }
+  return ranges;
+}
