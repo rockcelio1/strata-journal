@@ -343,7 +343,7 @@ function RdoDetailPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
         {(["manha", "tarde", "noite"] as const).map((p) => (
           <Card key={p} className="p-4">
             <div className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Cloud className="h-3 w-3" /> {p === "manha" ? "Manhã" : p === "tarde" ? "Tarde" : "Noite"}</div>
@@ -351,6 +351,15 @@ function RdoDetailPage() {
           </Card>
         ))}
       </div>
+      {r.status === "rascunho" && isAuthor && (
+        <div className="mb-4">
+          <EditarClimaRascunho
+            rdoId={rdoId}
+            atual={{ clima_manha: r.clima_manha, clima_tarde: r.clima_tarde, clima_noite: r.clima_noite }}
+            onSaved={refresh}
+          />
+        </div>
+      )}
 
       <ClimaRelatorio
         rdoId={rdoId}
