@@ -110,10 +110,14 @@ export function GlobalHoverHints() {
         zIndex: 9999,
         maxWidth: 320,
         pointerEvents: "none",
+        background: "linear-gradient(135deg, var(--brand), color-mix(in oklab, var(--brand) 75%, black))",
+        color: "var(--brand-foreground)",
+        boxShadow: "0 10px 30px -10px color-mix(in oklab, var(--brand) 55%, transparent), 0 0 0 1px color-mix(in oklab, var(--brand) 60%, transparent)",
       }}
-      className="rounded-lg border border-brand/40 bg-popover/95 px-3 py-2 text-xs text-popover-foreground shadow-lg backdrop-blur-md animate-in fade-in-0 zoom-in-95"
+      className="rounded-lg px-3 py-2 text-xs font-medium leading-snug animate-in fade-in-0 zoom-in-95"
     >
       {state.text}
     </div>
   );
 }
+
