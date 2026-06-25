@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast } from "@phosphor-icons/react";
+import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/galeria")({
