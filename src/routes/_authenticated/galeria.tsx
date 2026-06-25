@@ -64,6 +64,24 @@ function GaleriaPage() {
     return () => { supabase.removeChannel(ch); };
   }, [me?.profile?.empresa_id, qc]);
 
+  const flatItens = useMemo(() => (itens as any[]) ?? [], [itens]);
+  const previewIdx = useMemo(
+    () => (preview ? flatItens.findIndex((i) => i.id === preview.id) : -1),
+    [preview, flatItens],
+  );
+  const goPrev = () => { if (previewIdx > 0) setPreview(flatItens[previewIdx - 1]); };
+  const goNext = () => { if (previewIdx >= 0 && previewIdx < flatItens.length - 1) setPreview(flatItens[previewIdx + 1]); };
+
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [preview, previewIdx, flatItens]);
+
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(t);
