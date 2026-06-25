@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
+import { GlobalHoverHints } from "@/components/global-hover-hints";
+
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
