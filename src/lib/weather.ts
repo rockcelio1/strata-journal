@@ -109,15 +109,63 @@ async function fetchComRetry(url: string, tentativas = 3, baseDelayMs = 400): Pr
   throw ultimaErro instanceof Error ? ultimaErro : new Error("Falha ao consultar serviço externo");
 }
 
+// ----------------- Métricas / logs -----------------
+function wlog(etapa: string, dados: Record<string, unknown> = {}) {
+  try { console.info(`[weather:${etapa}]`, { ts: new Date().toISOString(), ...dados }); } catch { /* noop */ }
+}
+function werr(etapa: string, erro: unknown, dados: Record<string, unknown> = {}) {
+  try { console.warn(`[weather:${etapa}:erro]`, { ts: new Date().toISOString(), erro: (erro as any)?.message ?? String(erro), ...dados }); } catch { /* noop */ }
+}
+
+// ----------------- Elevação (fallback de altitude) -----------------
+async function fetchElevacao(lat: number, lon: number): Promise<number | null> {
+  const key = `elev:${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const cached = cacheGet<number | null>(key);
+  if (cached !== null) return cached;
+  try {
+    const r = await fetchComRetry(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`, 2, 300);
+    const j = await r.json();
+    const e = Array.isArray(j?.elevation) ? Number(j.elevation[0]) : null;
+    const val = Number.isFinite(e as number) ? (e as number) : null;
+    cacheSet(key, val, 24 * 60 * 60 * 1000);
+    wlog("elevacao", { lat, lon, elevacao_m: val });
+    return val;
+  } catch (e) {
+    werr("elevacao", e, { lat, lon });
+    cacheSet(key, null, 10 * 60 * 1000);
+    return null;
+  }
+}
+
 // ----------------- Clima -----------------
-export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapshot> {
+export async function fetchClima(lat: number, lon: number, elevacaoOverride?: number | null): Promise<ClimaSnapshot> {
+  const t0 = performance.now?.() ?? Date.now();
   const key = `clima:${lat.toFixed(3)},${lon.toFixed(3)}`;
   const cached = cacheGet<ClimaSnapshot>(key);
-  if (cached) return cached;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
-  const r = await fetchComRetry(url);
-  const j = await r.json();
-  const c = j.current;
+  if (cached) { wlog("clima:cache_hit", { lat, lon }); return cached; }
+
+  // Fallback de altitude: se não vier do GPS, busca elevação do terreno (melhora ajuste de temperatura)
+  let elev = elevacaoOverride ?? null;
+  if (elev === null || !Number.isFinite(elev)) {
+    elev = await fetchElevacao(lat, lon);
+  }
+  const elevParam = elev !== null ? `&elevation=${elev}` : "";
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}${elevParam}&current=temperature_2m,wind_speed_10m,precipitation,weather_code&timezone=America%2FSao_Paulo`;
+  wlog("clima:request", { lat, lon, elevacao_m: elev });
+  let j: any;
+  try {
+    const r = await fetchComRetry(url);
+    j = await r.json();
+  } catch (e) {
+    werr("clima:request", e, { lat, lon });
+    throw e;
+  }
+  const c = j?.current;
+  if (!c || typeof c.temperature_2m !== "number") {
+    werr("clima:parse", new Error("payload sem current.temperature_2m"), { lat, lon, payload_keys: j ? Object.keys(j) : null });
+    throw new Error("Resposta de previsão inválida.");
+  }
   const snap: ClimaSnapshot = {
     temperatura_c: c.temperature_2m,
     vento_kmh: c.wind_speed_10m,
@@ -128,7 +176,8 @@ export async function fetchClima(lat: number, lon: number): Promise<ClimaSnapsho
     longitude: lon,
     timestamp: c.time,
   };
-  cacheSet(key, snap, 10 * 60 * 1000); // 10 min
+  cacheSet(key, snap, 10 * 60 * 1000);
+  wlog("clima:ok", { lat, lon, dur_ms: Math.round((performance.now?.() ?? Date.now()) - t0), codigo: snap.codigo });
   return snap;
 }
 
