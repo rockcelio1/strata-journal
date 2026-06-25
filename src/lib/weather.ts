@@ -363,29 +363,94 @@ export async function fetchPrevisao5Dias(lat: number, lon: number): Promise<DiaP
   return out;
 }
 
+// Geocoding via Nominatim (suporta endereço completo com rua + número).
+async function geocodeNominatim(q: string): Promise<{ latitude: number; longitude: number; nome: string } | null> {
+  const termo = q.trim();
+  if (!termo) return null;
+  const key = `nominatim:${termo.toLowerCase()}`;
+  const cached = cacheGet<{ latitude: number; longitude: number; nome: string } | null>(key);
+  if (cached !== null) return cached;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&accept-language=pt-BR&q=${encodeURIComponent(termo)}`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(url, { headers: { Accept: "application/json" }, signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) { cacheSet(key, null, 10 * 60 * 1000); return null; }
+    const j = await r.json();
+    const hit = Array.isArray(j) ? j[0] : null;
+    if (!hit?.lat || !hit?.lon) { cacheSet(key, null, 10 * 60 * 1000); return null; }
+    const value = { latitude: parseFloat(hit.lat), longitude: parseFloat(hit.lon), nome: hit.display_name as string };
+    cacheSet(key, value, 24 * 60 * 60 * 1000);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve CEP → lat/lon via BrasilAPI v2 (precisão de quadra quando disponível).
+async function geocodeCepBrasilAPI(cep: string): Promise<{ latitude: number; longitude: number; nome: string } | null> {
+  const digits = cep.replace(/\D/g, "");
+  if (digits.length !== 8) return null;
+  const key = `brasilapi:${digits}`;
+  const cached = cacheGet<{ latitude: number; longitude: number; nome: string } | null>(key);
+  if (cached !== null) return cached;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) { cacheSet(key, null, 10 * 60 * 1000); return null; }
+    const j = await r.json();
+    const lat = parseFloat(j?.location?.coordinates?.latitude ?? "");
+    const lon = parseFloat(j?.location?.coordinates?.longitude ?? "");
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) { cacheSet(key, null, 10 * 60 * 1000); return null; }
+    const nome = [j.street, j.neighborhood, j.city && j.state ? `${j.city} - ${j.state}` : j.city].filter(Boolean).join(", ");
+    const value = { latitude: lat, longitude: lon, nome: nome || `CEP ${digits.slice(0,5)}-${digits.slice(5)}` };
+    cacheSet(key, value, 24 * 60 * 60 * 1000);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 async function resolveGeoBrasil(endereco: string) {
-  let g = await geocodeEndereco(endereco);
-  if (g) return g;
   const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
+
+  // 1) Endereço completo via Nominatim (rua + número, mais preciso)
+  let g = await geocodeNominatim(`${endereco}, Brasil`);
+  if (g) return g;
+
+  // 2) CEP via BrasilAPI v2 (coordenadas precisas por CEP)
   if (cep) {
+    g = await geocodeCepBrasilAPI(cep);
+    if (g) return g;
+    // 3) ViaCEP → cidade/UF → Nominatim/Open-Meteo
     try {
       const info = await fetchCepInfo(cep);
       if (info?.localidade && info?.uf) {
-        g = await geocodeEndereco(`${info.localidade}, ${info.uf}, Brasil`);
+        const cidade = `${info.localidade}, ${info.uf}, Brasil`;
+        g = await geocodeNominatim(cidade);
+        if (g) return g;
+        g = await geocodeEndereco(`${info.localidade}, ${info.uf}`);
         if (g) return g;
       }
     } catch { /* ignore */ }
-    g = await geocodeEndereco(cep);
-    if (g) return g;
   }
+
+  // 4) "Cidade - UF" no texto
   const m = endereco.match(/([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'.-]{2,})\s*[-/,]\s*([A-Z]{2})\b/);
   if (m) {
-    g = await geocodeEndereco(`${m[1].trim()}, ${m[2]}, Brasil`);
+    g = await geocodeNominatim(`${m[1].trim()}, ${m[2]}, Brasil`);
+    if (g) return g;
+    g = await geocodeEndereco(`${m[1].trim()}, ${m[2]}`);
     if (g) return g;
   }
+
+  // 5) Última vírgula como cidade
   const ultimo = endereco.split(",").map((s) => s.trim()).filter(Boolean).pop();
   if (ultimo && ultimo.length >= 3) {
-    g = await geocodeEndereco(`${ultimo}, Brasil`);
+    g = await geocodeEndereco(ultimo);
     if (g) return g;
   }
   return null;
