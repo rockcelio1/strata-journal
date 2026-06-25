@@ -301,6 +301,9 @@ function NovoRdoPage() {
     return `há ${h}h`;
   }
 
+  function describeWeatherError(e: any, fallback: string): string {
+    if (e instanceof WeatherError) {
+      const slug = e.status ? `${e.code}:${e.status}` : e.code;
       return `${e.message} [${slug}]`;
     }
     return e?.message ?? fallback;
