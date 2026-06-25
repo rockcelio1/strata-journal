@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { listRdos, createRdo } from "@/lib/rdo.functions";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { listRdos, createRdo, deleteRdo, adminDeleteRdo } from "@/lib/rdo.functions";
+import { getMe } from "@/lib/core.functions";
 import { listObras } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Plus, FileText, CloudArrowUp, WifiSlash, CheckCircle, WarningCircle,
-  ArrowClockwise, X, MagnifyingGlass, DownloadSimple, ListBullets, CalendarBlank,
+  ArrowClockwise, X, MagnifyingGlass, DownloadSimple, ListBullets, CalendarBlank, Trash,
 } from "@phosphor-icons/react";
 import { rdoStatusMeta } from "@/components/status";
+import { Highlight } from "@/components/Highlight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
