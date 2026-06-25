@@ -509,7 +509,7 @@ export async function fetchPrevisao5DiasPorEndereco(endereco: string): Promise<{
   if (!v.ok) throw new Error(v.mensagem);
   const g = await resolveGeoBrasil(endereco);
   if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
-  const dias = await fetchPrevisao5Dias(g.latitude, g.longitude);
+  const dias = await fetchPrevisao5Dias(g.latitude, g.longitude, { dias: 7 });
   return { local: g.nome, dias };
 }
 
