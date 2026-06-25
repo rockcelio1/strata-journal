@@ -118,11 +118,17 @@ function ObraDetail() {
 
               {/* Recentes */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                <Card className="p-0 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <Card className="p-0 overflow-hidden transition-colors hover:bg-muted/30 hover:ring-1 hover:ring-brand/30 focus-within:ring-2 focus-within:ring-ring">
+                  <button
+                    type="button"
+                    onClick={() => setView("relatorios")}
+                    aria-label="Abrir relatórios desta obra"
+                    className="w-full flex items-center justify-between px-4 py-3 border-b border-border text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/50"
+                  >
                     <h3 className="text-brand font-medium">Relatórios recentes</h3>
-                    <button onClick={() => setView("relatorios")} className="text-xs text-brand hover:underline">Ver tudo</button>
-                  </div>
+                    <span className="text-xs text-brand hover:underline">Ver tudo</span>
+                  </button>
+
                   {data.rdos.length === 0 ? (
                     <div className="p-8 text-center text-sm text-muted-foreground">
                       <FileText size={28} className="mx-auto mb-2 opacity-60" />
