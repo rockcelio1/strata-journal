@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, fetchClimaPorCep, fetchPrevisao5DiasPorCep, detectarCepAutomaticamente, validarCep, diffPrevisoes, WeatherError, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
+import { measure, dedupe } from "@/lib/perf";
 import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
