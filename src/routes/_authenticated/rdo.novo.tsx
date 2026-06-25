@@ -685,8 +685,31 @@ function NovoRdoPage() {
                   {climaStatus === "error" && "Falha — toque em Tentar novamente"}
                   {climaStatus === "idle" && "Sem previsão"}
                 </span>
+                {previsaoAt && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums" title={new Date(previsaoAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}>
+                    Atualizado {tempoRelativo(previsaoAt)}
+                  </span>
+                )}
+                {climaLoading && previsao5 && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <CircleNotch size={12} className="animate-spin" /> atualizando…
+                  </span>
+                )}
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap items-center">
+                <Select value={String(refreshMin)} onValueChange={(v) => {
+                  const n = Number(v) as 1 | 5 | 10;
+                  setRefreshMin(n); localStorage.setItem("rdo:weather-refresh-min", String(n));
+                }}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs" aria-label="Intervalo de atualização">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">A cada 1 min</SelectItem>
+                    <SelectItem value="5">A cada 5 min</SelectItem>
+                    <SelectItem value="10">A cada 10 min (padrão)</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button type="button" size="sm" variant="outline" disabled={climaLoading || !form.obra_id} onClick={importarClimaPorObra}>
                   <CloudSun size={16} className="mr-1" /> Pelo endereço da obra
                 </Button>
