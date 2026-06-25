@@ -206,7 +206,7 @@ function NovoRdoPage() {
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C`);
     } catch (e: any) {
       const msg = e?.message ?? "Não foi possível obter o clima";
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -251,7 +251,7 @@ function NovoRdoPage() {
       }
     } catch (e: any) {
       const msg = e?.message ?? "Não foi possível obter o clima";
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -270,7 +270,7 @@ function NovoRdoPage() {
     const v = validarCep(cepInput);
     if (!v.ok) {
       const msg = `${v.mensagem} [${v.code}]`;
-      setClimaErro(msg); toast.error(msg); return;
+      setClimaErro(msg); return;
     }
     setCepInput(v.cep);
     setClimaStatus("loading"); setClimaErro(null);
@@ -283,7 +283,7 @@ function NovoRdoPage() {
       toast.success(`${snap.descricao} · ${snap.temperatura_c}°C — ${snap.local}`);
     } catch (e: any) {
       const msg = describeWeatherError(e, "Não foi possível obter o clima pelo CEP");
-      setClimaStatus("error"); setClimaErro(msg); toast.error(msg);
+      setClimaStatus("error"); setClimaErro(msg);
     }
   }
 
@@ -301,7 +301,7 @@ function NovoRdoPage() {
       setClimaStatus("success");
     } catch (e: any) {
       const msg = describeWeatherError(e, "Não foi possível detectar o CEP automaticamente");
-      setClimaErro(msg); setClimaStatus("error"); toast.error(msg);
+      setClimaErro(msg); setClimaStatus("error");
     } finally {
       setCepDetecting(false);
     }
