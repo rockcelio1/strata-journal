@@ -6,6 +6,7 @@ import {
   getRdo, submitRdo, approveRdo, deleteRdo, adminDeleteRdo, adminDisableRdo,
   listRdoLogs, listRdoAnexos, registrarAnexo, removerAnexo,
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
+  updateRdoClimaRascunho,
 } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
