@@ -114,5 +114,6 @@ export function SkeletonRenderer({
 
 export function clearSkeletonCache() {
   cache.clear();
-  prefetched = false;
+  prefetchPromise = null;
 }
+
