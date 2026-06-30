@@ -278,6 +278,38 @@ export const listRdoLogs = createServerFn({ method: "GET" })
     return { rows: rows ?? [], total: count ?? 0 };
   });
 
+/** Lista logs de toda a empresa do usuário com filtros (autor, ação, intervalo). */
+export const listEmpresaRdoLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      autor_id: z.string().uuid().nullable().optional(),
+      acao: z.string().nullable().optional(),
+      from: z.string().nullable().optional(),
+      to: z.string().nullable().optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+      offset: z.number().int().min(0).default(0),
+    }).parse(d ?? {}),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    if (!me.data) throw new Error("Sem empresa");
+    let q = context.supabase
+      .from("rdo_audit_logs")
+      .select("*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email), rdo:rdos(id, numero)", { count: "exact" })
+      .eq("empresa_id", me.data.empresa_id);
+    if (data.autor_id) q = q.eq("autor_id", data.autor_id);
+    if (data.acao) q = q.eq("acao", data.acao);
+    if (data.from) q = q.gte("created_at", data.from);
+    if (data.to) q = q.lte("created_at", data.to);
+    const { data: rows, error, count } = await q
+      .order("created_at", { ascending: false })
+      .range(data.offset, data.offset + data.limit - 1);
+    if (error) throw error;
+    return { rows: rows ?? [], total: count ?? 0 };
+  });
+
+
 
 // ============== ANEXOS ==============
 export const listRdoAnexos = createServerFn({ method: "GET" })
