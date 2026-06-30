@@ -171,10 +171,10 @@ function GaleriaPage() {
             {selectMode && (
               <>
                 <span className="text-xs text-muted-foreground tabular-nums">{selected.size} selecionada(s)</span>
-                <Button size="sm" variant="destructive" disabled={selected.size === 0} onClick={() => setConfirmStep(1)}>
-                  <Trash size={14} className="mr-1" /> Excluir
+                <Button size="sm" variant="destructive" disabled={selected.size === 0 || deleting} onClick={() => setConfirmStep(1)}>
+                  <Trash size={14} className="mr-1" /> {failedIds.length > 0 ? "Tentar novamente" : "Excluir"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setSelectMode(false); setSelected(new Set()); }}>
+                <Button size="sm" variant="ghost" disabled={deleting} onClick={() => { setSelectMode(false); setSelected(new Set()); setFailedIds([]); setLastError(null); }}>
                   Cancelar
                 </Button>
               </>
