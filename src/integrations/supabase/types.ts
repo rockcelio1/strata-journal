@@ -55,6 +55,42 @@ export type Database = {
           },
         ]
       }
+      button_effect_settings: {
+        Row: {
+          button_key: string
+          button_label: string
+          created_at: string
+          effect_type: string
+          id: string
+          is_active: boolean
+          screen_key: string
+          screen_name: string
+          updated_at: string
+        }
+        Insert: {
+          button_key: string
+          button_label: string
+          created_at?: string
+          effect_type?: string
+          id?: string
+          is_active?: boolean
+          screen_key: string
+          screen_name: string
+          updated_at?: string
+        }
+        Update: {
+          button_key?: string
+          button_label?: string
+          created_at?: string
+          effect_type?: string
+          id?: string
+          is_active?: boolean
+          screen_key?: string
+          screen_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       convites: {
         Row: {
           aceito: boolean
