@@ -383,7 +383,11 @@ function GaleriaPage() {
               )}
               <div className="bg-background text-foreground p-3 flex items-center justify-between gap-3 flex-wrap">
                 <div className="text-sm min-w-0">
-                  <div className="font-medium truncate">{preview.legenda || preview.nome}</div>
+                  <div className="font-medium truncate">
+                    {preview.tipo === "assinatura"
+                      ? `Assinatura — ${preview.autor?.nome ?? "Usuário"}`
+                      : (preview.legenda || preview.nome)}
+                  </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {preview.rdos?.obras?.nome} · RDO #{preview.rdos?.numero} · {preview.autor?.nome ?? "—"} · {new Date(preview.created_at).toLocaleString("pt-BR")}
                   </div>
