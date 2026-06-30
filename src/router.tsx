@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { AutoSkeleton } from "./components/skeletons/AutoSkeleton";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
@@ -10,13 +11,15 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: "intent",
-    defaultPreloadDelay: 20, // hover/focus quase instantâneo dispara preload
-    defaultPreloadStaleTime: 0, // TanStack Query controla a frescura
-    defaultPendingMs: 200,
-    defaultPendingMinMs: 150,
+    defaultPreloadDelay: 20,
+    defaultPreloadStaleTime: 0,
+    defaultPendingMs: 150,
+    defaultPendingMinMs: 200,
+    defaultPendingComponent: AutoSkeleton,
   });
 
   return router;
 };
+
 
 

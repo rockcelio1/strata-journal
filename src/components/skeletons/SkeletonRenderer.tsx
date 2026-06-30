@@ -13,25 +13,52 @@ type Props = {
 };
 
 const cache = new Map<string, SkeletonEffectType>();
-let prefetched = false;
+let prefetchPromise: Promise<void> | null = null;
 
-async function prefetchAll() {
-  if (prefetched) return;
-  prefetched = true;
-  try {
-    const { data, error } = await supabase
-      .from("skeleton_loading_settings")
-      .select("screen_key, effect_type, is_active");
-    if (error || !data) return;
-    for (const row of data as { screen_key: string; effect_type: string; is_active: boolean }[]) {
-      if (row.is_active && isSkeletonEffect(row.effect_type)) {
-        cache.set(row.screen_key, row.effect_type);
+async function prefetchAll(): Promise<void> {
+  if (prefetchPromise) return prefetchPromise;
+  prefetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("skeleton_loading_settings")
+        .select("screen_key, effect_type, is_active");
+      if (error || !data) return;
+      cache.clear();
+      for (const row of data as { screen_key: string; effect_type: string; is_active: boolean }[]) {
+        if (row.is_active && isSkeletonEffect(row.effect_type)) {
+          cache.set(row.screen_key, row.effect_type);
+        }
       }
+    } catch {
+      /* silently fall back to defaults */
     }
+  })();
+  return prefetchPromise;
+}
+
+// Eager prefetch on module load (client only) so first render has settings ready
+if (typeof window !== "undefined") {
+  void prefetchAll();
+  // Realtime: when admin saves a setting, refresh cache immediately
+  try {
+    supabase
+      .channel("skeleton_loading_settings_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "skeleton_loading_settings" },
+        () => {
+          prefetchPromise = null;
+          void prefetchAll().then(() => {
+            window.dispatchEvent(new CustomEvent("skeleton-settings-updated"));
+          });
+        },
+      )
+      .subscribe();
   } catch {
-    /* silently fall back to defaults */
+    /* ignore */
   }
 }
+
 
 export function SkeletonRenderer({
   screenKey,
@@ -87,5 +114,6 @@ export function SkeletonRenderer({
 
 export function clearSkeletonCache() {
   cache.clear();
-  prefetched = false;
+  prefetchPromise = null;
 }
+
