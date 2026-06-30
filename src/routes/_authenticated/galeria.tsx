@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { listGaleria } from "@/lib/rdo.functions";
+import { listGaleria, removerAnexo } from "@/lib/rdo.functions";
 import { listObras } from "@/lib/obras.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,9 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut } from "@phosphor-icons/react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { SkeletonRenderer } from "@/components/skeletons";
+import { usePermissoes } from "@/hooks/usePermissoes";
 
 export const Route = createFileRoute("/_authenticated/galeria")({
   component: GaleriaPage,
@@ -29,12 +32,18 @@ function GaleriaPage() {
   const galeriaFn = useServerFn(listGaleria);
   const obrasFn = useServerFn(listObras);
   const meFn = useServerFn(getMe);
+  const removerFn = useServerFn(removerAnexo);
+  const { isMaster } = usePermissoes();
 
   const [obraId, setObraId] = useState<string>("");
   const [tipo, setTipo] = useState<string>("");
   const [data, setData] = useState<string>("");
   const [preview, setPreview] = useState<any | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
@@ -99,6 +108,30 @@ function GaleriaPage() {
     catch { toast.error("Não foi possível copiar"); }
   }
 
+  function toggleSelected(id: string) {
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
+
+  async function doDelete() {
+    setDeleting(true);
+    const ids = Array.from(selected);
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try { await removerFn({ data: { id } }); ok++; } catch { fail++; }
+    }
+    setDeleting(false);
+    setConfirmStep(0);
+    setSelected(new Set());
+    setSelectMode(false);
+    qc.invalidateQueries({ queryKey: ["galeria"] });
+    if (fail === 0) toast.success(`${ok} mídia(s) excluída(s)`);
+    else toast.error(`${ok} excluída(s), ${fail} falha(s)`);
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <header className="flex items-end justify-between mb-4 flex-wrap gap-3">
@@ -108,7 +141,28 @@ function GaleriaPage() {
             <Broadcast size={14} className="text-emerald-600 animate-pulse" /> Atualização em tempo real
           </p>
         </div>
+        {isMaster && (
+          <div className="flex items-center gap-2">
+            {selectMode && (
+              <>
+                <span className="text-xs text-muted-foreground tabular-nums">{selected.size} selecionada(s)</span>
+                <Button size="sm" variant="destructive" disabled={selected.size === 0} onClick={() => setConfirmStep(1)}>
+                  <Trash size={14} className="mr-1" /> Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setSelectMode(false); setSelected(new Set()); }}>
+                  Cancelar
+                </Button>
+              </>
+            )}
+            {!selectMode && (
+              <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>
+                <Trash size={14} className="mr-1" /> Selecionar para excluir
+              </Button>
+            )}
+          </div>
+        )}
       </header>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
@@ -184,8 +238,16 @@ function GaleriaPage() {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
                         return (
-                          <Card key={it.id} className="facom-glow overflow-hidden group cursor-pointer">
-                            <button onClick={() => setPreview(it)} className="block relative aspect-square w-full bg-muted overflow-hidden">
+                          <Card key={it.id} className={`facom-glow overflow-hidden group cursor-pointer relative ${selectMode && selected.has(it.id) ? "ring-2 ring-destructive" : ""}`}>
+                            {selectMode && (
+                              <label className="absolute top-1 left-1 z-10 bg-background/90 rounded p-1 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox checked={selected.has(it.id)} onCheckedChange={() => toggleSelected(it.id)} aria-label="Selecionar mídia" />
+                              </label>
+                            )}
+                            <button
+                              onClick={() => selectMode ? toggleSelected(it.id) : setPreview(it)}
+                              className="block relative aspect-square w-full bg-muted overflow-hidden"
+                            >
                               {it.tipo === "imagem" && it.url ? (
                                 <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                               ) : it.tipo === "video" && it.url ? (
@@ -193,7 +255,7 @@ function GaleriaPage() {
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
-                              {recente && (
+                              {recente && !selectMode && (
                                 <Badge className="absolute top-1 left-1 bg-emerald-600 text-white border-0">
                                   <Broadcast size={10} className="mr-1 animate-pulse" /> Recebido agora
                                 </Badge>
@@ -298,6 +360,44 @@ function GaleriaPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmStep === 1} onOpenChange={(o) => !o && setConfirmStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selected.size} mídia(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá permanentemente os arquivos selecionados da galeria e do armazenamento. Não poderá ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); setConfirmStep(2); }}>
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmStep === 2} onOpenChange={(o) => !o && !deleting && setConfirmStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirme novamente: <strong>{selected.size} mídia(s)</strong> serão excluídas definitivamente. Essa é a sua última chance de cancelar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Não, cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); doDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Excluindo…" : "Sim, excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
