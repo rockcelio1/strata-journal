@@ -423,7 +423,7 @@ export const listGaleria = createServerFn({ method: "GET" })
         const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
         url = signed.data?.signedUrl ?? null;
       }
-      return { ...a, tipo: tipoDe(a.mime_type), url };
+      return { ...a, tipo: tipoDe(a.mime_type, a.storage_path, a.nome), url };
     }));
     return withUrls;
   });
