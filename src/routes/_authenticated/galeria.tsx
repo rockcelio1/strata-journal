@@ -41,7 +41,7 @@ function GaleriaPage() {
     () => ({ obra_id: obraId || undefined, tipo: (tipo || undefined) as Tipo | undefined, data: data || undefined }),
     [obraId, tipo, data],
   );
-  const { data: itens = [] } = useQuery({
+  const { data: itens = [], isPending: itensLoading } = useQuery({
     queryKey: ["galeria", filtros],
     queryFn: () => galeriaFn({ data: filtros }),
     refetchOnWindowFocus: true,
@@ -150,7 +150,9 @@ function GaleriaPage() {
         )}
       </Card>
 
-      {(itens as any[]).length === 0 ? (
+      {itensLoading ? (
+        <SkeletonRenderer screenKey="galeria" isLoading={true} layout="gallery" fallbackVariant="typewriter" />
+      ) : (itens as any[]).length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
           <ImageIcon size={36} className="mx-auto mb-2" />
           Nenhuma mídia encontrada com os filtros atuais.
