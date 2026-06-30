@@ -98,7 +98,7 @@ export function SkeletonRenderer({
   const registered = Boolean(screen);
   const resolvedLayout: SkeletonLayoutType = layout ?? screen?.layout ?? "default";
   const defaultEffect: SkeletonEffectType =
-    fallbackVariant ?? screen?.defaultEffect ?? "shimmer";
+    fallbackVariant ?? screen?.defaultEffect ?? "none";
 
   // Re-render on cache/prefetch updates so saved settings apply on the CURRENT screen.
   useSyncExternalStore(
