@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Sparkles, RotateCcw, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sparkles, RotateCcw, Save, Eye } from "lucide-react";
 import {
   BUTTON_EFFECTS,
   ButtonEffectPreview,
+  ButtonEffectRenderer,
   buttonRegistry,
   clearButtonEffectsCache,
   ensureButtonEffectsLoaded,
@@ -107,87 +109,120 @@ function ButtonEffectsSettingsPage() {
         </div>
       </header>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Input placeholder="Buscar botão..." value={search} onChange={(e) => setSearch(e.target.value)} className="sm:max-w-xs" />
-        <Select value={screenFilter} onValueChange={setScreenFilter}>
-          <SelectTrigger className="sm:w-[220px]"><SelectValue placeholder="Todas as telas" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as telas</SelectItem>
-            {screens.map((s) => (<SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="config">
+        <TabsList>
+          <TabsTrigger value="config">Configurar</TabsTrigger>
+          <TabsTrigger value="preview"><Eye className="h-4 w-4 mr-1" /> Prévia por tela</TabsTrigger>
+          <TabsTrigger value="galeria">Galeria de efeitos</TabsTrigger>
+        </TabsList>
 
-      <Card className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr className="text-left">
-              <th className="p-2">Tela</th>
-              <th className="p-2">Botão</th>
-              <th className="p-2">Ação</th>
-              <th className="p-2">Efeito</th>
-              <th className="p-2">Prévia</th>
-              <th className="p-2 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((b) => {
-              const current = getCurrent(b.key);
-              const dirty = pending[b.key] !== undefined && pending[b.key] !== getButtonEffectSync(b.key);
-              return (
-                <tr key={b.key} className="border-t border-border align-middle">
-                  <td className="p-2 whitespace-nowrap">{b.screenName}</td>
-                  <td className="p-2">
-                    <div className="font-medium">{b.label}</div>
-                    <div className="text-xs text-muted-foreground">{b.key}</div>
-                  </td>
-                  <td className="p-2 text-xs text-muted-foreground">{b.selectorHint}</td>
-                  <td className="p-2">
-                    <Select
-                      value={current}
-                      onValueChange={(v) => setPending((p) => ({ ...p, [b.key]: v as ButtonEffectType }))}
-                    >
-                      <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {BUTTON_EFFECTS.map((e) => (
-                          <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-2"><ButtonEffectPreview effect={current} label={b.label.slice(0, 14)} /></td>
-                  <td className="p-2">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => restoreDefault(b.key)} title="Restaurar padrão">
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" onClick={() => save(b.key)} disabled={saving === b.key || !dirty}>
-                        <Save className="h-4 w-4" />
-                        {saving === b.key ? "Salvando..." : "Salvar"}
-                      </Button>
-                    </div>
-                  </td>
+        <TabsContent value="config" className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input placeholder="Buscar botão..." value={search} onChange={(e) => setSearch(e.target.value)} className="sm:max-w-xs" />
+            <Select value={screenFilter} onValueChange={setScreenFilter}>
+              <SelectTrigger className="sm:w-[220px]"><SelectValue placeholder="Todas as telas" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as telas</SelectItem>
+                {screens.map((s) => (<SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Card className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr className="text-left">
+                  <th className="p-2">Tela</th>
+                  <th className="p-2">Botão</th>
+                  <th className="p-2">Ação</th>
+                  <th className="p-2">Efeito</th>
+                  <th className="p-2">Prévia</th>
+                  <th className="p-2 text-right">Ações</th>
                 </tr>
+              </thead>
+              <tbody>
+                {rows.map((b) => {
+                  const current = getCurrent(b.key);
+                  const dirty = pending[b.key] !== undefined && pending[b.key] !== getButtonEffectSync(b.key);
+                  return (
+                    <tr key={b.key} className="border-t border-border align-middle">
+                      <td className="p-2 whitespace-nowrap">{b.screenName}</td>
+                      <td className="p-2">
+                        <div className="font-medium">{b.label}</div>
+                        <div className="text-xs text-muted-foreground">{b.key}</div>
+                      </td>
+                      <td className="p-2 text-xs text-muted-foreground">{b.selectorHint}</td>
+                      <td className="p-2">
+                        <Select value={current} onValueChange={(v) => setPending((p) => ({ ...p, [b.key]: v as ButtonEffectType }))}>
+                          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {BUTTON_EFFECTS.map((e) => (<SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-2"><ButtonEffectPreview effect={current} label={b.label.slice(0, 14)} /></td>
+                      <td className="p-2">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => restoreDefault(b.key)} title="Restaurar padrão">
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" onClick={() => save(b.key)} disabled={saving === b.key || !dirty}>
+                            <Save className="h-4 w-4" />
+                            {saving === b.key ? "Salvando..." : "Salvar"}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {rows.length === 0 && (
+                  <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">Nenhum botão encontrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preview" className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Pré-visualize os efeitos aplicados (incluindo alterações não salvas) sem persistir no banco. Os botões abaixo não executam nenhuma ação real.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {screens.map((s) => {
+              const screenButtons = buttonRegistry.filter((b) => b.screenKey === s.key);
+              if (!screenButtons.length) return null;
+              return (
+                <Card key={s.key} className="p-4 space-y-3">
+                  <div className="text-sm font-medium">{s.name}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {screenButtons.map((b) => {
+                      const eff = getCurrent(b.key);
+                      return (
+                        <ButtonEffectRenderer key={b.key} buttonKey={b.key} effect={eff}>
+                          <Button type="button" variant="outline" onClick={(e) => e.preventDefault()} aria-label={`Prévia ${b.label}`}>
+                            {b.label}
+                          </Button>
+                        </ButtonEffectRenderer>
+                      );
+                    })}
+                  </div>
+                </Card>
               );
             })}
-            {rows.length === 0 && (
-              <tr><td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">Nenhum botão encontrado.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </Card>
+          </div>
+        </TabsContent>
 
-      <section className="space-y-2">
-        <h3 className="font-medium">Galeria de efeitos</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          {BUTTON_EFFECTS.filter((e) => e.value !== "none").map((e) => (
-            <div key={e.value} className="border border-border rounded-lg p-3 bg-card flex flex-col items-center gap-2">
-              <ButtonEffectPreview effect={e.value} label={e.label} />
-              <div className="text-xs text-muted-foreground text-center">{e.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+        <TabsContent value="galeria">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {BUTTON_EFFECTS.filter((e) => e.value !== "none").map((e) => (
+              <div key={e.value} className="border border-border rounded-lg p-3 bg-card flex flex-col items-center gap-2">
+                <ButtonEffectPreview effect={e.value} label={e.label} />
+                <div className="text-xs text-muted-foreground text-center">{e.desc}</div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
