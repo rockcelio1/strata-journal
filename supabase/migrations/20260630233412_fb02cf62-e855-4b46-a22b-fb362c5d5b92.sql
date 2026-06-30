@@ -1,0 +1,2 @@
+ALTER TABLE public.skeleton_loading_settings DROP CONSTRAINT skeleton_loading_settings_effect_type_check;
+ALTER TABLE public.skeleton_loading_settings ADD CONSTRAINT skeleton_loading_settings_effect_type_check CHECK (effect_type = ANY (ARRAY['none','shimmer','gradient','staggered','typewriter','layered','elastic','pulse','cascade','outline']));
