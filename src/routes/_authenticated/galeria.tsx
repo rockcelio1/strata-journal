@@ -313,7 +313,11 @@ function GaleriaPage() {
                               <Badge variant="outline" className="absolute top-1 right-1 bg-background/90 text-[10px] uppercase">{it.tipo}</Badge>
                             </button>
                             <div className="p-2 text-xs">
-                              <div className="font-medium truncate">{it.legenda || it.nome}</div>
+                              <div className="font-medium truncate">
+                                {it.tipo === "assinatura"
+                                  ? `Assinatura — ${it.autor?.nome ?? "Usuário"}`
+                                  : (it.legenda || it.nome)}
+                              </div>
                               <div className="text-muted-foreground truncate">
                                 {it.rdos?.obras?.nome} · <Link to="/rdo/$rdoId" params={{ rdoId: it.rdo_id }} className="hover:underline">#{it.rdos?.numero}</Link>
                               </div>
