@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut, Trash } from "@phosphor-icons/react";
+import { Image as ImageIcon, FilmStrip, FilePdf, FileText, PenNib, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { SkeletonRenderer } from "@/components/skeletons";
 import { usePermissoes } from "@/hooks/usePermissoes";
@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/galeria")({
   component: GaleriaPage,
 });
 
-type Tipo = "imagem" | "video" | "pdf" | "outro";
-const tipoIcon: Record<Tipo, any> = { imagem: ImageIcon, video: FilmStrip, pdf: FilePdf, outro: FileText };
+type Tipo = "imagem" | "video" | "pdf" | "assinatura" | "outro";
+const tipoIcon: Record<Tipo, any> = { imagem: ImageIcon, video: FilmStrip, pdf: FilePdf, assinatura: PenNib, outro: FileText };
 const RECEBIDO_AGORA_MS = 30_000;
 
 function GaleriaPage() {
@@ -98,7 +98,7 @@ function GaleriaPage() {
   }, []);
 
   const totals = useMemo(() => {
-    const t = { imagem: 0, video: 0, pdf: 0, outro: 0 };
+    const t = { imagem: 0, video: 0, pdf: 0, assinatura: 0, outro: 0 };
     for (const i of itens as any[]) t[i.tipo as Tipo]++;
     return t;
   }, [itens]);
@@ -168,7 +168,8 @@ function GaleriaPage() {
         <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
         <Stat label="Vídeos" value={totals.video}  icon={FilmStrip} active={tipo === "video"}  onClick={() => setTipo(tipo === "video"  ? "" : "video")} />
         <Stat label="PDFs"   value={totals.pdf}    icon={FilePdf}   active={tipo === "pdf"}    onClick={() => setTipo(tipo === "pdf"    ? "" : "pdf")} />
-        <Stat label="Outros" value={totals.outro}  icon={FileText}  active={tipo === "outro"}  onClick={() => setTipo(tipo === "outro"  ? "" : "outro")} />
+        <Stat label="Assinaturas" value={totals.assinatura} icon={PenNib} active={tipo === "assinatura"} onClick={() => setTipo(tipo === "assinatura" ? "" : "assinatura")} />
+        <Stat label="Outros" value={totals.outro} icon={FileText} active={tipo === "outro"} onClick={() => setTipo(tipo === "outro" ? "" : "outro")} />
       </div>
 
 
@@ -192,6 +193,7 @@ function GaleriaPage() {
               <SelectItem value="imagem">Imagem</SelectItem>
               <SelectItem value="video">Vídeo</SelectItem>
               <SelectItem value="pdf">PDF</SelectItem>
+              <SelectItem value="assinatura">Assinaturas</SelectItem>
               <SelectItem value="outro">Outros</SelectItem>
             </SelectContent>
           </Select>

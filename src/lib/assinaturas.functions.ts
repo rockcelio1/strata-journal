@@ -174,6 +174,18 @@ export const assinarRdo = createServerFn({ method: "POST" })
       user_agent: null,
     });
     if (error) throw error;
+
+    // Também registra como anexo do RDO para aparecer na galeria "Assinaturas"
+    await supabase.from("rdo_anexos").insert({
+      rdo_id: data.rdo_id,
+      empresa_id: empresaId,
+      autor_id: userId,
+      nome: `assinatura-${userId}.${ext}`,
+      legenda: "Assinatura digital",
+      storage_path: path,
+      mime_type: data.mime || "image/png",
+    });
+
     return { ok: true, storage_path: path };
   });
 
