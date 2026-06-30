@@ -98,7 +98,7 @@ function GaleriaPage() {
   }, []);
 
   const totals = useMemo(() => {
-    const t = { imagem: 0, video: 0, pdf: 0, outro: 0 };
+    const t = { imagem: 0, video: 0, pdf: 0, assinatura: 0, outro: 0 };
     for (const i of itens as any[]) t[i.tipo as Tipo]++;
     return t;
   }, [itens]);
