@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Image as ImageIcon, FilmStrip, FilePdf, FileText, PenNib, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { SkeletonRenderer } from "@/components/skeletons";
@@ -44,6 +45,9 @@ function GaleriaPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
   const [deleting, setDeleting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [failedIds, setFailedIds] = useState<string[]>([]);
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
@@ -118,19 +122,40 @@ function GaleriaPage() {
 
   async function doDelete() {
     setDeleting(true);
+    setLastError(null);
     const ids = Array.from(selected);
-    let ok = 0, fail = 0;
+    setProgress({ done: 0, total: ids.length });
+    const failed: string[] = [];
+    let ok = 0;
+    let lastMsg = "";
     for (const id of ids) {
-      try { await removerFn({ data: { id } }); ok++; } catch { fail++; }
+      try {
+        await removerFn({ data: { id } });
+        ok++;
+      } catch (e: any) {
+        failed.push(id);
+        lastMsg = e?.message ?? String(e);
+      }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
     }
     setDeleting(false);
-    setConfirmStep(0);
-    setSelected(new Set());
-    setSelectMode(false);
     qc.invalidateQueries({ queryKey: ["galeria"] });
-    if (fail === 0) toast.success(`${ok} mídia(s) excluída(s)`);
-    else toast.error(`${ok} excluída(s), ${fail} falha(s)`);
+    if (failed.length === 0) {
+      toast.success(`${ok} mídia(s) excluída(s) com sucesso`);
+      setConfirmStep(0);
+      setSelected(new Set());
+      setSelectMode(false);
+      setFailedIds([]);
+    } else {
+      // Preserve selection of failed items so the user can retry
+      setSelected(new Set(failed));
+      setFailedIds(failed);
+      setLastError(lastMsg || "Falha desconhecida ao excluir");
+      toast.error(`${ok} excluída(s), ${failed.length} falha(s). Tente novamente.`);
+      setConfirmStep(0);
+    }
   }
+
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -146,10 +171,10 @@ function GaleriaPage() {
             {selectMode && (
               <>
                 <span className="text-xs text-muted-foreground tabular-nums">{selected.size} selecionada(s)</span>
-                <Button size="sm" variant="destructive" disabled={selected.size === 0} onClick={() => setConfirmStep(1)}>
-                  <Trash size={14} className="mr-1" /> Excluir
+                <Button size="sm" variant="destructive" disabled={selected.size === 0 || deleting} onClick={() => setConfirmStep(1)}>
+                  <Trash size={14} className="mr-1" /> {failedIds.length > 0 ? "Tentar novamente" : "Excluir"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setSelectMode(false); setSelected(new Set()); }}>
+                <Button size="sm" variant="ghost" disabled={deleting} onClick={() => { setSelectMode(false); setSelected(new Set()); setFailedIds([]); setLastError(null); }}>
                   Cancelar
                 </Button>
               </>
@@ -162,6 +187,29 @@ function GaleriaPage() {
           </div>
         )}
       </header>
+
+      {deleting && progress.total > 0 && (
+        <div className="mb-4 rounded-md border bg-card p-3">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-medium">Excluindo mídias…</span>
+            <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total}</span>
+          </div>
+          <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
+        </div>
+      )}
+
+      {!deleting && lastError && failedIds.length > 0 && (
+        <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+          <div className="font-medium text-destructive">Falha ao excluir {failedIds.length} item(ns)</div>
+          <div className="text-xs text-muted-foreground mt-1 break-all">{lastError}</div>
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" variant="destructive" onClick={() => setConfirmStep(1)}>Tentar novamente</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setLastError(null); setFailedIds([]); setSelected(new Set()); setSelectMode(false); }}>Descartar</Button>
+          </div>
+        </div>
+      )}
+
+
 
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -388,6 +436,15 @@ function GaleriaPage() {
               Confirme novamente: <strong>{selected.size} mídia(s)</strong> serão excluídas definitivamente. Essa é a sua última chance de cancelar.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleting && progress.total > 0 && (
+            <div className="my-2">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span>Excluindo…</span>
+                <span className="tabular-nums">{progress.done}/{progress.total}</span>
+              </div>
+              <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Não, cancelar</AlertDialogCancel>
             <AlertDialogAction
