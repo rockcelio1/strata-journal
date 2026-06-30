@@ -108,6 +108,30 @@ function GaleriaPage() {
     catch { toast.error("Não foi possível copiar"); }
   }
 
+  function toggleSelected(id: string) {
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
+
+  async function doDelete() {
+    setDeleting(true);
+    const ids = Array.from(selected);
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try { await removerFn({ data: { id } }); ok++; } catch { fail++; }
+    }
+    setDeleting(false);
+    setConfirmStep(0);
+    setSelected(new Set());
+    setSelectMode(false);
+    qc.invalidateQueries({ queryKey: ["galeria"] });
+    if (fail === 0) toast.success(`${ok} mídia(s) excluída(s)`);
+    else toast.error(`${ok} excluída(s), ${fail} falha(s)`);
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <header className="flex items-end justify-between mb-4 flex-wrap gap-3">
@@ -117,7 +141,28 @@ function GaleriaPage() {
             <Broadcast size={14} className="text-emerald-600 animate-pulse" /> Atualização em tempo real
           </p>
         </div>
+        {isMaster && (
+          <div className="flex items-center gap-2">
+            {selectMode && (
+              <>
+                <span className="text-xs text-muted-foreground tabular-nums">{selected.size} selecionada(s)</span>
+                <Button size="sm" variant="destructive" disabled={selected.size === 0} onClick={() => setConfirmStep(1)}>
+                  <Trash size={14} className="mr-1" /> Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setSelectMode(false); setSelected(new Set()); }}>
+                  Cancelar
+                </Button>
+              </>
+            )}
+            {!selectMode && (
+              <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>
+                <Trash size={14} className="mr-1" /> Selecionar para excluir
+              </Button>
+            )}
+          </div>
+        )}
       </header>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
