@@ -121,19 +121,40 @@ function GaleriaPage() {
 
   async function doDelete() {
     setDeleting(true);
+    setLastError(null);
     const ids = Array.from(selected);
-    let ok = 0, fail = 0;
+    setProgress({ done: 0, total: ids.length });
+    const failed: string[] = [];
+    let ok = 0;
+    let lastMsg = "";
     for (const id of ids) {
-      try { await removerFn({ data: { id } }); ok++; } catch { fail++; }
+      try {
+        await removerFn({ data: { id } });
+        ok++;
+      } catch (e: any) {
+        failed.push(id);
+        lastMsg = e?.message ?? String(e);
+      }
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
     }
     setDeleting(false);
-    setConfirmStep(0);
-    setSelected(new Set());
-    setSelectMode(false);
     qc.invalidateQueries({ queryKey: ["galeria"] });
-    if (fail === 0) toast.success(`${ok} mídia(s) excluída(s)`);
-    else toast.error(`${ok} excluída(s), ${fail} falha(s)`);
+    if (failed.length === 0) {
+      toast.success(`${ok} mídia(s) excluída(s) com sucesso`);
+      setConfirmStep(0);
+      setSelected(new Set());
+      setSelectMode(false);
+      setFailedIds([]);
+    } else {
+      // Preserve selection of failed items so the user can retry
+      setSelected(new Set(failed));
+      setFailedIds(failed);
+      setLastError(lastMsg || "Falha desconhecida ao excluir");
+      toast.error(`${ok} excluída(s), ${failed.length} falha(s). Tente novamente.`);
+      setConfirmStep(0);
+    }
   }
+
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
