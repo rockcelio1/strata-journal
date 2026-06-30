@@ -29,11 +29,13 @@
   opacity: 0;
   transform: translateY(-50%);
 }
-.btnfx-typewriter:hover::after { opacity: 1; animation: btnfx-caret 800ms steps(2) infinite; }
+.btnfx-typewriter:hover::after,
+.btnfx-typewriter.btnfx-demo::after { opacity: 1; animation: btnfx-caret 800ms steps(2) infinite; }
 
 /* ---------------- Rocket ---------------- */
 .btnfx-rocket { will-change: transform; }
-.btnfx-rocket:hover { transform: translate(2px, -2px) rotate(-2deg); }
+.btnfx-rocket:hover,
+.btnfx-rocket.btnfx-demo { transform: translate(2px, -2px) rotate(-2deg); }
 .btnfx-rocket:active { transform: translate(3px, -3px) rotate(-3deg) scale(0.98); }
 .btnfx-rocket::before {
   content: "";
@@ -44,11 +46,13 @@
   opacity: 0;
   transition: opacity 220ms ease, transform 220ms ease;
 }
-.btnfx-rocket:hover::before { opacity: 1; transform: translateY(-30%); }
+.btnfx-rocket:hover::before,
+.btnfx-rocket.btnfx-demo::before { opacity: 1; transform: translateY(-30%); }
 
 /* ---------------- Icon Swap ---------------- */
 .btnfx-icon-swap svg { transition: transform 240ms ease; }
-.btnfx-icon-swap:hover svg { transform: rotate(360deg) scale(1.08); }
+.btnfx-icon-swap:hover svg,
+.btnfx-icon-swap.btnfx-demo svg { transform: rotate(360deg) scale(1.08); }
 
 /* ---------------- Spark ---------------- */
 @keyframes btnfx-spark-anim {
@@ -70,7 +74,9 @@
 .btnfx-spark::before { top: 10%; left: 8%; }
 .btnfx-spark::after  { bottom: 12%; right: 10%; }
 .btnfx-spark:hover::before,
-.btnfx-spark:hover::after { animation: btnfx-spark-anim 700ms ease forwards; }
+.btnfx-spark:hover::after,
+.btnfx-spark.btnfx-demo::before,
+.btnfx-spark.btnfx-demo::after { animation: btnfx-spark-anim 700ms ease forwards; }
 
 /* ---------------- Circle Expand ---------------- */
 .btnfx-circle-expand::before {
@@ -83,7 +89,8 @@
   transition: inset 380ms ease, opacity 380ms ease;
   z-index: -1;
 }
-.btnfx-circle-expand:hover::before { inset: -10% -10% -10% -10%; opacity: 0.18; }
+.btnfx-circle-expand:hover::before,
+.btnfx-circle-expand.btnfx-demo::before { inset: -10% -10% -10% -10%; opacity: 0.18; }
 
 /* ---------------- Shine ---------------- */
 @keyframes btnfx-shine-anim {
@@ -99,15 +106,18 @@
   transform: translateX(-120%) skewX(-20deg);
   pointer-events: none;
 }
-.btnfx-shine:hover::before { animation: btnfx-shine-anim 900ms ease; }
+.btnfx-shine:hover::before,
+.btnfx-shine.btnfx-demo::before { animation: btnfx-shine-anim 900ms ease; }
 
 /* ---------------- Flip ---------------- */
 .btnfx-flip { perspective: 600px; }
 .btnfx-flip > * { transition: transform 320ms ease; transform-style: preserve-3d; }
-.btnfx-flip:hover > * { transform: rotateX(8deg); }
+.btnfx-flip:hover > *,
+.btnfx-flip.btnfx-demo > * { transform: rotateX(8deg); }
 
 /* ---------------- Expand ---------------- */
-.btnfx-expand:hover { transform: scale(1.04); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
+.btnfx-expand:hover,
+.btnfx-expand.btnfx-demo { transform: scale(1.04); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
 .btnfx-expand:active { transform: scale(0.98); }
 
 /* ---------------- Badge Arrow ---------------- */
@@ -121,7 +131,8 @@
   opacity: 0;
   transition: transform 220ms ease, opacity 220ms ease;
 }
-.btnfx-badge-arrow:hover::after { opacity: 1; transform: translateY(-50%) translateX(0); }
+.btnfx-badge-arrow:hover::after,
+.btnfx-badge-arrow.btnfx-demo::after { opacity: 1; transform: translateY(-50%) translateX(0); }
 
 /* ---------------- Warp ---------------- */
 @keyframes btnfx-warp-anim {
@@ -129,7 +140,8 @@
   25% { transform: skew(-3deg, 1deg); }
   75% { transform: skew(3deg, -1deg); }
 }
-.btnfx-warp:hover { animation: btnfx-warp-anim 600ms ease; }
+.btnfx-warp:hover,
+.btnfx-warp.btnfx-demo { animation: btnfx-warp-anim 600ms ease; }
 
 @media (prefers-reduced-motion: reduce) {
   .btnfx,
