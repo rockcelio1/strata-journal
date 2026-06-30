@@ -193,6 +193,7 @@ function GaleriaPage() {
               <SelectItem value="imagem">Imagem</SelectItem>
               <SelectItem value="video">Vídeo</SelectItem>
               <SelectItem value="pdf">PDF</SelectItem>
+              <SelectItem value="assinatura">Assinaturas</SelectItem>
               <SelectItem value="outro">Outros</SelectItem>
             </SelectContent>
           </Select>
