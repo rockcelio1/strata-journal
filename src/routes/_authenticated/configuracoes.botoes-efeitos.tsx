@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Sparkles, RotateCcw, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sparkles, RotateCcw, Save, Eye } from "lucide-react";
 import {
   BUTTON_EFFECTS,
   ButtonEffectPreview,
+  ButtonEffectRenderer,
   buttonRegistry,
   clearButtonEffectsCache,
   ensureButtonEffectsLoaded,
