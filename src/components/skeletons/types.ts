@@ -1,4 +1,5 @@
 export type SkeletonEffectType =
+  | "none"
   | "shimmer"
   | "gradient"
   | "staggered"
@@ -19,6 +20,7 @@ export type SkeletonLayoutType =
   | "default";
 
 export const SKELETON_EFFECTS: { value: SkeletonEffectType; label: string; desc: string }[] = [
+  { value: "none", label: "Sem Efeito", desc: "Não exibe skeleton (carregamento silencioso)" },
   { value: "shimmer", label: "Shimmer", desc: "Brilho deslizante clássico" },
   { value: "gradient", label: "Gradient", desc: "Gradiente colorido animado" },
   { value: "staggered", label: "Staggered", desc: "Linhas com atraso encadeado" },

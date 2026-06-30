@@ -159,7 +159,12 @@ export function OutlineSkeleton({ layout }: { layout: SkeletonLayoutType }) {
   );
 }
 
+export function NoneSkeleton(_: { layout: SkeletonLayoutType }) {
+  return null;
+}
+
 export const EFFECT_COMPONENTS = {
+  none: NoneSkeleton,
   shimmer: ShimmerSkeleton,
   gradient: GradientSkeleton,
   staggered: StaggeredSkeleton,
