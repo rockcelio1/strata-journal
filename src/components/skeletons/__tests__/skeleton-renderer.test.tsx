@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+/** @vitest-environment node */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderToString } from "react-dom/server";
 import { isSkeletonEffect, SKELETON_EFFECT_VALUES } from "../types";
