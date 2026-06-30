@@ -188,6 +188,29 @@ function GaleriaPage() {
         )}
       </header>
 
+      {deleting && progress.total > 0 && (
+        <div className="mb-4 rounded-md border bg-card p-3">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-medium">Excluindo mídias…</span>
+            <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total}</span>
+          </div>
+          <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
+        </div>
+      )}
+
+      {!deleting && lastError && failedIds.length > 0 && (
+        <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+          <div className="font-medium text-destructive">Falha ao excluir {failedIds.length} item(ns)</div>
+          <div className="text-xs text-muted-foreground mt-1 break-all">{lastError}</div>
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" variant="destructive" onClick={() => setConfirmStep(1)}>Tentar novamente</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setLastError(null); setFailedIds([]); setSelected(new Set()); setSelectMode(false); }}>Descartar</Button>
+          </div>
+        </div>
+      )}
+
+
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Stat label="Fotos"  value={totals.imagem} icon={ImageIcon} active={tipo === "imagem"} onClick={() => setTipo(tipo === "imagem" ? "" : "imagem")} />
