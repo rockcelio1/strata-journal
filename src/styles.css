@@ -542,3 +542,32 @@
 
 
 
+
+/* ============ Skeleton effects keyframes ============ */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes typewriter {
+  0% { width: 0%; }
+  60% { width: 100%; }
+  100% { width: 100%; opacity: 0.4; }
+}
+@keyframes elastic {
+  0%, 100% { transform: scaleX(0.4); opacity: 0.6; }
+  50% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes cascade {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes outline {
+  0% { border-color: color-mix(in oklab, var(--brand, #f97316) 20%, transparent); }
+  50% { border-color: color-mix(in oklab, var(--brand, #f97316) 80%, transparent); }
+  100% { border-color: color-mix(in oklab, var(--brand, #f97316) 20%, transparent); }
+}

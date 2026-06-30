@@ -1108,6 +1108,39 @@ export type Database = {
           },
         ]
       }
+      skeleton_loading_settings: {
+        Row: {
+          created_at: string
+          effect_type: string
+          id: string
+          is_active: boolean
+          layout_type: string
+          screen_key: string
+          screen_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          effect_type: string
+          id?: string
+          is_active?: boolean
+          layout_type?: string
+          screen_key: string
+          screen_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          effect_type?: string
+          id?: string
+          is_active?: boolean
+          layout_type?: string
+          screen_key?: string
+          screen_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tipos_ocorrencia: {
         Row: {
           ativo: boolean

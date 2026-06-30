@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { SkeletonRenderer } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/galeria")({
   component: GaleriaPage,
@@ -41,7 +42,7 @@ function GaleriaPage() {
     () => ({ obra_id: obraId || undefined, tipo: (tipo || undefined) as Tipo | undefined, data: data || undefined }),
     [obraId, tipo, data],
   );
-  const { data: itens = [] } = useQuery({
+  const { data: itens = [], isPending: itensLoading } = useQuery({
     queryKey: ["galeria", filtros],
     queryFn: () => galeriaFn({ data: filtros }),
     refetchOnWindowFocus: true,
@@ -150,7 +151,9 @@ function GaleriaPage() {
         )}
       </Card>
 
-      {(itens as any[]).length === 0 ? (
+      {itensLoading ? (
+        <SkeletonRenderer screenKey="galeria" isLoading={true} layout="gallery" fallbackVariant="typewriter" />
+      ) : (itens as any[]).length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
           <ImageIcon size={36} className="mx-auto mb-2" />
           Nenhuma mídia encontrada com os filtros atuais.
