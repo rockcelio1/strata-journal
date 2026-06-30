@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EFFECT_COMPONENTS } from "./effects";
 import { findScreen } from "./registry";
@@ -14,6 +14,31 @@ type Props = {
 
 const cache = new Map<string, SkeletonEffectType>();
 let prefetchPromise: Promise<void> | null = null;
+const listeners = new Set<() => void>();
+
+export type SkeletonDebugEntry = {
+  screenKey: string;
+  effect: SkeletonEffectType;
+  layout: SkeletonLayoutType;
+  registered: boolean;
+  at: number;
+};
+const debugLog: SkeletonDebugEntry[] = [];
+
+function emit() {
+  for (const l of listeners) l();
+}
+
+export function subscribeSkeletonDebug(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+export function getSkeletonDebug(): SkeletonDebugEntry[] {
+  return debugLog;
+}
+export function getSkeletonCacheSnapshot(): Record<string, SkeletonEffectType> {
+  return Object.fromEntries(cache.entries());
+}
 
 async function prefetchAll(): Promise<void> {
   if (prefetchPromise) return prefetchPromise;
@@ -29,17 +54,16 @@ async function prefetchAll(): Promise<void> {
           cache.set(row.screen_key, row.effect_type);
         }
       }
+      emit();
     } catch {
-      /* silently fall back to defaults */
+      /* fall back to defaults */
     }
   })();
   return prefetchPromise;
 }
 
-// Eager prefetch on module load (client only) so first render has settings ready
 if (typeof window !== "undefined") {
   void prefetchAll();
-  // Realtime: when admin saves a setting, refresh cache immediately
   try {
     supabase
       .channel("skeleton_loading_settings_changes")
@@ -57,8 +81,11 @@ if (typeof window !== "undefined") {
   } catch {
     /* ignore */
   }
+  window.addEventListener("skeleton-settings-updated", () => {
+    prefetchPromise = null;
+    void prefetchAll();
+  });
 }
-
 
 export function SkeletonRenderer({
   screenKey,
@@ -68,40 +95,50 @@ export function SkeletonRenderer({
   layout,
 }: Props) {
   const screen = findScreen(screenKey);
+  const registered = Boolean(screen);
   const resolvedLayout: SkeletonLayoutType = layout ?? screen?.layout ?? "default";
   const defaultEffect: SkeletonEffectType =
     fallbackVariant ?? screen?.defaultEffect ?? "shimmer";
 
-  const [effect, setEffect] = useState<SkeletonEffectType>(
-    () => cache.get(screenKey) ?? defaultEffect,
+  // Re-render on cache/prefetch updates so saved settings apply on the CURRENT screen.
+  useSyncExternalStore(
+    subscribeSkeletonDebug,
+    () => cache.get(screenKey) ?? "__default__",
+    () => "__ssr__",
   );
+
+  const [, force] = useState(0);
+  useEffect(() => {
+    const handler = () => force((n) => n + 1);
+    window.addEventListener("skeleton-settings-updated", handler);
+    return () => window.removeEventListener("skeleton-settings-updated", handler);
+  }, []);
 
   useEffect(() => {
     if (!isLoading) return;
-    let cancelled = false;
-    prefetchAll().then(() => {
-      if (cancelled) return;
-      const found = cache.get(screenKey);
-      if (found && found !== effect) setEffect(found);
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void prefetchAll();
   }, [screenKey, isLoading]);
 
   if (!isLoading) return <>{children}</>;
 
+  const effect: SkeletonEffectType = cache.get(screenKey) ?? defaultEffect;
   const Effect = EFFECT_COMPONENTS[effect] ?? EFFECT_COMPONENTS.shimmer;
 
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.debug("[SkeletonRenderer]", { screenKey, effect, layout: resolvedLayout });
-  }
+  // Push debug entry (keep last 20)
+  debugLog.unshift({ screenKey, effect, layout: resolvedLayout, registered, at: Date.now() });
+  if (debugLog.length > 20) debugLog.length = 20;
 
   try {
     return (
-      <div role="status" aria-busy="true" aria-live="polite" className="w-full">
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="w-full"
+        data-skeleton-screen={screenKey}
+        data-skeleton-effect={effect}
+        data-skeleton-layout={resolvedLayout}
+      >
         <span className="sr-only">Carregando…</span>
         <Effect layout={resolvedLayout} />
       </div>
@@ -115,5 +152,8 @@ export function SkeletonRenderer({
 export function clearSkeletonCache() {
   cache.clear();
   prefetchPromise = null;
+  emit();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("skeleton-settings-updated"));
+  }
 }
-
