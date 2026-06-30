@@ -147,8 +147,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster position="top-right" richColors />
+      <SkeletonDebugPanel />
     </QueryClientProvider>
   );
+
 }
 
 export function useCurrentPath() {
