@@ -436,6 +436,15 @@ function GaleriaPage() {
               Confirme novamente: <strong>{selected.size} mídia(s)</strong> serão excluídas definitivamente. Essa é a sua última chance de cancelar.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleting && progress.total > 0 && (
+            <div className="my-2">
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span>Excluindo…</span>
+                <span className="tabular-nums">{progress.done}/{progress.total}</span>
+              </div>
+              <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Não, cancelar</AlertDialogCancel>
             <AlertDialogAction
