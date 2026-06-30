@@ -29,7 +29,7 @@ export function resolveScreen(pathname: string): ScreenRegistryEntry {
     name: pathname,
     path: pathname,
     layout: inferLayout(pathname),
-    defaultEffect: "shimmer",
+    defaultEffect: "none",
   };
 }
 
