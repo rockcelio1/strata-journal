@@ -23,8 +23,8 @@ export const Route = createFileRoute("/_authenticated/galeria")({
   component: GaleriaPage,
 });
 
-type Tipo = "imagem" | "video" | "pdf" | "outro";
-const tipoIcon: Record<Tipo, any> = { imagem: ImageIcon, video: FilmStrip, pdf: FilePdf, outro: FileText };
+type Tipo = "imagem" | "video" | "pdf" | "assinatura" | "outro";
+const tipoIcon: Record<Tipo, any> = { imagem: ImageIcon, video: FilmStrip, pdf: FilePdf, assinatura: PenNib, outro: FileText };
 const RECEBIDO_AGORA_MS = 30_000;
 
 function GaleriaPage() {
