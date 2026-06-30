@@ -441,6 +441,72 @@ export type Database = {
           },
         ]
       }
+      obra_fotos: {
+        Row: {
+          altura: number | null
+          blur_data_url: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          largura: number | null
+          mime_type: string | null
+          nome: string | null
+          obra_id: string
+          ordem: number
+          storage_path: string
+          tamanho_bytes: number | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          altura?: number | null
+          blur_data_url?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          largura?: number | null
+          mime_type?: string | null
+          nome?: string | null
+          obra_id: string
+          ordem?: number
+          storage_path: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          altura?: number | null
+          blur_data_url?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          largura?: number | null
+          mime_type?: string | null
+          nome?: string | null
+          obra_id?: string
+          ordem?: number
+          storage_path?: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_fotos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_fotos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obras: {
         Row: {
           avanco_pct: number
@@ -454,6 +520,8 @@ export type Database = {
           descricao: string | null
           empresa_id: string
           endereco: string | null
+          foto_capa_blur: string | null
+          foto_capa_path: string | null
           id: string
           nome: string
           responsavel_id: string | null
@@ -472,6 +540,8 @@ export type Database = {
           descricao?: string | null
           empresa_id: string
           endereco?: string | null
+          foto_capa_blur?: string | null
+          foto_capa_path?: string | null
           id?: string
           nome: string
           responsavel_id?: string | null
@@ -490,6 +560,8 @@ export type Database = {
           descricao?: string | null
           empresa_id?: string
           endereco?: string | null
+          foto_capa_blur?: string | null
+          foto_capa_path?: string | null
           id?: string
           nome?: string
           responsavel_id?: string | null
