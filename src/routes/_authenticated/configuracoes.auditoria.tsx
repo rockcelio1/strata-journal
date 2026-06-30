@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ShieldCheck } from "lucide-react";
+import { SkeletonRenderer } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/auditoria")({
   component: AuditoriaPage,
@@ -93,7 +94,9 @@ function AuditoriaPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Carregando…</td></tr>
+              <tr><td colSpan={5} className="p-3">
+                <SkeletonRenderer screenKey="configuracoesAuditoria" isLoading={true} layout="table" />
+              </td></tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhum evento.</td></tr>
