@@ -238,8 +238,16 @@ function GaleriaPage() {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
                         return (
-                          <Card key={it.id} className="facom-glow overflow-hidden group cursor-pointer">
-                            <button onClick={() => setPreview(it)} className="block relative aspect-square w-full bg-muted overflow-hidden">
+                          <Card key={it.id} className={`facom-glow overflow-hidden group cursor-pointer relative ${selectMode && selected.has(it.id) ? "ring-2 ring-destructive" : ""}`}>
+                            {selectMode && (
+                              <label className="absolute top-1 left-1 z-10 bg-background/90 rounded p-1 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox checked={selected.has(it.id)} onCheckedChange={() => toggleSelected(it.id)} aria-label="Selecionar mídia" />
+                              </label>
+                            )}
+                            <button
+                              onClick={() => selectMode ? toggleSelected(it.id) : setPreview(it)}
+                              className="block relative aspect-square w-full bg-muted overflow-hidden"
+                            >
                               {it.tipo === "imagem" && it.url ? (
                                 <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                               ) : it.tipo === "video" && it.url ? (
@@ -247,7 +255,7 @@ function GaleriaPage() {
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
-                              {recente && (
+                              {recente && !selectMode && (
                                 <Badge className="absolute top-1 left-1 bg-emerald-600 text-white border-0">
                                   <Broadcast size={10} className="mr-1 animate-pulse" /> Recebido agora
                                 </Badge>
