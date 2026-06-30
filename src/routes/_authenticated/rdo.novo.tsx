@@ -28,6 +28,7 @@ import { getObraClimaCache, saveObraClimaCache } from "@/lib/obras.functions";
 import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
+import { ButtonEffectRenderer } from "@/components/button-effects";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
@@ -1236,14 +1237,18 @@ function NovoRdoPage() {
               </p>
             )}
             <div className="flex gap-2">
-              <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => { setSubmitError(null); save.mutate(false); }}>Rascunho</Button>
-              <Button
-                className="bg-brand text-brand-foreground"
-                disabled={!canSubmit || save.isPending}
-                onClick={() => { setSubmitError(null); save.mutate(true); }}
-              >
-                <Check size={16} className="mr-1" /> {save.isPending ? "Enviando…" : "Concluir RDO"}
-              </Button>
+              <ButtonEffectRenderer buttonKey="rdo_salvar_rascunho">
+                <Button variant="outline" disabled={!form.obra_id || save.isPending} onClick={() => { setSubmitError(null); save.mutate(false); }}>Rascunho</Button>
+              </ButtonEffectRenderer>
+              <ButtonEffectRenderer buttonKey="rdo_enviar_aprovacao">
+                <Button
+                  className="bg-brand text-brand-foreground"
+                  disabled={!canSubmit || save.isPending}
+                  onClick={() => { setSubmitError(null); save.mutate(true); }}
+                >
+                  <Check size={16} className="mr-1" /> {save.isPending ? "Enviando…" : "Concluir RDO"}
+                </Button>
+              </ButtonEffectRenderer>
             </div>
           </div>
         )}
