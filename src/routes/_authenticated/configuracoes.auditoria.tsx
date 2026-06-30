@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ShieldCheck } from "lucide-react";
+import { SkeletonRenderer } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/auditoria")({
   component: AuditoriaPage,
