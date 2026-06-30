@@ -44,6 +44,9 @@ function GaleriaPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
   const [deleting, setDeleting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number }>({ done: 0, total: 0 });
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [failedIds, setFailedIds] = useState<string[]>([]);
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
