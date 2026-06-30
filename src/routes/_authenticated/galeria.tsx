@@ -360,6 +360,44 @@ function GaleriaPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmStep === 1} onOpenChange={(o) => !o && setConfirmStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selected.size} mídia(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá permanentemente os arquivos selecionados da galeria e do armazenamento. Não poderá ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); setConfirmStep(2); }}>
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmStep === 2} onOpenChange={(o) => !o && !deleting && setConfirmStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirme novamente: <strong>{selected.size} mídia(s)</strong> serão excluídas definitivamente. Essa é a sua última chance de cancelar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Não, cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); doDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Excluindo…" : "Sim, excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
