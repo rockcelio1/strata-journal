@@ -27,6 +27,7 @@ import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
 import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
 import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
+import { Route as AuthenticatedConfiguracoesSkeletonRouteImport } from './routes/_authenticated/configuracoes.skeleton'
 import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
 import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
@@ -132,6 +133,12 @@ const AuthenticatedConfiguracoesUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesSkeletonRoute =
+  AuthenticatedConfiguracoesSkeletonRouteImport.update({
+    id: '/skeleton',
+    path: '/skeleton',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesSistemaRoute =
   AuthenticatedConfiguracoesSistemaRouteImport.update({
     id: '/sistema',
@@ -205,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
@@ -232,6 +240,7 @@ export interface FileRoutesByTo {
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
@@ -262,6 +271,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
+  '/_authenticated/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/_authenticated/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
   '/_authenticated/obras/$obraId': typeof AuthenticatedObrasObraIdRoute
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
+    | '/configuracoes/skeleton'
     | '/configuracoes/usuarios'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
+    | '/configuracoes/skeleton'
     | '/configuracoes/usuarios'
     | '/obras/$obraId'
     | '/rdo/$rdoId'
@@ -348,6 +360,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/onedrive'
     | '/_authenticated/configuracoes/permissoes'
     | '/_authenticated/configuracoes/sistema'
+    | '/_authenticated/configuracoes/skeleton'
     | '/_authenticated/configuracoes/usuarios'
     | '/_authenticated/obras/$obraId'
     | '/_authenticated/rdo/$rdoId'
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesUsuariosRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/skeleton': {
+      id: '/_authenticated/configuracoes/skeleton'
+      path: '/skeleton'
+      fullPath: '/configuracoes/skeleton'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesSkeletonRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/sistema': {
       id: '/_authenticated/configuracoes/sistema'
       path: '/sistema'
@@ -568,6 +588,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesSistemaRoute: typeof AuthenticatedConfiguracoesSistemaRoute
+  AuthenticatedConfiguracoesSkeletonRoute: typeof AuthenticatedConfiguracoesSkeletonRoute
   AuthenticatedConfiguracoesUsuariosRoute: typeof AuthenticatedConfiguracoesUsuariosRoute
   AuthenticatedConfiguracoesIndexRoute: typeof AuthenticatedConfiguracoesIndexRoute
 }
@@ -586,6 +607,8 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesPermissoesRoute,
     AuthenticatedConfiguracoesSistemaRoute:
       AuthenticatedConfiguracoesSistemaRoute,
+    AuthenticatedConfiguracoesSkeletonRoute:
+      AuthenticatedConfiguracoesSkeletonRoute,
     AuthenticatedConfiguracoesUsuariosRoute:
       AuthenticatedConfiguracoesUsuariosRoute,
     AuthenticatedConfiguracoesIndexRoute: AuthenticatedConfiguracoesIndexRoute,
