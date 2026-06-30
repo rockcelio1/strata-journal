@@ -499,29 +499,8 @@ function RdoListPage() {
 
       {view === "lista" && (
         isLoading ? (
-          <Card className="hidden md:block overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="p-3 font-medium">#</th>
-                  <th className="p-3 font-medium">Obra</th>
-                  <th className="p-3 font-medium">Data</th>
-                  <th className="p-3 font-medium">Status</th>
-                  <th className="p-3 font-medium w-10" aria-label="Ações" />
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border last:border-0">
-                    <td className="p-3"><Skeleton className="h-4 w-10" /></td>
-                    <td className="p-3"><Skeleton className="h-4 w-56" /></td>
-                    <td className="p-3"><Skeleton className="h-4 w-20" /></td>
-                    <td className="p-3"><Skeleton className="h-5 w-20 rounded-full" /></td>
-                    <td className="p-3"><Skeleton className="h-4 w-4" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <Card className="overflow-hidden p-3">
+            <SkeletonRenderer screenKey="rdo" isLoading={true} layout="table" fallbackVariant="staggered" />
           </Card>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
