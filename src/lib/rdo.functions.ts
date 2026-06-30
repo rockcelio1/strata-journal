@@ -112,9 +112,20 @@ export const getRdo = createServerFn({ method: "GET" })
     };
   });
 
-import { assertRowsValid, sanitizeRdoPayload } from "./rdo-validate";
+import { assertRowsValid, sanitizeRdoPayload, type SanitizeResult } from "./rdo-validate";
 export { assertRowsValid };
 
+/** Pure helper exposto para teste: sanitiza, valida e parseia o payload de
+ *  createRdo. Retorna o payload validado + relatório de descartes para
+ *  auditoria. Lança quando há erros estruturais (obra_id inválido, etc.). */
+export function prepareCreateRdoInput(d: unknown): {
+  data: z.infer<typeof rdoSchema>;
+  sanitize: SanitizeResult<any>;
+} {
+  const sanitize = sanitizeRdoPayload((d ?? {}) as any);
+  assertRowsValid(sanitize.sane);
+  return { data: rdoSchema.parse(sanitize.sane), sanitize };
+}
 
 export const createRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,11 +133,13 @@ export const createRdo = createServerFn({ method: "POST" })
     // Defesa em profundidade: descarta linhas inválidas (UUID quebrado /
     // descrição vazia) ANTES do zod, evitando 400 quando o cliente envia
     // linhas em branco vindas de auto-save ou fila offline antiga.
-    const { sane } = sanitizeRdoPayload((d ?? {}) as any);
-    assertRowsValid(sane);
-    return rdoSchema.parse(sane);
+    const { data, sanitize } = prepareCreateRdoInput(d);
+    // anexa o relatório de descartes no payload para o handler auditar
+    (data as any).__sanitize = sanitize;
+    return data;
   })
   .handler(async ({ context, data }) => {
+    const sanitize: SanitizeResult<any> | undefined = (data as any).__sanitize;
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
 
@@ -156,6 +169,27 @@ export const createRdo = createServerFn({ method: "POST" })
     }
     if (data.ocorrencias.length) {
       await context.supabase.from("rdo_ocorrencias").insert(data.ocorrencias.map((o) => ({ ...o, rdo_id: rdoId })));
+    }
+
+    // Auditoria: registra quais linhas foram descartadas pelo sanitize.
+    if (sanitize && sanitize.total_dropped > 0) {
+      try {
+        await context.supabase.from("rdo_audit_logs").insert({
+          rdo_id: rdoId,
+          empresa_id: me.data.empresa_id,
+          autor_id: context.userId,
+          acao: "payload_sanitizado",
+          status_anterior: rdo.status,
+          status_novo: rdo.status,
+          motivo:
+            `Linhas descartadas no envio — equipamentos: ${sanitize.dropped.equipamentos}, ` +
+            `ocorrências: ${sanitize.dropped.ocorrencias}, mão de obra: ${sanitize.dropped.mao_de_obra}, ` +
+            `atividades: ${sanitize.dropped.atividades} (total: ${sanitize.total_dropped})`,
+        });
+      } catch (e) {
+        // não bloqueia o fluxo se a auditoria falhar
+        console.warn("[createRdo] falha ao registrar auditoria de sanitize", e);
+      }
     }
     return rdo;
   });
