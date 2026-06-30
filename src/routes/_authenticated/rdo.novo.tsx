@@ -494,8 +494,8 @@ function NovoRdoPage() {
       };
       if (total_dropped > 0) {
         const partes = [
-          dropped.equipamentos && `equipamentos #${droppedIdx.equipamentos.map((i) => i + 1).join(", ")}`,
-          dropped.ocorrencias && `ocorrências #${droppedIdx.ocorrencias.map((i) => i + 1).join(", ")}`,
+          dropped.equipamentos && `equipamentos #${droppedIdx.equipamentos.map((i: number) => i + 1).join(", ")}`,
+          dropped.ocorrencias && `ocorrências #${droppedIdx.ocorrencias.map((i: number) => i + 1).join(", ")}`,
           dropped.mao_de_obra && `mão de obra: ${dropped.mao_de_obra}`,
           dropped.atividades && `atividades: ${dropped.atividades}`,
         ].filter(Boolean).join(" · ");
