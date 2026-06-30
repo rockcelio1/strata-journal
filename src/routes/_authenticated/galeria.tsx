@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image as ImageIcon, FilmStrip, FilePdf, FileText, DownloadSimple, Copy, Broadcast, CaretLeft, CaretRight, ArrowSquareOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { SkeletonRenderer } from "@/components/skeletons";
 
 export const Route = createFileRoute("/_authenticated/galeria")({
   component: GaleriaPage,
