@@ -112,15 +112,19 @@ export const getRdo = createServerFn({ method: "GET" })
     };
   });
 
-import { assertRowsValid } from "./rdo-validate";
+import { assertRowsValid, sanitizeRdoPayload } from "./rdo-validate";
 export { assertRowsValid };
 
 
 export const createRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => {
-    assertRowsValid(d);
-    return rdoSchema.parse(d);
+    // Defesa em profundidade: descarta linhas inválidas (UUID quebrado /
+    // descrição vazia) ANTES do zod, evitando 400 quando o cliente envia
+    // linhas em branco vindas de auto-save ou fila offline antiga.
+    const { sane } = sanitizeRdoPayload((d ?? {}) as any);
+    assertRowsValid(sane);
+    return rdoSchema.parse(sane);
   })
   .handler(async ({ context, data }) => {
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
