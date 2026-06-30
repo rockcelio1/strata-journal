@@ -31,6 +31,7 @@ import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/
 import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
 import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
+import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
@@ -155,6 +156,12 @@ const AuthenticatedConfiguracoesGruposRoute =
     path: '/grupos',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesAuditoriaRoute =
+  AuthenticatedConfiguracoesAuditoriaRouteImport.update({
+    id: '/auditoria',
+    path: '/auditoria',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesAplicativoRoute =
   AuthenticatedConfiguracoesAplicativoRouteImport.update({
     id: '/aplicativo',
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
+  '/_authenticated/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
+    | '/configuracoes/auditoria'
     | '/configuracoes/grupos'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
+    | '/configuracoes/auditoria'
     | '/configuracoes/grupos'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
@@ -331,6 +343,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/configuracoes/aplicativo'
+    | '/_authenticated/configuracoes/auditoria'
     | '/_authenticated/configuracoes/grupos'
     | '/_authenticated/configuracoes/onedrive'
     | '/_authenticated/configuracoes/permissoes'
@@ -510,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesGruposRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/auditoria': {
+      id: '/_authenticated/configuracoes/auditoria'
+      path: '/auditoria'
+      fullPath: '/configuracoes/auditoria'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/aplicativo': {
       id: '/_authenticated/configuracoes/aplicativo'
       path: '/aplicativo'
@@ -543,6 +563,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
+  AuthenticatedConfiguracoesAuditoriaRoute: typeof AuthenticatedConfiguracoesAuditoriaRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -555,6 +576,8 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
   {
     AuthenticatedConfiguracoesAplicativoRoute:
       AuthenticatedConfiguracoesAplicativoRoute,
+    AuthenticatedConfiguracoesAuditoriaRoute:
+      AuthenticatedConfiguracoesAuditoriaRoute,
     AuthenticatedConfiguracoesGruposRoute:
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesOnedriveRoute:

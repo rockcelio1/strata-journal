@@ -482,7 +482,26 @@ function NovoRdoPage() {
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
       pushLog({ kind: "start", mensagem: enviar ? "Iniciando envio do RDO…" : "Salvando rascunho…" });
-      const { sane: cleaned } = sanitizeRdoPayload(form);
+      const { sane: cleaned, dropped, total_dropped } = sanitizeRdoPayload(form);
+      // Índices descartados (sobre o array original) para feedback ao usuário.
+      const droppedIdx = {
+        equipamentos: (form.equipamentos ?? [])
+          .map((e: any, i: number) => (isUuid(e?.equipamento_id) ? -1 : i))
+          .filter((i: number) => i >= 0),
+        ocorrencias: (form.ocorrencias ?? [])
+          .map((o: any, i: number) => (o?.descricao?.trim() ? -1 : i))
+          .filter((i: number) => i >= 0),
+      };
+      if (total_dropped > 0) {
+        const partes = [
+          dropped.equipamentos && `equipamentos #${droppedIdx.equipamentos.map((i: number) => i + 1).join(", ")}`,
+          dropped.ocorrencias && `ocorrências #${droppedIdx.ocorrencias.map((i: number) => i + 1).join(", ")}`,
+          dropped.mao_de_obra && `mão de obra: ${dropped.mao_de_obra}`,
+          dropped.atividades && `atividades: ${dropped.atividades}`,
+        ].filter(Boolean).join(" · ");
+        pushLog({ kind: "erro", etapa: "Sanitização", mensagem: `Descartado(s) ${total_dropped} item(ns) inválido(s) — ${partes}` });
+        toast.warning(`${total_dropped} item(ns) descartado(s) antes do envio`, { description: partes });
+      }
       const payload = { ...cleaned, enviar };
       const sigManifest = await buildSignatureManifest(payload);
       const queued = await enqueueRdo({ ...payload, _assinatura: sigManifest });
@@ -490,7 +509,7 @@ function NovoRdoPage() {
       if (!navigator.onLine) {
         toast.info("Salvo offline. Será sincronizado quando voltar a conexão.");
         pushLog({ kind: "offline", mensagem: "Sem conexão — RDO enfileirado para sincronizar." });
-        return { offline: true as const, local_id: queued.local_id };
+        return { offline: true as const, local_id: queued.local_id, total_dropped, dropped };
       }
       try {
         const rdo: any = await createFn({ data: payload });
@@ -502,7 +521,7 @@ function NovoRdoPage() {
           }
         }
         await markQueued(queued.local_id, { status: "sincronizado", remote_id: rdo.id });
-        return { offline: false as const, rdo };
+        return { offline: false as const, rdo, total_dropped, dropped };
       } catch (e: any) {
         await markQueued(queued.local_id, { status: "erro", error: e?.message });
         throw e;
@@ -510,9 +529,15 @@ function NovoRdoPage() {
     },
     onSuccess: (r: any) => {
       clearDraft(draftKey);
-      pushLog({ kind: "ok", mensagem: r.offline ? "RDO em fila offline" : `RDO ${r.rdo?.numero ?? ""} sincronizado` });
-      if (r.offline) { toast.success("RDO em fila offline"); navigate({ to: "/rdo" }); }
-      else { toast.success("RDO sincronizado"); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
+      const enviadoCount =
+        (form.atividades?.length ?? 0) + (form.mao_de_obra?.length ?? 0) +
+        (form.equipamentos?.length ?? 0) + (form.ocorrencias?.length ?? 0) - (r.total_dropped ?? 0);
+      const resumo = r.total_dropped
+        ? `${enviadoCount} válido(s) · ${r.total_dropped} descartado(s)`
+        : `${enviadoCount} item(ns) enviado(s)`;
+      pushLog({ kind: "ok", mensagem: r.offline ? `RDO em fila offline (${resumo})` : `RDO ${r.rdo?.numero ?? ""} sincronizado (${resumo})` });
+      if (r.offline) { toast.success("RDO em fila offline", { description: resumo }); navigate({ to: "/rdo" }); }
+      else { toast.success("RDO sincronizado", { description: resumo }); navigate({ to: "/rdo/$rdoId", params: { rdoId: r.rdo.id } }); }
     },
     onError: (e: any) => {
       const msg = e?.message ?? "Falha ao concluir RDO";
