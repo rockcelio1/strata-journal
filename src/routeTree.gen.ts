@@ -32,6 +32,7 @@ import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/
 import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
 import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
+import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
 import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
@@ -163,6 +164,12 @@ const AuthenticatedConfiguracoesGruposRoute =
     path: '/grupos',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesBotoesEfeitosRoute =
+  AuthenticatedConfiguracoesBotoesEfeitosRouteImport.update({
+    id: '/botoes-efeitos',
+    path: '/botoes-efeitos',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesAuditoriaRoute =
   AuthenticatedConfiguracoesAuditoriaRouteImport.update({
     id: '/auditoria',
@@ -208,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
+  '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -236,6 +244,7 @@ export interface FileRoutesByTo {
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
+  '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -267,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/_authenticated/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
+  '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -298,6 +308,7 @@ export interface FileRouteTypes {
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
+    | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/cadastros/ocorrencias'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
+    | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
@@ -356,6 +368,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/configuracoes/aplicativo'
     | '/_authenticated/configuracoes/auditoria'
+    | '/_authenticated/configuracoes/botoes-efeitos'
     | '/_authenticated/configuracoes/grupos'
     | '/_authenticated/configuracoes/onedrive'
     | '/_authenticated/configuracoes/permissoes'
@@ -543,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesGruposRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/botoes-efeitos': {
+      id: '/_authenticated/configuracoes/botoes-efeitos'
+      path: '/botoes-efeitos'
+      fullPath: '/configuracoes/botoes-efeitos'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/auditoria': {
       id: '/_authenticated/configuracoes/auditoria'
       path: '/auditoria'
@@ -584,6 +604,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
   AuthenticatedConfiguracoesAuditoriaRoute: typeof AuthenticatedConfiguracoesAuditoriaRoute
+  AuthenticatedConfiguracoesBotoesEfeitosRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
@@ -599,6 +620,8 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesAplicativoRoute,
     AuthenticatedConfiguracoesAuditoriaRoute:
       AuthenticatedConfiguracoesAuditoriaRoute,
+    AuthenticatedConfiguracoesBotoesEfeitosRoute:
+      AuthenticatedConfiguracoesBotoesEfeitosRoute,
     AuthenticatedConfiguracoesGruposRoute:
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesOnedriveRoute:

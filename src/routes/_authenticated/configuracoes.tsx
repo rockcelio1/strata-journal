@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles, MousePointerClick } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ const subNav = [
   { to: "/configuracoes/onedrive", label: "OneDrive", icon: Cloud, desc: "Conta, pasta de destino e validação" },
   { to: "/configuracoes/auditoria", label: "Auditoria de RDO", icon: ScrollText, desc: "Eventos e payloads sanitizados" },
   { to: "/configuracoes/skeleton", label: "Efeitos de Carregamento", icon: Sparkles, desc: "Skeleton por tela (9 efeitos)" },
+  { to: "/configuracoes/botoes-efeitos", label: "Efeitos dos Botões", icon: MousePointerClick, desc: "10 efeitos visuais por botão" },
 ];
 
 function ConfiguracoesLayout() {
