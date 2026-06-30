@@ -13,8 +13,9 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadDelay: 20,
     defaultPreloadStaleTime: 0,
-    defaultPendingMs: 150,
-    defaultPendingMinMs: 200,
+    defaultPendingMs: 0,
+    defaultPendingMinMs: 250,
+
     defaultPendingComponent: AutoSkeleton,
   });
 
