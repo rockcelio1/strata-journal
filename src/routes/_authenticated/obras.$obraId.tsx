@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import { obraStatusMeta, rdoStatusMeta } from "@/components/status";
 import { cn } from "@/lib/utils";
+import { ObraFotos } from "@/components/obra/ObraFotos";
 
 export const Route = createFileRoute("/_authenticated/obras/$obraId")({
   component: ObraDetail,
@@ -66,20 +67,8 @@ function ObraDetail() {
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 p-4">
         {/* Sidebar */}
         <aside className="space-y-3">
-          <Card className="overflow-hidden p-0" title="Foto da obra">
-            <div className="aspect-[4/3] bg-gradient-to-br from-brand/30 via-muted to-muted/60 flex items-center justify-center relative">
-              {(() => {
-                const capa = (o as any).foto_capa_url || fotos.find((f: any) => f?.tipo?.startsWith?.("image") || /\.(png|jpe?g|webp|gif)$/i.test(f?.url ?? ""))?.url;
-                return capa ? (
-                  <img src={capa} alt={`Foto da obra ${o.nome}`} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-brand/60">
-                    <House size={48} weight="duotone" />
-                    <span className="text-[10px] uppercase tracking-wide">Foto da obra</span>
-                  </div>
-                );
-              })()}
-            </div>
+          <Card className="overflow-hidden p-2">
+            <ObraFotos obraId={obraId} empresaId={o.empresa_id} />
           </Card>
           <nav className="bg-background rounded-md border border-border overflow-hidden">
             {nav.map((n) => {
