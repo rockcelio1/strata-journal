@@ -32,12 +32,18 @@ function GaleriaPage() {
   const galeriaFn = useServerFn(listGaleria);
   const obrasFn = useServerFn(listObras);
   const meFn = useServerFn(getMe);
+  const removerFn = useServerFn(removerAnexo);
+  const { isMaster } = usePermissoes();
 
   const [obraId, setObraId] = useState<string>("");
   const [tipo, setTipo] = useState<string>("");
   const [data, setData] = useState<string>("");
   const [preview, setPreview] = useState<any | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmStep, setConfirmStep] = useState<0 | 1 | 2>(0);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
