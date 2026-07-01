@@ -384,12 +384,12 @@ export const removerAnexo = createServerFn({ method: "POST" })
 // ============== GALERIA (mídias da empresa, com filtros) ==============
 export const listGaleria = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { obra_id?: string; data?: string; rdo_id?: string; tipo?: "imagem" | "video" | "pdf" | "assinatura" | "outro" } = {}) =>
+  .inputValidator((d: { obra_id?: string; data?: string; rdo_id?: string; tipo?: "imagem" | "video" | "pdf" | "assinatura" } = {}) =>
     z.object({
       obra_id: z.string().uuid().optional(),
       data: z.string().optional(),
       rdo_id: z.string().uuid().optional(),
-      tipo: z.enum(["imagem", "video", "pdf", "assinatura", "outro"]).optional(),
+      tipo: z.enum(["imagem", "video", "pdf", "assinatura"]).optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -404,16 +404,20 @@ export const listGaleria = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) throw error;
 
-    const tipoDe = (mime?: string | null, path?: string | null, nome?: string | null) => {
+    const tipoDe = (mime?: string | null, path?: string | null, nome?: string | null): "imagem" | "video" | "pdf" | "assinatura" | null => {
       const hint = `${path ?? ""} ${nome ?? ""}`.toLowerCase();
       if (hint.includes("assinatura-") || hint.includes("/assinatura")) return "assinatura";
-      if (!mime) return "outro";
+      if (!mime) return null;
       if (mime.startsWith("image/")) return "imagem";
       if (mime.startsWith("video/")) return "video";
       if (mime === "application/pdf") return "pdf";
-      return "outro";
+      return null;
     };
-    const filtered = (rows ?? []).filter((r: any) => !data.tipo || tipoDe(r.mime_type, r.storage_path, r.nome) === data.tipo);
+    const filtered = (rows ?? []).filter((r: any) => {
+      const t = tipoDe(r.mime_type, r.storage_path, r.nome);
+      if (!t) return false;
+      return !data.tipo || t === data.tipo;
+    });
 
     const withUrls = await Promise.all(filtered.map(async (a: any) => {
       let url: string | null = null;
