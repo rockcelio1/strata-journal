@@ -244,7 +244,7 @@ function GaleriaPage() {
               <SelectItem value="video">Vídeo</SelectItem>
               <SelectItem value="pdf">PDF</SelectItem>
               <SelectItem value="assinatura">Assinaturas</SelectItem>
-              <SelectItem value="outro">Outros</SelectItem>
+              
             </SelectContent>
           </Select>
         </div>
