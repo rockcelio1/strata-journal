@@ -380,9 +380,6 @@ function GaleriaPage() {
               {preview.tipo === "pdf" && preview.url && (
                 <iframe src={preview.url} title={preview.nome} className="w-full h-[80vh] bg-white" />
               )}
-              {preview.tipo === "outro" && (
-                <div className="h-40 grid place-items-center text-white">Prévia indisponível para este tipo.</div>
-              )}
               <div className="bg-background text-foreground p-3 flex items-center justify-between gap-3 flex-wrap">
                 <div className="text-sm min-w-0">
                   <div className="font-medium truncate">
