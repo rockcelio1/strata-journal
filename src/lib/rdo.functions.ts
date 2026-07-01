@@ -345,6 +345,14 @@ export const registrarAnexo = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
+    // Bloqueia arquivos de tipo desconhecido — só Fotos/Vídeos/PDFs/Assinaturas
+    const hint = `${data.storage_path ?? ""} ${data.nome ?? ""}`.toLowerCase();
+    const isAssinatura = hint.includes("assinatura-") || hint.includes("/assinatura");
+    const mime = data.mime_type ?? "";
+    const tipoOk = isAssinatura || mime.startsWith("image/") || mime.startsWith("video/") || mime === "application/pdf";
+    if (!tipoOk) {
+      throw new Error("Tipo de arquivo não suportado. Envie apenas imagens, vídeos, PDFs ou assinaturas.");
+    }
     const { error, data: created } = await context.supabase.from("rdo_anexos").insert({
       rdo_id: data.rdo_id,
       empresa_id: me.data.empresa_id,
