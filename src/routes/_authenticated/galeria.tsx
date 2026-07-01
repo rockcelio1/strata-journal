@@ -219,7 +219,7 @@ function GaleriaPage() {
         <Stat label="Vídeos" value={totals.video}  icon={FilmStrip} active={tipo === "video"}  onClick={() => setTipo(tipo === "video"  ? "" : "video")} />
         <Stat label="PDFs"   value={totals.pdf}    icon={FilePdf}   active={tipo === "pdf"}    onClick={() => setTipo(tipo === "pdf"    ? "" : "pdf")} />
         <Stat label="Assinaturas" value={totals.assinatura} icon={PenNib} active={tipo === "assinatura"} onClick={() => setTipo(tipo === "assinatura" ? "" : "assinatura")} />
-        <Stat label="Outros" value={totals.outro} icon={FileText} active={tipo === "outro"} onClick={() => setTipo(tipo === "outro" ? "" : "outro")} />
+        
       </div>
 
 
