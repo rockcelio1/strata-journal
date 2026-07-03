@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as InstalarRouteImport } from './routes/instalar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -18,6 +19,8 @@ import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
 import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
@@ -38,10 +41,16 @@ import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './rout
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstalarRoute = InstalarRouteImport.update({
@@ -83,6 +92,18 @@ const AuthenticatedConfiguracoesRoute =
     id: '/configuracoes',
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedRdoIndexRoute = AuthenticatedRdoIndexRouteImport.update({
   id: '/rdo/',
@@ -200,16 +221,26 @@ const AuthenticatedCadastrosEquipamentosRoute =
     path: '/cadastros/equipamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -235,10 +266,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -266,11 +301,15 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
   '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
@@ -298,11 +337,15 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/instalar'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/configuracoes'
     | '/dashboard'
     | '/empresa'
     | '/galeria'
+    | '/.mcp/invoke-tool/$tool'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
@@ -328,10 +371,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/instalar'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/empresa'
     | '/galeria'
+    | '/.mcp/invoke-tool/$tool'
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
@@ -358,11 +405,15 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/instalar'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa'
     | '/_authenticated/galeria'
+    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
@@ -390,7 +441,11 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   InstalarRoute: typeof InstalarRoute
+  McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -400,6 +455,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/instalar': {
@@ -457,6 +519,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/rdo/': {
       id: '/_authenticated/rdo/'
@@ -598,6 +674,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -686,7 +769,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   InstalarRoute: InstalarRoute,
+  McpRoute: McpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
