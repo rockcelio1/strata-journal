@@ -14,11 +14,15 @@ import { InstallAppButton } from "@/components/install-app-button";
 const LOGO_URL = "/icone-rdo.png";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : undefined,
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [loading, setLoading] = useState(false);
 
   // Verificação de e-mail em tempo real no cadastro
@@ -65,7 +69,8 @@ function AuthPage() {
       }
       return toast.error(error.message);
     }
-    navigate({ to: "/dashboard" });
+    if (next) window.location.assign(next);
+    else navigate({ to: "/dashboard" });
   }
 
   async function handleResend() {
@@ -120,11 +125,15 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    const redirect_uri = next
+      ? `${window.location.origin}${next}`
+      : window.location.origin;
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri });
     setLoading(false);
     if (result.error) return toast.error(String(result.error));
     if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    if (next) window.location.assign(next);
+    else navigate({ to: "/dashboard" });
   }
 
   return (

@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yjwcvtyeuerqxbxkskgp.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "diario-de-obra-mcp",
+      "version": "0.1.0",
+      "title": "Diário de Obra"
+    },
+    "tools": [
+      {
+        "name": "list_obras",
+        "title": "Listar obras",
+        "description": "Lista as obras da empresa do usuário autenticado, ordenadas pelas mais recentes.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Máximo de obras a retornar (padrão 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "status": {
+              "description": "Filtrar por status da obra.",
+              "type": "string",
+              "enum": [
+                "planejamento",
+                "em_andamento",
+                "pausada",
+                "concluida"
+              ]
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_rdos",
+        "title": "Listar RDOs",
+        "description": "Lista Relatórios Diários de Obra (RDOs) acessíveis ao usuário autenticado. Opcionalmente filtrado por obra.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "obra_id": {
+              "description": "Filtrar por ID da obra.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "limit": {
+              "description": "Máximo de RDOs a retornar (padrão 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "status": {
+              "description": "Filtrar por status do RDO (ex.: rascunho, aprovado).",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_rdo",
+        "title": "Obter RDO",
+        "description": "Obtém um RDO por ID, incluindo dados básicos da obra vinculada.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID (UUID) do RDO."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
