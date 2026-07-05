@@ -70,6 +70,7 @@ export function ObraFotos({
   const capa = data?.capa ?? null;
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // mantém index válido
