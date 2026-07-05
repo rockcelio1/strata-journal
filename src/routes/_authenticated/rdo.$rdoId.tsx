@@ -277,7 +277,23 @@ function RdoDetailPage() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline"><History className="h-4 w-4 mr-1" />Solicitar revisão</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader><AlertDialogTitle>Solicitar revisão</AlertDialogTitle></AlertDialogHeader>
+                  <Textarea placeholder="Descreva o que precisa ser revisado..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => motivo.trim() && requestRev.mutate(motivo)}>Solicitar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
+          )}
+          {(r.status === "aprovado" || r.status === "revisao_solicitada") && canApprove && (
+            <Button variant="outline" onClick={() => reopen.mutate()}><History className="h-4 w-4 mr-1" />Reabrir</Button>
           )}
           {canDeleteRascunho && (
             <AlertDialog>
