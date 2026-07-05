@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/obras/$obraId")({
   component: ObraDetail,
 });
 
-type View = "visao" | "tarefas" | "relatorios" | "filtro" | "editar";
+type View = "visao" | "tarefas" | "recursos" | "relatorios" | "filtro" | "editar";
 
 function ObraDetail() {
   const { obraId } = Route.useParams();
