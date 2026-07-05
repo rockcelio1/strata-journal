@@ -67,30 +67,42 @@ function ObrasPage() {
           {filtered.map((o) => {
             const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
             return (
-              <Card key={o.id} className="p-5 hover:shadow-md transition-shadow group">
-                <div className="flex items-start justify-between mb-3">
-                  <Badge variant="outline" className={m.className}>{m.label}</Badge>
-                  <span className="text-xs text-muted-foreground tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</span>
-                </div>
-                <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block">
-                  <h3 className="font-serif text-xl group-hover:underline">{o.nome}</h3>
-                  {o.cliente && <p className="text-sm text-muted-foreground mt-0.5">{o.cliente}</p>}
-                  {o.endereco && (
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />{o.endereco}
-                    </p>
+              <Card key={o.id} className="overflow-hidden hover:shadow-md transition-shadow group">
+                <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block relative aspect-[16/9] bg-muted overflow-hidden">
+                  {o.foto_capa_url ? (
+                    <img src={o.foto_capa_url} alt={o.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
+                      <Building2 className="h-10 w-10" />
+                    </div>
                   )}
                 </Link>
-                <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-brand" style={{ width: `${o.avanco_pct}%` }} />
-                </div>
-                <div className="flex justify-end gap-1 mt-3 -mb-1">
-                  <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
-                  <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                    <span className="text-xs text-muted-foreground tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</span>
+                  </div>
+                  <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block">
+                    <h3 className="font-serif text-xl group-hover:underline">{o.nome}</h3>
+                    {o.cliente && <p className="text-sm text-muted-foreground mt-0.5">{o.cliente}</p>}
+                    {o.endereco && (
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{o.endereco}
+                      </p>
+                    )}
+                  </Link>
+                  <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-brand" style={{ width: `${o.avanco_pct}%` }} />
+                  </div>
+                  <div className="flex justify-end gap-1 mt-3 -mb-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+                    <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                  </div>
                 </div>
               </Card>
             );
           })}
+
         </div>
       ) : (
         <>
