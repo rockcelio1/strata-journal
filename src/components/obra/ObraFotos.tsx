@@ -167,10 +167,12 @@ export function ObraFotos({
         )}
 
         {heroUrl ? (
-          <button
-            type="button"
-            onClick={() => setLightbox(true)}
-            className="absolute inset-0 w-full h-full"
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => { setZoom(1); setLightbox(true); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setZoom(1); setLightbox(true); } }}
+            className="absolute inset-0 w-full h-full cursor-zoom-in"
             aria-label="Abrir foto em tela cheia"
           >
             <img
@@ -180,7 +182,7 @@ export function ObraFotos({
               decoding="async"
               className="relative w-full h-full object-cover"
             />
-          </button>
+          </div>
         ) : (
           <PremiumPlaceholder />
         )}
