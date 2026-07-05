@@ -218,11 +218,22 @@ function RdoDetailPage() {
   };
 
 
-  const baixarPdf = () => {
+  const avancosExpFn = useServerFn(listRdoAvancos);
+  const fetchAvancos = async () => {
+    if (!data?.rdo?.obra_id) return [] as any[];
+    try {
+      const r = await avancosExpFn({ data: { rdo_id: rdoId, obra_id: data.rdo.obra_id } });
+      return r.avancos ?? [];
+    } catch { return []; }
+  };
+
+  const baixarPdf = async () => {
     if (!data) return;
+    const avancos = await fetchAvancos();
     exportRdoPdf({
       rdo: data.rdo,
       atividades: data.atividades,
+      avancos,
       mao_de_obra: data.mao_de_obra,
       equipamentos: data.equipamentos,
       ocorrencias: data.ocorrencias,
@@ -231,6 +242,24 @@ function RdoDetailPage() {
       empresa: (me as any)?.empresa,
       clima_dias: climaState.dias ?? null,
       clima_local: climaState.local ?? null,
+    });
+  };
+
+  const baixarExcel = async () => {
+    if (!data) return;
+    const avancos = await fetchAvancos();
+    exportRdoExcel({
+      rdo: data.rdo,
+      atividades: data.atividades,
+      avancos,
+      mao_de_obra: data.mao_de_obra,
+      equipamentos: data.equipamentos,
+      ocorrencias: data.ocorrencias,
+      anexos: anexos as any[],
+      logs: logs as any[],
+      clima_dias: climaState.dias ?? null,
+      clima_local: climaState.local ?? null,
+      empresa: (me as any)?.empresa,
     });
   };
 
