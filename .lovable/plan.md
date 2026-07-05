@@ -1,72 +1,98 @@
-## Objetivo
+# Plano — Diário de Obra: melhoria incremental
 
-Permitir que Master/Admin (e Gestor de Acessos) conceda acesso a RDOs também para **grupos**, não só usuários individuais. Dois tipos de grupos: globais (da empresa) e equipes vinculadas a uma obra. Três níveis: **Ver / Editar / Aprovar**.
+Escopo enorme. Divido em **6 fases entregáveis**. Cada fase é auto-contida, migra sem quebrar, e recebe a tarja `<NewBadge since="..." />` já criada. Confirme por qual fase começar (ou "todas em ordem").
 
-## Banco de dados (1 migração)
+## Fase 1 — Fundação de banco (migrations seguras)
+Migration única com `CREATE TABLE IF NOT EXISTS` + GRANTs + RLS para as novas tabelas, mantendo a nomenclatura PT-BR já usada no projeto (aliases dos nomes EN do prompt):
 
-Novas tabelas em `public`:
+- `templates_tarefas` (task_templates)
+- `template_tarefa_itens` (task_template_items)
+- `obra_listas_tarefas` (work_task_lists)
+- `obra_tarefa_itens` (work_task_items)
+- `rdo_tarefa_avancos` (report_task_updates)
+- `import_jobs_tarefas` (task_import_jobs)
+- `obra_funcoes_permitidas` (work_allowed_labor_roles) → FK `mao_de_obra`
+- `obra_equipamentos_permitidos` (work_allowed_equipment) → FK `equipamentos`
+- `obra_anexos` (work_attachments)
 
-- `grupos` — id, empresa_id, nome, descricao, tipo `'global' | 'equipe_obra'`, obra_id (nullable, obrigatório quando `tipo='equipe_obra'`), created_at/updated_at.
-- `grupo_membros` — id, grupo_id, user_id, created_at; unique(grupo_id, user_id).
-- `rdo_acessos` — id, rdo_id, empresa_id, sujeito_tipo `'user' | 'grupo'`, sujeito_id (uuid do user OU do grupo), nivel `'ver' | 'editar' | 'aprovar'`, created_at, created_by. Unique(rdo_id, sujeito_tipo, sujeito_id).
+Ajustes em tabelas existentes (`ADD COLUMN IF NOT EXISTS`):
+- `rdo_anexos`: `tarefa_item_id`, `rdo_tarefa_avanco_id`, `ocorrencia_id`, `legenda` (já existe), `contexto`
+- `rdos`: `submitted_at/by`, `revision_requested_at/by/reason`, `final_pdf_url` (aproveita `approved_at/by` já existente via audit)
+- `obras`: `numero_contrato`, `responsavel_tecnico`, `grupo_obra`, `foto_principal_path`
 
-Função `private.can_access_rdo(_user, _rdo, _nivel)` (SECURITY DEFINER) que retorna true se:
-- usuário é admin/master da empresa do RDO, OU
-- usuário é o autor do RDO, OU
-- existe `rdo_acessos` com `sujeito_tipo='user'` e `sujeito_id=_user` e `nivel >= _nivel`, OU
-- existe `rdo_acessos` com `sujeito_tipo='grupo'` e o grupo contém o usuário e `nivel >= _nivel`.
+Novos enums:
+- `tarefa_controle` (`porcentagem`,`produtividade`,`misto`)
+- `tarefa_status` (`nao_iniciada`,`em_andamento`,`concluida`,`paralisada`,`cancelada`)
 
-Wrapper `public.can_access_rdo(...)` SECURITY INVOKER que chama o privado.
+RLS: todas por `empresa_id = private.get_user_empresa(auth.uid())`; mutação restrita via `has_permission`. Autor/planejador/admin conforme perfis.
 
-RLS:
-- `grupos`, `grupo_membros`: SELECT para mesma empresa; INSERT/UPDATE/DELETE só para quem tem `permissoes.editar` (admin/master/gestor_acessos).
-- `rdo_acessos`: SELECT para quem tem `rdos.ver` na empresa; INSERT/DELETE só para admin/master ou `permissoes.editar`.
-- Atualiza policies de `rdos` para considerar `can_access_rdo` ao lado das regras atuais.
+## Fase 2 — Cadastros globais (Mão de obra + Equipamentos + Ocorrências)
+- Seed idempotente das disciplinas/funções e equipamentos listados (só insere se `NOT EXISTS`).
+- Adiciona coluna `disciplina` em `mao_de_obra` e `equipamentos`.
+- Tela `cadastros.mao-de-obra` ganha abas: Disciplinas / Funções globais / Personalizados.
+- Tela `cadastros.equipamentos` ganha campos: tipo, disciplina, obrigatório, controle horas, controle qtd.
+- Seed dos tipos de ocorrência obrigatórios em `tipos_ocorrencia`.
 
-GRANTS padrão para `authenticated` e `service_role`.
+## Fase 3 — Módulo Templates de Tarefas
+Rotas novas sob `_authenticated/`:
+- `cadastros.templates-tarefas.tsx` (lista + CRUD)
+- `cadastros.templates-tarefas.$id.tsx` (editor hierárquico)
+- `cadastros.templates-tarefas.importar.tsx` (upload xlsx → parse → preview → mapear colunas → commit)
 
-Trigger de auditoria em `rdo_acessos` registrando concessão/remoção em `audit_logs_usuarios`.
+Server fns em `src/lib/templates-tarefas.functions.ts`:
+- `listTemplates`, `criarTemplate`, `duplicarTemplate`, `excluirTemplate`
+- `listItens`, `salvarItens` (batch)
+- `parseExcelTemplate` (client-side, usa `xlsx`), `commitImport` (server)
+- Download dos modelos `.xlsx` (porcentagem/produtividade) via arquivo estático.
 
-## Server functions (`src/lib/grupos.functions.ts`)
+Dependências novas: `xlsx`, `file-saver` (zod/react-hook-form/date-fns/lucide/sonner/recharts já existem).
 
-- `listarGrupos({ tipo?, obra_id? })`
-- `criarGrupo({ nome, tipo, obra_id?, descricao? })`
-- `excluirGrupo({ id })`
-- `adicionarMembro({ grupo_id, user_id })` / `removerMembro({ grupo_id, user_id })`
-- `listarAcessosRdo({ rdo_id })` — retorna users + grupos com nível
-- `concederAcessoRdo({ rdo_id, sujeito_tipo, sujeito_id, nivel })`
-- `revogarAcessoRdo({ id })`
+## Fase 4 — Vinculação à obra
+Em `obras.$obraId.tsx` adicionar abas:
+- **Lista de tarefas** — importar template, criar manual, duplicar, editar, excluir (bloqueia se há RDO vinculado). Indicadores: total/não iniciadas/em andamento/concluídas/% avanço.
+- **Equipes permitidas** — multi-select de `mao_de_obra`.
+- **Equipamentos permitidos** — multi-select de `equipamentos`.
+- **Anexos/Projetos** — upload PDFs para bucket `obra-fotos` (subpasta `anexos/`).
 
-Todas exigem `permissoes.editar` para mutações; leitura exige `rdos.ver` + mesma empresa.
+`obras.index.tsx`: adicionar contadores (relatórios, fotos, vídeos, ocorrências, % avanço geral) via view agregada.
 
-## UI
+## Fase 5 — RDO: atividades, aprovação, permissões
+`rdo.$rdoId.tsx` — seção Atividades reformulada:
+- Escolher entre "Da lista" (dropdown de `obra_tarefa_itens`) ou "Avulsa".
+- Campos: previsto/realizado acumulado (read-only) + realizado hoje / % hoje / status / horas / comentário / MO / equipamentos / fotos com legenda.
+- Salva em `rdo_tarefa_avancos`; trigger recalcula `obra_tarefa_itens.realizado_quantity` e `percent_complete`.
 
-1. Nova página `/configuracoes/grupos` (Master/Admin/Gestor de Acessos):
-   - Aba "Grupos globais" e aba "Equipes por obra".
-   - CRUD de grupos, gerenciamento de membros.
+Fluxo de aprovação (novo card `RdoAprovacaoCard.tsx`):
+- Botões: Enviar para aprovação → Aprovar / Solicitar revisão (motivo obrigatório) / Reabrir.
+- RPCs SECURITY DEFINER com checagem `has_permission('rdos','aprovar')`.
+- Status adicionais no enum `rdo_status`: `enviado`, `em_revisao`, `reaberto` (mantém existentes).
+- Após aprovado, `final_pdf_url` populado pela geração de PDF já existente.
 
-2. Na tela de detalhe do RDO (`rdo.$rdoId.tsx`), novo card **"Acesso ao RDO"** (visível para Master/Admin):
-   - Lista usuários e grupos com nível atual.
-   - Seletor para adicionar acesso: tipo (usuário/grupo) + alvo + nível (Ver/Editar/Aprovar).
-   - Botão de revogar por linha.
+Permissões — adiciona ao enum `app_action`/`app_resource` (se preciso):
+- `rdos.aprovar`, `rdos.solicitar_revisao`, `templates.editar`, `obras.vincular_recursos`.
+- Seed `role_permissions` para admin/master/planejador/encarregado/consulta.
 
-3. Sidebar de Configurações ganha item "Grupos & equipes".
+## Fase 6 — Export Excel + PDF com fotos por atividade + dashboard
+- `src/lib/export-excel.functions.ts` — gera workbook 9 abas (Relatórios/Horário/Clima/MO/Equip/Atividades/Ocorrências/Comentários/Mídias) usando `xlsx`. Botões em `relatorios.$dim` e detalhe da obra.
+- `src/lib/rdo-pdf.ts` — grid de fotos com legenda `item_code - descricao` abaixo (padrão RDO nº 33).
+- `dashboard.tsx` — cards novos: HH por obra, RDOs pendentes/aprovados/revisão, avanço por etapa, produtividade prev×real, atividades fora do escopo. Usa `recharts` (já instalado).
 
-## Arquivos
+---
 
-**Novos:**
-- `supabase/migrations/<ts>_rdo_grupos_acesso.sql`
-- `src/lib/grupos.functions.ts`
-- `src/routes/_authenticated/configuracoes.grupos.tsx`
-- `src/components/rdo/RdoAcessoCard.tsx`
+## Regras de segurança aplicadas em todas as fases
+- Toda migration: `IF NOT EXISTS` em tabelas, colunas, tipos, políticas.
+- `GRANT SELECT/INSERT/UPDATE/DELETE ... TO authenticated` + `GRANT ALL ... TO service_role` para toda tabela nova.
+- RLS `ENABLE` + policies escopadas a `empresa_id`.
+- Nenhum `DROP` de tabela ou coluna existente.
+- Nenhuma edição em `src/integrations/supabase/*` (auto-gen).
+- `<NewBadge since="2026-07-05" />` em cada UI nova.
 
-**Editados:**
-- `src/routes/_authenticated/rdo.$rdoId.tsx` (montar `RdoAcessoCard`)
-- `src/routes/_authenticated/configuracoes.tsx` (novo item de menu)
-- `src/integrations/supabase/types.ts` (regenerado)
+## Dependências a adicionar
+`xlsx`, `file-saver`, `@types/file-saver`. (uuid, zod, rhf, recharts, date-fns, lucide, sonner já presentes.)
 
-## Observações
-
-- O nível "aprovar" implica também "editar" e "ver"; "editar" implica "ver". A função `can_access_rdo` compara via ordem `ver < editar < aprovar`.
-- O autor do RDO sempre tem nível "editar" implícito (não precisa entrada em `rdo_acessos`).
-- Master/Admin têm acesso total — não dependem de `rdo_acessos`.
+## Como proceder
+Responda com uma das opções:
+1. **"Fase 1"** — só banco (mais seguro, valida schema antes de UI).
+2. **"Fases 1+2"** — banco + cadastros globais.
+3. **"Todas em ordem"** — executo fase por fase, uma por turno, esperando você validar entre elas.
+4. **Outra combinação** que preferir.
