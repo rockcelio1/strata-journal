@@ -56,6 +56,7 @@ export const createObraListFromTemplate = createServerFn({ method: "POST" })
         obra_id: data.obra_id,
         task_list_id: list.data.id,
         item_code: it.item_code,
+        descricao: it.descricao,
         is_etapa: false,
         unidade: it.unidade,
         planned_quantity: it.planned_quantity,
