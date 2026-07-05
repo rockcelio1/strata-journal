@@ -2,11 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { listTiposOcorrencia, upsertTipoOcorrencia, deleteTipoOcorrencia } from "@/lib/cadastros.functions";
+import { listTiposOcorrencia, upsertTipoOcorrencia, deleteTipoOcorrencia, seedTiposOcorrenciaPadrao } from "@/lib/cadastros.functions";
 import { CadastroLayout, CrudDialog, CrudTable, FieldText, FieldSwitch, FieldSelect, FieldTextarea } from "@/components/cadastro-helpers";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import { severidadeMeta } from "@/components/status";
 import { toast } from "sonner";
+import { NewBadge } from "@/components/NewBadge";
 
 export const Route = createFileRoute("/_authenticated/cadastros/ocorrencias")({
   component: TiposOcorrenciaPage,
