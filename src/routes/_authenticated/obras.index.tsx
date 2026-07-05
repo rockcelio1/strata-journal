@@ -112,21 +112,33 @@ function ObrasPage() {
               const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
               return (
                 <Card key={o.id} className="p-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline min-w-0 truncate">{o.nome}</Link>
-                    <Badge variant="outline" className={m.className}>{m.label}</Badge>
-                  </div>
-                  {o.cliente && <p className="text-xs text-muted-foreground truncate">{o.cliente}</p>}
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
-                      <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                  <div className="flex items-start gap-3">
+                    <Link to="/obras/$obraId" params={{ obraId: o.id }} className="shrink-0 w-16 h-16 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                      {o.foto_capa_url ? (
+                        <img src={o.foto_capa_url} alt={o.nome} loading="lazy" className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-muted-foreground/60" />
+                      )}
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline min-w-0 truncate">{o.nome}</Link>
+                        <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                      </div>
+                      {o.cliente && <p className="text-xs text-muted-foreground truncate">{o.cliente}</p>}
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+                          <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Card>
               );
             })}
+
           </div>
           {/* Desktop: tabela */}
           <Card className="hidden md:block">
