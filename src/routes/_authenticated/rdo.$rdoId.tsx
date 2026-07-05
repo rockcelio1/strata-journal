@@ -8,13 +8,14 @@ import {
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
   updateRdoClimaRascunho,
 } from "@/lib/rdo.functions";
-import { requestRevisionRdo, reopenRdo } from "@/lib/rdo-avancos.functions";
+import { requestRevisionRdo, reopenRdo, listRdoAvancos } from "@/lib/rdo-avancos.functions";
 import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
+import { exportRdoExcel } from "@/lib/rdo-excel";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
