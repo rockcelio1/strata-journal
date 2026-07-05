@@ -242,12 +242,9 @@ function ObraDetail() {
             </>
           )}
 
-          {view === "tarefas" && (
-            <Card className="p-12 text-center text-muted-foreground">
-              <ListChecks size={36} className="mx-auto mb-3 opacity-60" />
-              <p className="text-sm">Lista de tarefas em breve.</p>
-            </Card>
-          )}
+          {view === "tarefas" && <ObraVinculacoes obraId={obraId} />}
+
+          {view === "recursos" && <ObraVinculacoes obraId={obraId} />}
 
           {view === "relatorios" && (
             <Card className="p-0 overflow-hidden">
