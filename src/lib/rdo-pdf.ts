@@ -79,6 +79,23 @@ export function exportRdoPdf(args: {
   section("Atividades", ["Descrição", "% Executado"],
     atividades.map((a) => [a.descricao, `${Number(a.pct_executado ?? 0).toFixed(0)}%`]));
 
+  if (avancos && avancos.length) {
+    section(
+      "Avanços de tarefas",
+      ["Código", "Descrição", "Unid.", "Realizado hoje", "% acum.", "Status", "Horas", "Comentário"],
+      avancos.map((a) => [
+        a.item_code ?? "—",
+        a.descricao ?? "—",
+        a.unidade ?? "—",
+        a.realized_today ?? "—",
+        a.accumulated_percent != null ? `${Number(a.accumulated_percent).toFixed(0)}%` : "—",
+        a.status ?? "—",
+        a.total_hours ?? "—",
+        a.comment ?? "",
+      ]),
+    );
+  }
+
   section("Mão de obra", ["Pessoa", "Função", "Atividade", "Horas"],
     mao_de_obra.map((m) => [m.mao_de_obra?.nome ?? "—", m.mao_de_obra?.funcao ?? "—", m.atividade ?? "—", String(m.horas ?? 0)]));
 
