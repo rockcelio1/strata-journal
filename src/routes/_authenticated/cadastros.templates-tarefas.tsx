@@ -57,9 +57,10 @@ function TemplatesTarefasPage() {
 
   return (
     <CadastroLayout
-      title={<span className="flex items-center gap-2">Templates de Tarefas <NewBadge since="2026-07-05" /></span> as any}
+      title="Templates de Tarefas"
       subtitle="Modelos hierárquicos de tarefas, reutilizáveis entre obras."
       onNew={() => { setForm({ nome: "", tipo_controle: "porcentagem", ativo: true }); setOpen(true); }}
+      extraActions={<NewBadge since="2026-07-05" />}
     >
       <CrudTable<Row>
         rows={data as Row[]}
