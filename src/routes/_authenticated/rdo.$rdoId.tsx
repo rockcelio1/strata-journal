@@ -416,6 +416,15 @@ function RdoDetailPage() {
         ))}
       </SectionList>
 
+      {(r.obras?.id ?? r.obra_id) && (
+        <RdoAvancosSection
+          rdoId={rdoId}
+          obraId={r.obras?.id ?? r.obra_id}
+          readOnly={!(r.status === "rascunho" || r.status === "revisao_solicitada" || r.status === "reaberto") || !isAuthor}
+        />
+      )}
+
+
       <SectionList title="Mão de obra" empty="Nenhuma pessoa registrada.">
         {data.mao_de_obra.map((m: any) => (
           <div key={m.id} className="flex justify-between py-2 border-b border-border last:border-0 text-sm">
