@@ -116,6 +116,18 @@ function RdoDetailPage() {
     onSuccess: () => { toast.success("Decisão registrada"); refresh(); },
     onError: (e: any) => toast.error(e.message),
   });
+  const revisionFn = useServerFn(requestRevisionRdo);
+  const reopenSFn = useServerFn(reopenRdo);
+  const requestRev = useMutation({
+    mutationFn: (m: string) => revisionFn({ data: { id: rdoId, motivo: m } }),
+    onSuccess: () => { toast.success("Revisão solicitada"); refresh(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const reopen = useMutation({
+    mutationFn: () => reopenSFn({ data: { id: rdoId } }),
+    onSuccess: () => { toast.success("RDO reaberto"); refresh(); },
+    onError: (e: any) => toast.error(e.message),
+  });
   const removerAnx = useMutation({
     mutationFn: (id: string) => removerFn({ data: { id } }),
     onSuccess: () => { toast.success("Anexo removido"); qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }); },
