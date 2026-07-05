@@ -68,6 +68,7 @@ const avancoSchema = z.object({
   accumulated_percent: z.number().nullable().optional(),
   status: z.enum(["nao_iniciada", "em_andamento", "concluida", "paralisada", "cancelada"]).optional(),
   total_hours: z.number().nullable().optional(),
+
   comment: z.string().nullable().optional(),
 });
 
