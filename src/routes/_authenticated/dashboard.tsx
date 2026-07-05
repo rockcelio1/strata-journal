@@ -216,6 +216,37 @@ function DashboardPage() {
         />
       </div>
 
+      {/* Indicadores operacionais (Fase 7) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
+        <StatCard
+          icon={HardHat}
+          label="HH total"
+          value={Math.round(Number((data as any).hh_total ?? 0))}
+          sub="horas de mão de obra"
+          tone="brand"
+        />
+        <StatCard
+          icon={Wrench}
+          label="Horas de equipamentos"
+          value={Math.round(Number((data as any).equipamentos_horas_total ?? 0))}
+          sub="uso registrado nos RDOs"
+          tone="brand"
+        />
+        <StatCard
+          icon={BarChart3}
+          label="Avanço físico médio"
+          value={`${Number((data as any).avanco_fisico_medio ?? 0).toFixed(1)}%`}
+          sub="tarefas ativas em todas as obras"
+          tone="success"
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Ocorrências (7d)"
+          value={data.ocorrencias_semana}
+          sub={`${data.ocorrencias_total} no total`}
+          tone="warning"
+        />
+
       {/* ============== GRÁFICOS MULTI-DIMENSÃO ============== */}
       <Card id="graficos" className="dash-card p-4 sm:p-6 mb-4 overflow-hidden relative">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
