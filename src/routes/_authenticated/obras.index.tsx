@@ -57,12 +57,22 @@ function ObrasPage() {
           <h1 className="font-serif text-3xl">Obras</h1>
           <p className="text-sm text-muted-foreground mt-1">{obras.length} obras cadastradas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-56" />
+          <Button
+            variant={onlyWithCover ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyWithCover((v) => !v)}
+            aria-pressed={onlyWithCover}
+            title="Filtrar obras com foto de capa"
+          >
+            <ImageIcon className="h-4 w-4 mr-1" /> Com capa
+          </Button>
           <div className="flex border border-border rounded-md">
-            <button onClick={() => setView("cards")} className={`p-2 ${view === "cards" ? "bg-muted" : ""}`}><LayoutGrid className="h-4 w-4" /></button>
-            <button onClick={() => setView("list")} className={`p-2 ${view === "list" ? "bg-muted" : ""}`}><List className="h-4 w-4" /></button>
+            <button onClick={() => setView("cards")} className={`p-2 ${view === "cards" ? "bg-muted" : ""}`} aria-label="Visualizar em cards"><LayoutGrid className="h-4 w-4" /></button>
+            <button onClick={() => setView("list")} className={`p-2 ${view === "list" ? "bg-muted" : ""}`} aria-label="Visualizar em lista"><List className="h-4 w-4" /></button>
           </div>
+
           <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-brand text-brand-foreground hover:bg-brand/90">
             <Plus className="h-4 w-4 mr-1" /> Nova obra
           </Button>
