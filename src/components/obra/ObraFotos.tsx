@@ -71,6 +71,7 @@ export function ObraFotos({
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [fitMode, setFitMode] = useState<"fit" | "actual">("fit");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // mantém index válido
