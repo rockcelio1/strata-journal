@@ -606,6 +606,21 @@ function RdoDetailPage() {
                       <div className="text-[10px] text-muted-foreground">
                         {new Date(a.created_at).toLocaleDateString("pt-BR")} · {a.autor?.nome ?? "—"}
                       </div>
+                      {avancosItens.length > 0 && (
+                        <select
+                          value={a.task_item_id ?? ""}
+                          onChange={(e) => setTaskItem.mutate({ id: a.id, task_item_id: e.target.value || null })}
+                          className="text-[10px] border border-border rounded px-1 py-0.5 bg-background"
+                          aria-label="Vincular a atividade"
+                        >
+                          <option value="">— sem atividade —</option>
+                          {avancosItens.map((it: any) => (
+                            <option key={it.id} value={it.id}>
+                              {(it.item_code ? it.item_code + " · " : "") + (it.descricao ?? "")}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <div className="flex items-center justify-between mt-1">
                         <a
                           href={a.url ?? "#"}
