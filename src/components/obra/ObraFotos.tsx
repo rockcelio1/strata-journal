@@ -71,6 +71,7 @@ export function ObraFotos({
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [fitMode, setFitMode] = useState<"fit" | "actual">("fit");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // mantém index válido
@@ -141,7 +142,29 @@ export function ObraFotos({
   const go = (delta: number) => {
     if (!fotos.length) return;
     setActive((i) => (i + delta + fotos.length) % fotos.length);
+    setZoom(1);
+    setFitMode("fit");
   };
+
+  // Reseta zoom/fit ao trocar de foto
+  useEffect(() => { setZoom(1); setFitMode("fit"); }, [active, lightbox]);
+
+  // Atalhos de teclado no lightbox
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); setLightbox(false); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "+" || e.key === "=") { e.preventDefault(); setFitMode("fit"); setZoom((z) => Math.min(5, z + 0.25)); }
+      else if (e.key === "-" || e.key === "_") { e.preventDefault(); setFitMode("fit"); setZoom((z) => Math.max(1, z - 0.25)); }
+      else if (e.key === "0") { e.preventDefault(); setFitMode("fit"); setZoom(1); }
+      else if (e.key === "1") { e.preventDefault(); setFitMode("actual"); setZoom(1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, fotos.length]);
+
 
   const empty = !isLoading && fotos.length === 0;
   const isCapa = useMemo(
@@ -330,57 +353,97 @@ export function ObraFotos({
           >
             <X size={18} />
           </button>
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
+            onClick={(e) => e.stopPropagation()}
+            role="toolbar"
+            aria-label="Controles de visualização"
+          >
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.max(1, z - 0.25))}
+              onClick={() => { setFitMode("fit"); setZoom((z) => Math.max(1, z - 0.25)); }}
               className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-sm"
-              aria-label="Diminuir zoom"
+              aria-label="Diminuir zoom (tecla -)"
+              title="Diminuir zoom (-)"
             >−</button>
-            <span className="text-white text-xs tabular-nums w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <span className="text-white text-xs tabular-nums w-12 text-center" aria-live="polite">
+              {fitMode === "actual" ? "1:1" : `${Math.round(zoom * 100)}%`}
+            </span>
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.min(5, z + 0.25))}
+              onClick={() => { setFitMode("fit"); setZoom((z) => Math.min(5, z + 0.25)); }}
               className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-sm"
-              aria-label="Aumentar zoom"
+              aria-label="Aumentar zoom (tecla +)"
+              title="Aumentar zoom (+)"
             >+</button>
+            <div className="mx-1 h-6 w-px bg-white/20" aria-hidden />
             <button
               type="button"
-              onClick={() => setZoom(1)}
-              className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-xs"
-              aria-label="Redefinir zoom"
-            >100%</button>
+              onClick={() => { setFitMode("fit"); setZoom(1); }}
+              className={cn(
+                "px-3 h-9 rounded-full text-xs text-white hover:bg-white/20",
+                fitMode === "fit" ? "bg-white/25" : "bg-white/10",
+              )}
+              aria-label="Ajustar à tela (tecla 0)"
+              aria-pressed={fitMode === "fit"}
+              title="Ajustar à tela (0)"
+            >Ajustar</button>
+            <button
+              type="button"
+              onClick={() => { setFitMode("actual"); setZoom(1); }}
+              className={cn(
+                "px-3 h-9 rounded-full text-xs text-white hover:bg-white/20",
+                fitMode === "actual" ? "bg-white/25" : "bg-white/10",
+              )}
+              aria-label="Tamanho real 1 para 1 (tecla 1)"
+              aria-pressed={fitMode === "actual"}
+              title="Tamanho real 1:1 (1)"
+            >1:1</button>
           </div>
           {fotos.length > 1 && (
             <>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); go(-1); setZoom(1); }}
+                onClick={(e) => { e.stopPropagation(); go(-1); }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center z-10"
-                aria-label="Anterior"
+                aria-label="Foto anterior (seta esquerda)"
+                title="Anterior (←)"
               >
                 <CaretLeft size={18} />
               </button>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); go(1); setZoom(1); }}
+                onClick={(e) => { e.stopPropagation(); go(1); }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center z-10"
-                aria-label="Próxima"
+                aria-label="Próxima foto (seta direita)"
+                title="Próxima (→)"
               >
                 <CaretRight size={18} />
               </button>
             </>
           )}
-          <img
-            src={heroUrl}
-            alt={current?.nome ?? "Foto da obra"}
-            className={cn("max-w-[95vw] max-h-[90vh] object-contain transition-transform select-none", zoom > 1 ? "cursor-zoom-out" : "cursor-zoom-in")}
-            style={{ transform: `scale(${zoom})` }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setZoom((z) => (z >= 2 ? 1 : z + 1));
-            }}
-          />
+          <div
+            className={cn("relative", fitMode === "actual" ? "overflow-auto max-w-[95vw] max-h-[90vh]" : "")}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={heroUrl}
+              alt={current?.nome ?? "Foto da obra"}
+              className={cn(
+                "select-none transition-transform",
+                fitMode === "fit"
+                  ? cn("max-w-[95vw] max-h-[90vh] object-contain", zoom > 1 ? "cursor-zoom-out" : "cursor-zoom-in")
+                  : "block",
+              )}
+              style={fitMode === "fit" ? { transform: `scale(${zoom})` } : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (fitMode === "actual") { setFitMode("fit"); setZoom(1); return; }
+                setZoom((z) => (z >= 2 ? 1 : z + 1));
+              }}
+            />
+          </div>
+
         </div>
       )}
     </div>
