@@ -90,13 +90,30 @@ export function exportRdoExcel(args: {
     descricao: o.descricao ?? "",
   })));
 
+  const findAtiv = (id?: string | null) => {
+    if (!id) return "";
+    const av = (avancos ?? []).find((a: AnyRec) => a.task_item_id === id || a.id === id);
+    return av ? `${av.item_code ? av.item_code + " · " : ""}${av.descricao ?? ""}` : "";
+  };
+
   addSheet(wb, "Anexos", anexos.map((a: AnyRec) => ({
     nome: a.nome,
+    atividade: findAtiv(a.task_item_id),
     autor: a.autor?.nome ?? "",
     mime_type: a.mime_type ?? "",
     tamanho_bytes: a.tamanho_bytes ?? "",
     enviado_em: fmtDate(a.created_at),
+    url: a.url ?? "",
   })));
+
+  addSheet(wb, "Fotos", anexos
+    .filter((a: AnyRec) => (a.mime_type ?? "").toString().startsWith("image/"))
+    .map((a: AnyRec) => ({
+      atividade: findAtiv(a.task_item_id),
+      nome: a.nome,
+      url: a.url ?? "",
+      enviado_em: fmtDate(a.created_at),
+    })));
 
   addSheet(wb, "Clima", (clima_dias ?? []).map((d: AnyRec) => ({
     local: clima_local ?? "",
