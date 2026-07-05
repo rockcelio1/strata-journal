@@ -135,3 +135,28 @@ export const deleteTipoOcorrencia = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// =============== SEEDS PADRÃO ===============
+export const seedMaoDeObraPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_mao_de_obra_padrao");
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const seedEquipamentosPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_equipamentos_padrao");
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const seedTiposOcorrenciaPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_tipos_ocorrencia_padrao");
+    if (error) throw error;
+    return { ok: true };
+  });
