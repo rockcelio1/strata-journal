@@ -157,7 +157,18 @@ function ObrasPage() {
                   const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
                   return (
                     <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                      <td className="p-3"><Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline">{o.nome}</Link></td>
+                      <td className="p-3">
+                        <Link to="/obras/$obraId" params={{ obraId: o.id }} className="flex items-center gap-3 font-medium hover:underline">
+                          <span className="shrink-0 w-10 h-10 rounded overflow-hidden bg-muted flex items-center justify-center">
+                            {o.foto_capa_url ? (
+                              <img src={o.foto_capa_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                            ) : (
+                              <Building2 className="h-4 w-4 text-muted-foreground/60" />
+                            )}
+                          </span>
+                          <span className="truncate">{o.nome}</span>
+                        </Link>
+                      </td>
                       <td className="p-3 text-muted-foreground">{o.cliente ?? "—"}</td>
                       <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
                       <td className="p-3 text-right tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</td>
