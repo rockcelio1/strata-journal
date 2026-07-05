@@ -202,10 +202,12 @@ function ObrasPage() {
                       <td className="p-3 text-muted-foreground">{o.cliente ?? "—"}</td>
                       <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
                       <td className="p-3 text-right tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right whitespace-nowrap">
+                        <CapaMenu obra={o} />
                         <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
                         <DeleteBtn onConfirm={() => del.mutate(o.id)} />
                       </td>
+
                     </tr>
                   );
                 })}
