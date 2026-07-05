@@ -8,6 +8,8 @@ import {
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
   updateRdoClimaRascunho,
 } from "@/lib/rdo.functions";
+import { requestRevisionRdo, reopenRdo } from "@/lib/rdo-avancos.functions";
+import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
