@@ -6,6 +6,7 @@ import { z } from "zod";
 const maoSchema = z.object({
   nome: z.string().min(1),
   funcao: z.string().min(1),
+  disciplina: z.string().nullable().optional(),
   empresa_terceira: z.string().nullable().optional(),
   contato: z.string().nullable().optional(),
   ativo: z.boolean().default(true),
