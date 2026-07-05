@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CadastroLayout, CrudTable } from "@/components/cadastro-helpers";
 import { NewBadge } from "@/components/NewBadge";
-import { Upload } from "lucide-react";
 import { listTemplates, upsertTemplate, deleteTemplate } from "@/lib/templates-tarefas.functions";
 
 export const Route = createFileRoute("/_authenticated/cadastros/templates-tarefas")({
