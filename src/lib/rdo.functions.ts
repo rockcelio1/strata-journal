@@ -333,19 +333,19 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
 
 export const registrarAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { rdo_id: string; nome: string; storage_path: string; mime_type?: string; tamanho_bytes?: number }) =>
+  .inputValidator((d: unknown) =>
     z.object({
       rdo_id: z.string().uuid(),
       nome: z.string().min(1),
       storage_path: z.string().min(1),
       mime_type: z.string().optional(),
       tamanho_bytes: z.number().optional(),
+      task_item_id: z.string().uuid().nullable().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
-    // Bloqueia arquivos de tipo desconhecido — só Fotos/Vídeos/PDFs/Assinaturas
     const hint = `${data.storage_path ?? ""} ${data.nome ?? ""}`.toLowerCase();
     const isAssinatura = hint.includes("assinatura-") || hint.includes("/assinatura");
     const mime = data.mime_type ?? "";
@@ -361,9 +361,27 @@ export const registrarAnexo = createServerFn({ method: "POST" })
       storage_path: data.storage_path,
       mime_type: data.mime_type ?? null,
       tamanho_bytes: data.tamanho_bytes ?? null,
-    }).select().single();
+      task_item_id: data.task_item_id ?? null,
+    } as any).select().single();
     if (error) throw error;
     return created;
+  });
+
+export const setAnexoTaskItem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      task_item_id: z.string().uuid().nullable(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("rdo_anexos")
+      .update({ task_item_id: data.task_item_id } as any)
+      .eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
   });
 
 export const removerAnexo = createServerFn({ method: "POST" })
