@@ -282,7 +282,7 @@ export const getDashboard = createServerFn({ method: "GET" })
     const uid = context.userId;
     // Rascunhos são pessoais: só o autor enxerga os próprios.
     const rascunhoVisivel = `status.neq.rascunho,autor_id.eq.${uid}`;
-    const [obras, rdosPendentes, rdosFull, ocorrenciasFull, recentRdos, equipamentos, maoDeObra, tiposOcorrencia, rdoEquip, rdoMao] = await Promise.all([
+    const [obras, rdosPendentes, rdosFull, ocorrenciasFull, recentRdos, equipamentos, maoDeObra, tiposOcorrencia, rdoEquip, rdoMao, rdoMaoHH, rdoEquipHH, tarefaItens] = await Promise.all([
       supabase.from("obras").select("id, nome, status, avanco_pct"),
       supabase.from("rdos").select("id", { count: "exact", head: true }).eq("status", "enviado").is("deleted_at", null),
       supabase.from("rdos").select("id, status, data, obra_id, autor_id").is("deleted_at", null).or(rascunhoVisivel),
@@ -293,8 +293,17 @@ export const getDashboard = createServerFn({ method: "GET" })
       supabase.from("tipos_ocorrencia").select("id, nome"),
       supabase.from("rdo_equipamentos").select("equipamento_id, rdo_id, rdos!inner(obra_id)"),
       supabase.from("rdo_mao_de_obra").select("mao_de_obra_id, rdo_id, rdos!inner(obra_id)"),
+      supabase.from("rdo_mao_de_obra").select("horas, rdo_id, rdos!inner(obra_id, deleted_at)").is("rdos.deleted_at", null),
+      supabase.from("rdo_equipamentos").select("horas_uso, rdo_id, rdos!inner(obra_id, deleted_at)").is("rdos.deleted_at", null),
+      supabase.from("obra_tarefa_itens").select("obra_id, percent_complete, ativo").eq("ativo", true),
     ]);
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000);
+    const hhTotal = (rdoMaoHH.data ?? []).reduce((s: number, r: any) => s + Number(r.horas ?? 0), 0);
+    const equipHorasTotal = (rdoEquipHH.data ?? []).reduce((s: number, r: any) => s + Number(r.horas_uso ?? 0), 0);
+    const tarefas = (tarefaItens.data ?? []) as any[];
+    const avancoFisicoMedio = tarefas.length
+      ? tarefas.reduce((s, t) => s + Number(t.percent_complete ?? 0), 0) / tarefas.length
+      : 0;
     return {
       obras: obras.data ?? [],
       obras_ativas: (obras.data ?? []).filter((o) => o.status === "em_andamento").length,
@@ -304,6 +313,9 @@ export const getDashboard = createServerFn({ method: "GET" })
       rdos_aprovados: (rdosFull.data ?? []).filter((r) => r.status === "aprovado").length,
       ocorrencias_semana: (ocorrenciasFull.data ?? []).filter((o: any) => new Date(o.created_at) > sevenDaysAgo).length,
       ocorrencias_total: (ocorrenciasFull.data ?? []).length,
+      hh_total: hhTotal,
+      equipamentos_horas_total: equipHorasTotal,
+      avanco_fisico_medio: avancoFisicoMedio,
       recent_rdos: recentRdos.data ?? [],
       // dados para filtro avançado
       rdos_all: rdosFull.data ?? [],

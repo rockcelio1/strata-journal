@@ -1086,6 +1086,7 @@ export type Database = {
           storage_provider: string
           tamanho_bytes: number | null
           tarefa_item_id: string | null
+          task_item_id: string | null
           thumbnail_url: string | null
         }
         Insert: {
@@ -1107,6 +1108,7 @@ export type Database = {
           storage_provider?: string
           tamanho_bytes?: number | null
           tarefa_item_id?: string | null
+          task_item_id?: string | null
           thumbnail_url?: string | null
         }
         Update: {
@@ -1128,6 +1130,7 @@ export type Database = {
           storage_provider?: string
           tamanho_bytes?: number | null
           tarefa_item_id?: string | null
+          task_item_id?: string | null
           thumbnail_url?: string | null
         }
         Relationships: [
@@ -1150,6 +1153,13 @@ export type Database = {
             columns: ["rdo_id"]
             isOneToOne: false
             referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_anexos_task_item_id_fkey"
+            columns: ["task_item_id"]
+            isOneToOne: false
+            referencedRelation: "obra_tarefa_itens"
             referencedColumns: ["id"]
           },
         ]

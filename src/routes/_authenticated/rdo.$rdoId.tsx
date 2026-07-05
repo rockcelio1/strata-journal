@@ -10,6 +10,7 @@ import {
 } from "@/lib/rdo.functions";
 import { requestRevisionRdo, reopenRdo, listRdoAvancos } from "@/lib/rdo-avancos.functions";
 import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
+import { setAnexoTaskItem } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
@@ -219,21 +220,25 @@ function RdoDetailPage() {
 
 
   const avancosExpFn = useServerFn(listRdoAvancos);
-  const fetchAvancos = async () => {
-    if (!data?.rdo?.obra_id) return [] as any[];
-    try {
-      const r = await avancosExpFn({ data: { rdo_id: rdoId, obra_id: data.rdo.obra_id } });
-      return r.avancos ?? [];
-    } catch { return []; }
-  };
+  const { data: avancosData } = useQuery({
+    queryKey: ["rdo-avancos-export", rdoId, (data as any)?.rdo?.obra_id],
+    queryFn: () => avancosExpFn({ data: { rdo_id: rdoId, obra_id: (data as any).rdo.obra_id } }),
+    enabled: !!(data as any)?.rdo?.obra_id,
+  });
+  const avancosItens = (avancosData?.itens ?? []) as any[];
+  const avancosRows = (avancosData?.avancos ?? []) as any[];
+  const setTaskItemFn = useServerFn(setAnexoTaskItem);
+  const setTaskItem = useMutation({
+    mutationFn: (p: { id: string; task_item_id: string | null }) => setTaskItemFn({ data: p }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }),
+  });
 
   const baixarPdf = async () => {
     if (!data) return;
-    const avancos = await fetchAvancos();
-    exportRdoPdf({
+    await exportRdoPdf({
       rdo: data.rdo,
       atividades: data.atividades,
-      avancos,
+      avancos: avancosRows,
       mao_de_obra: data.mao_de_obra,
       equipamentos: data.equipamentos,
       ocorrencias: data.ocorrencias,
@@ -247,11 +252,10 @@ function RdoDetailPage() {
 
   const baixarExcel = async () => {
     if (!data) return;
-    const avancos = await fetchAvancos();
     exportRdoExcel({
       rdo: data.rdo,
       atividades: data.atividades,
-      avancos,
+      avancos: avancosRows,
       mao_de_obra: data.mao_de_obra,
       equipamentos: data.equipamentos,
       ocorrencias: data.ocorrencias,
@@ -602,6 +606,21 @@ function RdoDetailPage() {
                       <div className="text-[10px] text-muted-foreground">
                         {new Date(a.created_at).toLocaleDateString("pt-BR")} · {a.autor?.nome ?? "—"}
                       </div>
+                      {avancosItens.length > 0 && (
+                        <select
+                          value={a.task_item_id ?? ""}
+                          onChange={(e) => setTaskItem.mutate({ id: a.id, task_item_id: e.target.value || null })}
+                          className="text-[10px] border border-border rounded px-1 py-0.5 bg-background"
+                          aria-label="Vincular a atividade"
+                        >
+                          <option value="">— sem atividade —</option>
+                          {avancosItens.map((it: any) => (
+                            <option key={it.id} value={it.id}>
+                              {(it.item_code ? it.item_code + " · " : "") + (it.descricao ?? "")}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <div className="flex items-center justify-between mt-1">
                         <a
                           href={a.url ?? "#"}
