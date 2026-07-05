@@ -142,7 +142,29 @@ export function ObraFotos({
   const go = (delta: number) => {
     if (!fotos.length) return;
     setActive((i) => (i + delta + fotos.length) % fotos.length);
+    setZoom(1);
+    setFitMode("fit");
   };
+
+  // Reseta zoom/fit ao trocar de foto
+  useEffect(() => { setZoom(1); setFitMode("fit"); }, [active, lightbox]);
+
+  // Atalhos de teclado no lightbox
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); setLightbox(false); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+      else if (e.key === "+" || e.key === "=") { e.preventDefault(); setFitMode("fit"); setZoom((z) => Math.min(5, z + 0.25)); }
+      else if (e.key === "-" || e.key === "_") { e.preventDefault(); setFitMode("fit"); setZoom((z) => Math.max(1, z - 0.25)); }
+      else if (e.key === "0") { e.preventDefault(); setFitMode("fit"); setZoom(1); }
+      else if (e.key === "1") { e.preventDefault(); setFitMode("actual"); setZoom(1); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, fotos.length]);
+
 
   const empty = !isLoading && fotos.length === 0;
   const isCapa = useMemo(
