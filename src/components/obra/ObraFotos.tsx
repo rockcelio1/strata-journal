@@ -315,31 +315,56 @@ export function ObraFotos({
         <div
           role="dialog"
           aria-modal
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-auto"
           onClick={() => setLightbox(false)}
+          onWheel={(e) => {
+            e.preventDefault();
+            setZoom((z) => Math.min(5, Math.max(1, z + (e.deltaY < 0 ? 0.2 : -0.2))));
+          }}
         >
           <button
             type="button"
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center"
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center z-10"
             aria-label="Fechar"
-            onClick={() => setLightbox(false)}
+            onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
           >
             <X size={18} />
           </button>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(1, z - 0.25))}
+              className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-sm"
+              aria-label="Diminuir zoom"
+            >−</button>
+            <span className="text-white text-xs tabular-nums w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(5, z + 0.25))}
+              className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-sm"
+              aria-label="Aumentar zoom"
+            >+</button>
+            <button
+              type="button"
+              onClick={() => setZoom(1)}
+              className="px-3 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 text-xs"
+              aria-label="Redefinir zoom"
+            >100%</button>
+          </div>
           {fotos.length > 1 && (
             <>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); go(-1); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center"
+                onClick={(e) => { e.stopPropagation(); go(-1); setZoom(1); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center z-10"
                 aria-label="Anterior"
               >
                 <CaretLeft size={18} />
               </button>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); go(1); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center"
+                onClick={(e) => { e.stopPropagation(); go(1); setZoom(1); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 inline-flex items-center justify-center z-10"
                 aria-label="Próxima"
               >
                 <CaretRight size={18} />
@@ -349,8 +374,12 @@ export function ObraFotos({
           <img
             src={heroUrl}
             alt={current?.nome ?? "Foto da obra"}
-            className="max-w-[95vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
+            className={cn("max-w-[95vw] max-h-[90vh] object-contain transition-transform select-none", zoom > 1 ? "cursor-zoom-out" : "cursor-zoom-in")}
+            style={{ transform: `scale(${zoom})` }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom((z) => (z >= 2 ? 1 : z + 1));
+            }}
           />
         </div>
       )}
