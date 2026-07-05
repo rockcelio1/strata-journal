@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { listObras, deleteObra } from "@/lib/obras.functions";
+import { registerObraFoto, setObraCapa } from "@/lib/obra-fotos.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, LayoutGrid, List, Trash2, MapPin, Building2 } from "lucide-react";
+import { Plus, LayoutGrid, List, Trash2, MapPin, Building2, Camera, ImageOff, Image as ImageIcon } from "lucide-react";
 import { obraStatusMeta } from "@/components/status";
 import { ObraDialog } from "@/components/obra-dialog";
 import { toast } from "sonner";
@@ -15,6 +17,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const BUCKET = "obra-fotos";
+const MAX_BYTES = 5 * 1024 * 1024;
 
 export const Route = createFileRoute("/_authenticated/obras/")({
   component: ObrasPage,
@@ -27,6 +35,7 @@ function ObrasPage() {
   const { data: obras = [] } = useQuery({ queryKey: ["obras"], queryFn: () => fn() });
   const [view, setView] = useState<"cards" | "list">("cards");
   const [search, setSearch] = useState("");
+  const [onlyWithCover, setOnlyWithCover] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
 
@@ -36,7 +45,10 @@ function ObrasPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = (obras as any[]).filter((o) => o.nome.toLowerCase().includes(search.toLowerCase()));
+  const filtered = (obras as any[])
+    .filter((o) => o.nome.toLowerCase().includes(search.toLowerCase()))
+    .filter((o) => (onlyWithCover ? !!o.foto_capa_path : true));
+
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
