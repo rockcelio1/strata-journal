@@ -62,7 +62,7 @@ export const createObraListFromTemplate = createServerFn({ method: "POST" })
         planned_quantity: it.planned_quantity,
         realized_quantity: 0,
         percent_complete: 0,
-        status: "nao_iniciada",
+        status: "nao_iniciada" as const,
         sort_order: idx,
         ativo: true,
       }));
