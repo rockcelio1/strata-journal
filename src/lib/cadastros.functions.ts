@@ -6,6 +6,7 @@ import { z } from "zod";
 const maoSchema = z.object({
   nome: z.string().min(1),
   funcao: z.string().min(1),
+  disciplina: z.string().nullable().optional(),
   empresa_terceira: z.string().nullable().optional(),
   contato: z.string().nullable().optional(),
   ativo: z.boolean().default(true),
@@ -50,6 +51,10 @@ const equipSchema = z.object({
   nome: z.string().min(1),
   tipo: z.string().nullable().optional(),
   identificacao: z.string().nullable().optional(),
+  disciplina: z.string().nullable().optional(),
+  obrigatorio: z.boolean().default(false),
+  controla_horas: z.boolean().default(true),
+  controla_quantidade: z.boolean().default(false),
   status: z.enum(["disponivel", "em_uso", "manutencao"]).default("disponivel"),
   observacoes: z.string().nullable().optional(),
   ativo: z.boolean().default(true),
@@ -127,6 +132,31 @@ export const deleteTipoOcorrencia = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.from("tipos_ocorrencia").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+// =============== SEEDS PADRÃO ===============
+export const seedMaoDeObraPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_mao_de_obra_padrao");
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const seedEquipamentosPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_equipamentos_padrao");
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const seedTiposOcorrenciaPadrao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("seed_tipos_ocorrencia_padrao");
     if (error) throw error;
     return { ok: true };
   });

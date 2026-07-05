@@ -2,11 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { listTiposOcorrencia, upsertTipoOcorrencia, deleteTipoOcorrencia } from "@/lib/cadastros.functions";
+import { listTiposOcorrencia, upsertTipoOcorrencia, deleteTipoOcorrencia, seedTiposOcorrenciaPadrao } from "@/lib/cadastros.functions";
 import { CadastroLayout, CrudDialog, CrudTable, FieldText, FieldSwitch, FieldSelect, FieldTextarea } from "@/components/cadastro-helpers";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import { severidadeMeta } from "@/components/status";
 import { toast } from "sonner";
+import { NewBadge } from "@/components/NewBadge";
 
 export const Route = createFileRoute("/_authenticated/cadastros/ocorrencias")({
   component: TiposOcorrenciaPage,
@@ -18,6 +21,7 @@ function TiposOcorrenciaPage() {
   const listFn = useServerFn(listTiposOcorrencia);
   const upFn = useServerFn(upsertTipoOcorrencia);
   const delFn = useServerFn(deleteTipoOcorrencia);
+  const seedFn = useServerFn(seedTiposOcorrenciaPadrao);
   const qc = useQueryClient();
   const { data = [] } = useQuery({ queryKey: ["tipos_ocorrencia"], queryFn: () => listFn() });
   const [open, setOpen] = useState(false);
@@ -32,9 +36,26 @@ function TiposOcorrenciaPage() {
     mutationFn: (id: string) => delFn({ data: { id } }),
     onSuccess: () => { toast.success("Removido"); qc.invalidateQueries({ queryKey: ["tipos_ocorrencia"] }); },
   });
+  const seed = useMutation({
+    mutationFn: () => seedFn(),
+    onSuccess: () => { toast.success("Tipos padrão adicionados"); qc.invalidateQueries({ queryKey: ["tipos_ocorrencia"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
-    <CadastroLayout title="Tipos de ocorrência" subtitle="Catálogo usado pelos RDOs para classificar eventos no canteiro" onNew={() => { setForm(empty); setOpen(true); }}>
+    <CadastroLayout
+      title="Tipos de ocorrência"
+      subtitle="Catálogo usado pelos RDOs para classificar eventos no canteiro"
+      onNew={() => { setForm(empty); setOpen(true); }}
+      extraActions={
+        <>
+          <NewBadge since="2026-07-05" label="Tipos padrão" />
+          <Button variant="outline" onClick={() => seed.mutate()} disabled={seed.isPending}>
+            <Sparkles className="h-4 w-4 mr-1" />Popular padrões
+          </Button>
+        </>
+      }
+    >
       <CrudTable
         rows={data as any[]}
         columns={[

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2 } from "lucide-react";
 
-export function CadastroLayout({ title, subtitle, onNew, children }: { title: string; subtitle?: string; onNew: () => void; children: ReactNode }) {
+export function CadastroLayout({ title, subtitle, onNew, extraActions, children }: { title: string; subtitle?: string; onNew: () => void; extraActions?: ReactNode; children: ReactNode }) {
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <header className="flex items-end justify-between mb-6 gap-4">
@@ -21,7 +21,10 @@ export function CadastroLayout({ title, subtitle, onNew, children }: { title: st
           <h1 className="font-serif text-3xl">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
         </div>
-        <Button onClick={onNew} className="bg-brand text-brand-foreground"><Plus className="h-4 w-4 mr-1" />Novo</Button>
+        <div className="flex items-center gap-2">
+          {extraActions}
+          <Button onClick={onNew} className="bg-brand text-brand-foreground"><Plus className="h-4 w-4 mr-1" />Novo</Button>
+        </div>
       </header>
       {children}
     </div>

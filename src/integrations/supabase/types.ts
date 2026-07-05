@@ -2085,6 +2085,9 @@ export type Database = {
           user_id: string
         }[]
       }
+      seed_equipamentos_padrao: { Args: never; Returns: number }
+      seed_mao_de_obra_padrao: { Args: never; Returns: number }
+      seed_tipos_ocorrencia_padrao: { Args: never; Returns: number }
       soft_delete_rdo: { Args: { _rdo_id: string }; Returns: undefined }
     }
     Enums: {
