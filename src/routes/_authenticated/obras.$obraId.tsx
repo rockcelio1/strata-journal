@@ -90,6 +90,7 @@ function ObraDetail() {
                 >
                   <Icon size={16} weight={active ? "fill" : "regular"} />
                   <span className="flex-1 text-left">{n.label}</span>
+                  {n.isNew && <NewBadge since="2026-07-05" />}
                   {typeof n.badge === "number" && (
                     <Badge variant="outline" className="text-[10px] px-1.5 h-5 tabular-nums">{n.badge}</Badge>
                   )}
