@@ -157,9 +157,11 @@ function ObrasPage() {
                       <div className="mt-2 flex items-center justify-between">
                         <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
                         <div className="flex items-center gap-1">
+                          <CapaMenu obra={o} />
                           <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
                           <DeleteBtn onConfirm={() => del.mutate(o.id)} />
                         </div>
+
                       </div>
                     </div>
                   </div>
