@@ -14,12 +14,14 @@ import {
 import { obraStatusMeta, rdoStatusMeta } from "@/components/status";
 import { cn } from "@/lib/utils";
 import { ObraFotos } from "@/components/obra/ObraFotos";
+import { ObraVinculacoes } from "@/components/obra/ObraVinculacoes";
+import { NewBadge } from "@/components/NewBadge";
 
 export const Route = createFileRoute("/_authenticated/obras/$obraId")({
   component: ObraDetail,
 });
 
-type View = "visao" | "tarefas" | "relatorios" | "filtro" | "editar";
+type View = "visao" | "tarefas" | "recursos" | "relatorios" | "filtro" | "editar";
 
 function ObraDetail() {
   const { obraId } = Route.useParams();
@@ -33,9 +35,10 @@ function ObraDetail() {
   const stats = data.stats;
   const fotos = data.fotos_recentes ?? [];
 
-  const nav: { id: View; label: string; icon: any; badge?: number }[] = [
+  const nav: { id: View; label: string; icon: any; badge?: number; isNew?: boolean }[] = [
     { id: "visao", label: "Visão geral", icon: House },
     { id: "tarefas", label: "Lista de tarefas", icon: ListChecks, badge: 0 },
+    { id: "recursos", label: "Recursos e anexos", icon: ClipboardText, isNew: true },
     { id: "relatorios", label: "Relatórios", icon: ClipboardText, badge: stats.relatorios },
     { id: "filtro", label: "Filtro de busca", icon: Funnel },
     { id: "editar", label: "Editar obra", icon: PencilSimple },
@@ -87,6 +90,7 @@ function ObraDetail() {
                 >
                   <Icon size={16} weight={active ? "fill" : "regular"} />
                   <span className="flex-1 text-left">{n.label}</span>
+                  {n.isNew && <NewBadge since="2026-07-05" />}
                   {typeof n.badge === "number" && (
                     <Badge variant="outline" className="text-[10px] px-1.5 h-5 tabular-nums">{n.badge}</Badge>
                   )}
@@ -238,12 +242,9 @@ function ObraDetail() {
             </>
           )}
 
-          {view === "tarefas" && (
-            <Card className="p-12 text-center text-muted-foreground">
-              <ListChecks size={36} className="mx-auto mb-3 opacity-60" />
-              <p className="text-sm">Lista de tarefas em breve.</p>
-            </Card>
-          )}
+          {view === "tarefas" && <ObraVinculacoes obraId={obraId} />}
+
+          {view === "recursos" && <ObraVinculacoes obraId={obraId} />}
 
           {view === "relatorios" && (
             <Card className="p-0 overflow-hidden">
