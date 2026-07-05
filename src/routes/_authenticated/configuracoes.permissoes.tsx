@@ -416,7 +416,9 @@ function descAction(a: AppAction) {
     editar: "Alterar registros existentes.",
     excluir: "Remover registros permanentemente.",
     aprovar: "Aprovar ou reprovar (ex.: RDOs enviados).",
-    exportar: "Exportar dados (PDF, CSV).",
+    exportar: "Exportar dados (PDF, CSV, Excel).",
+    importar: "Importar dados de arquivos externos (ex.: Excel).",
+    solicitar_revisao: "Solicitar revisão de um registro enviado.",
   }[a];
 }
 
@@ -432,5 +434,7 @@ function descResource(r: AppResource) {
     convites: "Convites para novos usuários.",
     empresa: "Dados da empresa e configurações gerais.",
     permissoes: "Editar a matriz de permissões (esta tela).",
+    templates_tarefas: "Modelos de lista de tarefas reutilizáveis.",
+    listas_tarefas: "Listas de tarefas vinculadas a cada obra.",
   }[r];
 }
