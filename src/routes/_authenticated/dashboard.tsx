@@ -246,6 +246,9 @@ function DashboardPage() {
           sub={`${data.ocorrencias_total} no total`}
           tone="warning"
         />
+      </div>
+
+
 
       {/* ============== GRÁFICOS MULTI-DIMENSÃO ============== */}
       <Card id="graficos" className="dash-card p-4 sm:p-6 mb-4 overflow-hidden relative">
