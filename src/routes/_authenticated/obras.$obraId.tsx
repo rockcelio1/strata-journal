@@ -35,9 +35,10 @@ function ObraDetail() {
   const stats = data.stats;
   const fotos = data.fotos_recentes ?? [];
 
-  const nav: { id: View; label: string; icon: any; badge?: number }[] = [
+  const nav: { id: View; label: string; icon: any; badge?: number; isNew?: boolean }[] = [
     { id: "visao", label: "Visão geral", icon: House },
     { id: "tarefas", label: "Lista de tarefas", icon: ListChecks, badge: 0 },
+    { id: "recursos", label: "Recursos e anexos", icon: ClipboardText, isNew: true },
     { id: "relatorios", label: "Relatórios", icon: ClipboardText, badge: stats.relatorios },
     { id: "filtro", label: "Filtro de busca", icon: Funnel },
     { id: "editar", label: "Editar obra", icon: PencilSimple },
