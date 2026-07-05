@@ -154,6 +154,75 @@ export async function exportRdoPdf(args: {
       l.motivo ?? "",
     ]));
 
+  // ===== Fotos por atividade =====
+  const fotos = (anexos ?? []).filter((a: AnyRec) =>
+    (a.mime_type ?? "").toString().startsWith("image/") && a.url,
+  );
+  if (fotos.length) {
+    // agrupa por task_item_id (ou "Sem atividade")
+    const groups = new Map<string, { label: string; items: AnyRec[] }>();
+    const itemLabel = (id?: string | null) => {
+      if (!id) return "Sem atividade";
+      const av = (avancos ?? []).find((a: AnyRec) => a.task_item_id === id || a.id === id);
+      return av ? `${av.item_code ? av.item_code + " · " : ""}${av.descricao ?? "Atividade"}` : "Atividade";
+    };
+    for (const f of fotos) {
+      const key = f.task_item_id ?? "__none";
+      if (!groups.has(key)) groups.set(key, { label: itemLabel(f.task_item_id), items: [] });
+      groups.get(key)!.items.push(f);
+    }
+
+    doc.addPage();
+    y = 40;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Fotos por atividade", 40, y);
+    y += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const H = doc.internal.pageSize.getHeight();
+    const cols = 2;
+    const gap = 12;
+    const cellW = (W - 80 - gap * (cols - 1)) / cols;
+    const cellH = 150;
+
+    for (const [, g] of groups) {
+      if (y + 30 > H - 40) { doc.addPage(); y = 40; }
+      doc.setFont("helvetica", "bold");
+      doc.text(g.label, 40, y);
+      doc.setFont("helvetica", "normal");
+      y += 10;
+
+      let col = 0;
+      let rowY = y + 4;
+      for (const f of g.items) {
+        if (rowY + cellH > H - 40) { doc.addPage(); rowY = 40; y = 40; col = 0; }
+        const img = await urlToDataUrl(f.url as string);
+        if (!img) continue;
+        const ratio = img.w / img.h;
+        let w = cellW, h = cellW / ratio;
+        if (h > cellH) { h = cellH; w = cellH * ratio; }
+        const x = 40 + col * (cellW + gap) + (cellW - w) / 2;
+        const yTop = rowY + (cellH - h) / 2;
+        try { doc.addImage(img.dataUrl, "JPEG", x, yTop, w, h, undefined, "FAST"); }
+        catch { try { doc.addImage(img.dataUrl, "PNG", x, yTop, w, h, undefined, "FAST"); } catch { /* skip */ } }
+        doc.setFontSize(8);
+        doc.setTextColor(90);
+        doc.text(
+          doc.splitTextToSize(f.nome ?? "", cellW),
+          40 + col * (cellW + gap),
+          rowY + cellH + 10,
+        );
+        doc.setTextColor(0);
+        doc.setFontSize(10);
+        col++;
+        if (col >= cols) { col = 0; rowY += cellH + 24; }
+      }
+      y = (col === 0 ? rowY : rowY + cellH + 24) + 8;
+    }
+  }
+
   // Rodapé
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
