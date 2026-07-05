@@ -20,8 +20,16 @@ export const listObras = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("obras").select("*").order("created_at", { ascending: false });
     if (error) throw error;
-    return data;
+    const rows = (data ?? []) as any[];
+    const paths = Array.from(new Set(rows.map((r) => r.foto_capa_path).filter(Boolean)));
+    let urls: Record<string, string> = {};
+    if (paths.length) {
+      const { data: signed } = await context.supabase.storage.from("obra-fotos").createSignedUrls(paths, 3600);
+      for (const s of signed ?? []) if (s.path && s.signedUrl) urls[s.path] = s.signedUrl;
+    }
+    return rows.map((r) => ({ ...r, foto_capa_url: r.foto_capa_path ? urls[r.foto_capa_path] ?? null : null }));
   });
+
 
 export const getObra = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
