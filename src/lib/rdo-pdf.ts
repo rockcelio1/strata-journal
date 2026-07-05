@@ -11,6 +11,7 @@ const fmtDayBR = (yyyyMmDd?: string | null) => (yyyyMmDd ? new Date(`${yyyyMmDd}
 export function exportRdoPdf(args: {
   rdo: AnyRec;
   atividades: AnyRec[];
+  avancos?: AnyRec[] | null;
   mao_de_obra: AnyRec[];
   equipamentos: AnyRec[];
   ocorrencias: AnyRec[];
@@ -20,7 +21,7 @@ export function exportRdoPdf(args: {
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
 }) {
-  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
+  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   let y = 40;
