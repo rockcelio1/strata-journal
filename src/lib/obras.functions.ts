@@ -22,13 +22,26 @@ export const listObras = createServerFn({ method: "GET" })
     if (error) throw error;
     const rows = (data ?? []) as any[];
     const paths = Array.from(new Set(rows.map((r) => r.foto_capa_path).filter(Boolean)));
-    let urls: Record<string, string> = {};
-    if (paths.length) {
-      const { data: signed } = await context.supabase.storage.from("obra-fotos").createSignedUrls(paths, 3600);
-      for (const s of signed ?? []) if (s.path && s.signedUrl) urls[s.path] = s.signedUrl;
-    }
-    return rows.map((r) => ({ ...r, foto_capa_url: r.foto_capa_path ? urls[r.foto_capa_path] ?? null : null }));
+    const thumbs: Record<string, string> = {};
+    // Miniaturas geradas pelo transformador de imagem do Storage — reduzem
+    // bytes transferidos e padronizam o recorte para a grade/lista/tabela.
+    await Promise.all(
+      paths.map(async (p) => {
+        const { data: s } = await context.supabase.storage
+          .from("obra-fotos")
+          .createSignedUrl(p as string, 3600, {
+            transform: { width: 640, height: 360, resize: "cover", quality: 70 },
+          });
+        if (s?.signedUrl) thumbs[p as string] = s.signedUrl;
+      }),
+    );
+    return rows.map((r) => ({
+      ...r,
+      foto_capa_url: r.foto_capa_path ? thumbs[r.foto_capa_path] ?? null : null,
+      foto_capa_thumb_url: r.foto_capa_path ? thumbs[r.foto_capa_path] ?? null : null,
+    }));
   });
+
 
 
 export const getObra = createServerFn({ method: "GET" })
