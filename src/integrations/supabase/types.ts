@@ -225,11 +225,15 @@ export type Database = {
       equipamentos: {
         Row: {
           ativo: boolean
+          controla_horas: boolean
+          controla_quantidade: boolean
           created_at: string
+          disciplina: string | null
           empresa_id: string
           id: string
           identificacao: string | null
           nome: string
+          obrigatorio: boolean
           observacoes: string | null
           status: Database["public"]["Enums"]["equipamento_status"]
           tipo: string | null
@@ -237,11 +241,15 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          controla_horas?: boolean
+          controla_quantidade?: boolean
           created_at?: string
+          disciplina?: string | null
           empresa_id: string
           id?: string
           identificacao?: string | null
           nome: string
+          obrigatorio?: boolean
           observacoes?: string | null
           status?: Database["public"]["Enums"]["equipamento_status"]
           tipo?: string | null
@@ -249,11 +257,15 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          controla_horas?: boolean
+          controla_quantidade?: boolean
           created_at?: string
+          disciplina?: string | null
           empresa_id?: string
           id?: string
           identificacao?: string | null
           nome?: string
+          obrigatorio?: boolean
           observacoes?: string | null
           status?: Database["public"]["Enums"]["equipamento_status"]
           tipo?: string | null
@@ -346,11 +358,82 @@ export type Database = {
           },
         ]
       }
+      import_jobs_tarefas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          error_log: Json | null
+          error_rows: number | null
+          file_name: string | null
+          id: string
+          import_type: string | null
+          imported_rows: number | null
+          obra_id: string | null
+          status: string
+          template_id: string | null
+          total_rows: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          error_log?: Json | null
+          error_rows?: number | null
+          file_name?: string | null
+          id?: string
+          import_type?: string | null
+          imported_rows?: number | null
+          obra_id?: string | null
+          status?: string
+          template_id?: string | null
+          total_rows?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          error_log?: Json | null
+          error_rows?: number | null
+          file_name?: string | null
+          id?: string
+          import_type?: string | null
+          imported_rows?: number | null
+          obra_id?: string | null
+          status?: string
+          template_id?: string | null
+          total_rows?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_tarefas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_tarefas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_tarefas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mao_de_obra: {
         Row: {
           ativo: boolean
           contato: string | null
           created_at: string
+          disciplina: string | null
           empresa_id: string
           empresa_terceira: string | null
           funcao: string
@@ -362,6 +445,7 @@ export type Database = {
           ativo?: boolean
           contato?: string | null
           created_at?: string
+          disciplina?: string | null
           empresa_id: string
           empresa_terceira?: string | null
           funcao: string
@@ -373,6 +457,7 @@ export type Database = {
           ativo?: boolean
           contato?: string | null
           created_at?: string
+          disciplina?: string | null
           empresa_id?: string
           empresa_terceira?: string | null
           funcao?: string
@@ -437,6 +522,106 @@ export type Database = {
             columns: ["rdo_id"]
             isOneToOne: false
             referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_anexos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          empresa_id: string
+          file_name: string
+          file_type: string | null
+          id: string
+          obra_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id: string
+          file_name: string
+          file_type?: string | null
+          id?: string
+          obra_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          file_name?: string
+          file_type?: string | null
+          id?: string
+          obra_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_anexos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_anexos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_equipamentos_permitidos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          empresa_id: string
+          equipamento_id: string
+          id: string
+          obra_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id: string
+          equipamento_id: string
+          id?: string
+          obra_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id?: string
+          equipamento_id?: string
+          id?: string
+          obra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_equipamentos_permitidos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_equipamentos_permitidos_equipamento_id_fkey"
+            columns: ["equipamento_id"]
+            isOneToOne: false
+            referencedRelation: "equipamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_equipamentos_permitidos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
         ]
@@ -507,6 +692,205 @@ export type Database = {
           },
         ]
       }
+      obra_funcoes_permitidas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          empresa_id: string
+          id: string
+          mao_de_obra_id: string
+          obra_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id: string
+          id?: string
+          mao_de_obra_id: string
+          obra_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          mao_de_obra_id?: string
+          obra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_funcoes_permitidas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_funcoes_permitidas_mao_de_obra_id_fkey"
+            columns: ["mao_de_obra_id"]
+            isOneToOne: false
+            referencedRelation: "mao_de_obra"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_funcoes_permitidas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_listas_tarefas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          id: string
+          nome: string
+          obra_id: string
+          template_id: string | null
+          tipo_controle: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          id?: string
+          nome: string
+          obra_id: string
+          template_id?: string | null
+          tipo_controle?: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          id?: string
+          nome?: string
+          obra_id?: string
+          template_id?: string | null
+          tipo_controle?: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_listas_tarefas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_listas_tarefas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_listas_tarefas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_tarefa_itens: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          empresa_id: string
+          id: string
+          is_etapa: boolean
+          item_code: string
+          obra_id: string
+          parent_id: string | null
+          percent_complete: number
+          planned_quantity: number | null
+          realized_quantity: number
+          sort_order: number
+          status: Database["public"]["Enums"]["tarefa_status"]
+          task_list_id: string
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao: string
+          empresa_id: string
+          id?: string
+          is_etapa?: boolean
+          item_code: string
+          obra_id: string
+          parent_id?: string | null
+          percent_complete?: number
+          planned_quantity?: number | null
+          realized_quantity?: number
+          sort_order?: number
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          task_list_id: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          empresa_id?: string
+          id?: string
+          is_etapa?: boolean
+          item_code?: string
+          obra_id?: string
+          parent_id?: string | null
+          percent_complete?: number
+          planned_quantity?: number | null
+          realized_quantity?: number
+          sort_order?: number
+          status?: Database["public"]["Enums"]["tarefa_status"]
+          task_list_id?: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_tarefa_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_tarefa_itens_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_tarefa_itens_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "obra_tarefa_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_tarefa_itens_task_list_id_fkey"
+            columns: ["task_list_id"]
+            isOneToOne: false
+            referencedRelation: "obra_listas_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obras: {
         Row: {
           avanco_pct: number
@@ -522,9 +906,12 @@ export type Database = {
           endereco: string | null
           foto_capa_blur: string | null
           foto_capa_path: string | null
+          grupo_obra: string | null
           id: string
           nome: string
+          numero_contrato: string | null
           responsavel_id: string | null
+          responsavel_tecnico: string | null
           status: Database["public"]["Enums"]["obra_status"]
           updated_at: string
         }
@@ -542,9 +929,12 @@ export type Database = {
           endereco?: string | null
           foto_capa_blur?: string | null
           foto_capa_path?: string | null
+          grupo_obra?: string | null
           id?: string
           nome: string
+          numero_contrato?: string | null
           responsavel_id?: string | null
+          responsavel_tecnico?: string | null
           status?: Database["public"]["Enums"]["obra_status"]
           updated_at?: string
         }
@@ -562,9 +952,12 @@ export type Database = {
           endereco?: string | null
           foto_capa_blur?: string | null
           foto_capa_path?: string | null
+          grupo_obra?: string | null
           id?: string
           nome?: string
+          numero_contrato?: string | null
           responsavel_id?: string | null
+          responsavel_tecnico?: string | null
           status?: Database["public"]["Enums"]["obra_status"]
           updated_at?: string
         }
@@ -676,53 +1069,65 @@ export type Database = {
       rdo_anexos: {
         Row: {
           autor_id: string | null
+          contexto: string | null
           created_at: string
           empresa_id: string
           id: string
           legenda: string | null
           mime_type: string | null
           nome: string
+          ocorrencia_id: string | null
           onedrive_download_url: string | null
           onedrive_item_id: string | null
           onedrive_web_url: string | null
           rdo_id: string
+          rdo_tarefa_avanco_id: string | null
           storage_path: string
           storage_provider: string
           tamanho_bytes: number | null
+          tarefa_item_id: string | null
           thumbnail_url: string | null
         }
         Insert: {
           autor_id?: string | null
+          contexto?: string | null
           created_at?: string
           empresa_id: string
           id?: string
           legenda?: string | null
           mime_type?: string | null
           nome: string
+          ocorrencia_id?: string | null
           onedrive_download_url?: string | null
           onedrive_item_id?: string | null
           onedrive_web_url?: string | null
           rdo_id: string
+          rdo_tarefa_avanco_id?: string | null
           storage_path: string
           storage_provider?: string
           tamanho_bytes?: number | null
+          tarefa_item_id?: string | null
           thumbnail_url?: string | null
         }
         Update: {
           autor_id?: string | null
+          contexto?: string | null
           created_at?: string
           empresa_id?: string
           id?: string
           legenda?: string | null
           mime_type?: string | null
           nome?: string
+          ocorrencia_id?: string | null
           onedrive_download_url?: string | null
           onedrive_item_id?: string | null
           onedrive_web_url?: string | null
           rdo_id?: string
+          rdo_tarefa_avanco_id?: string | null
           storage_path?: string
           storage_provider?: string
           tamanho_bytes?: number | null
+          tarefa_item_id?: string | null
           thumbnail_url?: string | null
         }
         Relationships: [
@@ -1074,6 +1479,126 @@ export type Database = {
           },
         ]
       }
+      rdo_tarefa_avancos: {
+        Row: {
+          accumulated_percent: number | null
+          accumulated_realized: number | null
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string
+          empresa_id: string
+          end_time: string | null
+          id: string
+          is_extra_activity: boolean
+          item_code: string | null
+          obra_id: string
+          percent_today: number | null
+          planned_quantity: number | null
+          previous_percent: number | null
+          previous_realized_quantity: number | null
+          rdo_id: string
+          realized_today: number | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["tarefa_status"] | null
+          task_item_id: string | null
+          task_list_id: string | null
+          total_hours: string | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          accumulated_percent?: number | null
+          accumulated_realized?: number | null
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          empresa_id: string
+          end_time?: string | null
+          id?: string
+          is_extra_activity?: boolean
+          item_code?: string | null
+          obra_id: string
+          percent_today?: number | null
+          planned_quantity?: number | null
+          previous_percent?: number | null
+          previous_realized_quantity?: number | null
+          rdo_id: string
+          realized_today?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["tarefa_status"] | null
+          task_item_id?: string | null
+          task_list_id?: string | null
+          total_hours?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accumulated_percent?: number | null
+          accumulated_realized?: number | null
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          empresa_id?: string
+          end_time?: string | null
+          id?: string
+          is_extra_activity?: boolean
+          item_code?: string | null
+          obra_id?: string
+          percent_today?: number | null
+          planned_quantity?: number | null
+          previous_percent?: number | null
+          previous_realized_quantity?: number | null
+          rdo_id?: string
+          realized_today?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["tarefa_status"] | null
+          task_item_id?: string | null
+          task_list_id?: string | null
+          total_hours?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_tarefa_avancos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_tarefa_avancos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_tarefa_avancos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_tarefa_avancos_task_item_id_fkey"
+            columns: ["task_item_id"]
+            isOneToOne: false
+            referencedRelation: "obra_tarefa_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_tarefa_avancos_task_list_id_fkey"
+            columns: ["task_list_id"]
+            isOneToOne: false
+            referencedRelation: "obra_listas_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rdos: {
         Row: {
           aprovado_em: string | null
@@ -1090,12 +1615,18 @@ export type Database = {
           disabled_by: string | null
           empresa_id: string
           enviado_em: string | null
+          final_pdf_url: string | null
           id: string
           motivo_reprovacao: string | null
           numero: number
           obra_id: string
           observacoes: string | null
+          revision_reason: string | null
+          revision_requested_at: string | null
+          revision_requested_by: string | null
           status: Database["public"]["Enums"]["rdo_status"]
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
         }
         Insert: {
@@ -1113,12 +1644,18 @@ export type Database = {
           disabled_by?: string | null
           empresa_id: string
           enviado_em?: string | null
+          final_pdf_url?: string | null
           id?: string
           motivo_reprovacao?: string | null
           numero?: number
           obra_id: string
           observacoes?: string | null
+          revision_reason?: string | null
+          revision_requested_at?: string | null
+          revision_requested_by?: string | null
           status?: Database["public"]["Enums"]["rdo_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -1136,12 +1673,18 @@ export type Database = {
           disabled_by?: string | null
           empresa_id?: string
           enviado_em?: string | null
+          final_pdf_url?: string | null
           id?: string
           motivo_reprovacao?: string | null
           numero?: number
           obra_id?: string
           observacoes?: string | null
+          revision_reason?: string | null
+          revision_requested_at?: string | null
+          revision_requested_by?: string | null
           status?: Database["public"]["Enums"]["rdo_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1248,6 +1791,126 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      template_tarefa_itens: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          default_percent: number | null
+          default_realized_quantity: number | null
+          descricao: string
+          empresa_id: string
+          id: string
+          is_etapa: boolean
+          item_code: string
+          parent_id: string | null
+          planned_quantity: number | null
+          sort_order: number
+          template_id: string
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          default_percent?: number | null
+          default_realized_quantity?: number | null
+          descricao: string
+          empresa_id: string
+          id?: string
+          is_etapa?: boolean
+          item_code: string
+          parent_id?: string | null
+          planned_quantity?: number | null
+          sort_order?: number
+          template_id: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          default_percent?: number | null
+          default_realized_quantity?: number | null
+          descricao?: string
+          empresa_id?: string
+          id?: string
+          is_etapa?: boolean
+          item_code?: string
+          parent_id?: string | null
+          planned_quantity?: number | null
+          sort_order?: number
+          template_id?: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_tarefa_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_tarefa_itens_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "template_tarefa_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_tarefa_itens_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates_tarefas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          empresa_id: string
+          id: string
+          nome: string
+          tipo_controle: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          nome: string
+          tipo_controle?: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          nome?: string
+          tipo_controle?: Database["public"]["Enums"]["tarefa_controle"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_tarefas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tipos_ocorrencia: {
         Row: {
@@ -1432,6 +2095,8 @@ export type Database = {
         | "excluir"
         | "aprovar"
         | "exportar"
+        | "importar"
+        | "solicitar_revisao"
       app_resource:
         | "obras"
         | "rdos"
@@ -1443,6 +2108,8 @@ export type Database = {
         | "convites"
         | "empresa"
         | "permissoes"
+        | "templates_tarefas"
+        | "listas_tarefas"
       app_role:
         | "admin"
         | "engenheiro"
@@ -1461,8 +2128,24 @@ export type Database = {
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
       rdo_acesso_nivel: "ver" | "editar" | "aprovar"
       rdo_acesso_sujeito: "user" | "grupo"
-      rdo_status: "rascunho" | "enviado" | "aprovado" | "reprovado" | "assinado"
+      rdo_status:
+        | "rascunho"
+        | "enviado"
+        | "aprovado"
+        | "reprovado"
+        | "assinado"
+        | "em_revisao"
+        | "revisao_solicitada"
+        | "reaberto"
+        | "cancelado"
       severidade: "baixa" | "media" | "alta" | "critica"
+      tarefa_controle: "porcentagem" | "produtividade" | "misto"
+      tarefa_status:
+        | "nao_iniciada"
+        | "em_andamento"
+        | "concluida"
+        | "paralisada"
+        | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1590,7 +2273,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_action: ["ver", "criar", "editar", "excluir", "aprovar", "exportar"],
+      app_action: [
+        "ver",
+        "criar",
+        "editar",
+        "excluir",
+        "aprovar",
+        "exportar",
+        "importar",
+        "solicitar_revisao",
+      ],
       app_resource: [
         "obras",
         "rdos",
@@ -1602,6 +2294,8 @@ export const Constants = {
         "convites",
         "empresa",
         "permissoes",
+        "templates_tarefas",
+        "listas_tarefas",
       ],
       app_role: [
         "admin",
@@ -1623,8 +2317,26 @@ export const Constants = {
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
       rdo_acesso_nivel: ["ver", "editar", "aprovar"],
       rdo_acesso_sujeito: ["user", "grupo"],
-      rdo_status: ["rascunho", "enviado", "aprovado", "reprovado", "assinado"],
+      rdo_status: [
+        "rascunho",
+        "enviado",
+        "aprovado",
+        "reprovado",
+        "assinado",
+        "em_revisao",
+        "revisao_solicitada",
+        "reaberto",
+        "cancelado",
+      ],
       severidade: ["baixa", "media", "alta", "critica"],
+      tarefa_controle: ["porcentagem", "produtividade", "misto"],
+      tarefa_status: [
+        "nao_iniciada",
+        "em_andamento",
+        "concluida",
+        "paralisada",
+        "cancelada",
+      ],
     },
   },
 } as const
