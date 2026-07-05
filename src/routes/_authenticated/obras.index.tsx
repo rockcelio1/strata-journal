@@ -90,15 +90,20 @@ function ObrasPage() {
             const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
             return (
               <Card key={o.id} className="overflow-hidden hover:shadow-md transition-shadow group">
-                <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block relative aspect-[16/9] bg-muted overflow-hidden">
-                  {o.foto_capa_url ? (
-                    <img src={o.foto_capa_url} alt={o.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
-                      <Building2 className="h-10 w-10" />
-                    </div>
-                  )}
-                </Link>
+                <div className="relative aspect-[16/9] bg-muted overflow-hidden">
+                  <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block w-full h-full">
+                    {o.foto_capa_url ? (
+                      <img src={o.foto_capa_url} alt={o.nome} loading="lazy" width={640} height={360} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
+                        <Building2 className="h-10 w-10" />
+                      </div>
+                    )}
+                  </Link>
+                  <div className="absolute top-2 right-2">
+                    <CapaMenu obra={o} />
+                  </div>
+                </div>
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <Badge variant="outline" className={m.className}>{m.label}</Badge>
@@ -122,6 +127,7 @@ function ObrasPage() {
                   </div>
                 </div>
               </Card>
+
             );
           })}
 
