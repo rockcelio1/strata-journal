@@ -102,7 +102,7 @@ export const saveRdoAvancos = createServerFn({ method: "POST" })
         realized_today: a.realized_today ?? null,
         accumulated_percent: a.accumulated_percent ?? null,
         status: a.status ?? ("em_andamento" as const),
-        total_hours: a.total_hours ?? null,
+        total_hours: a.total_hours != null ? `${a.total_hours} hours` : null,
         comment: a.comment ?? null,
         created_by: context.userId,
       };
