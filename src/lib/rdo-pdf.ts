@@ -11,6 +11,7 @@ const fmtDayBR = (yyyyMmDd?: string | null) => (yyyyMmDd ? new Date(`${yyyyMmDd}
 export function exportRdoPdf(args: {
   rdo: AnyRec;
   atividades: AnyRec[];
+  avancos?: AnyRec[] | null;
   mao_de_obra: AnyRec[];
   equipamentos: AnyRec[];
   ocorrencias: AnyRec[];
@@ -20,7 +21,7 @@ export function exportRdoPdf(args: {
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
 }) {
-  const { rdo, atividades, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
+  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   let y = 40;
@@ -77,6 +78,23 @@ export function exportRdoPdf(args: {
 
   section("Atividades", ["Descrição", "% Executado"],
     atividades.map((a) => [a.descricao, `${Number(a.pct_executado ?? 0).toFixed(0)}%`]));
+
+  if (avancos && avancos.length) {
+    section(
+      "Avanços de tarefas",
+      ["Código", "Descrição", "Unid.", "Realizado hoje", "% acum.", "Status", "Horas", "Comentário"],
+      avancos.map((a) => [
+        a.item_code ?? "—",
+        a.descricao ?? "—",
+        a.unidade ?? "—",
+        a.realized_today ?? "—",
+        a.accumulated_percent != null ? `${Number(a.accumulated_percent).toFixed(0)}%` : "—",
+        a.status ?? "—",
+        a.total_hours ?? "—",
+        a.comment ?? "",
+      ]),
+    );
+  }
 
   section("Mão de obra", ["Pessoa", "Função", "Atividade", "Horas"],
     mao_de_obra.map((m) => [m.mao_de_obra?.nome ?? "—", m.mao_de_obra?.funcao ?? "—", m.atividade ?? "—", String(m.horas ?? 0)]));
