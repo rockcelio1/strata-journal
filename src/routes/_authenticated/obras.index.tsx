@@ -241,3 +241,136 @@ function DeleteBtn({ onConfirm }: { onConfirm: () => void }) {
     </AlertDialog>
   );
 }
+
+function CapaMenu({ obra }: { obra: any }) {
+  const qc = useQueryClient();
+  const registerFn = useServerFn(registerObraFoto);
+  const setCapaFn = useServerFn(setObraCapa);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const hasCapa = !!obra.foto_capa_path;
+
+  async function makeBlur(file: File) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const w = 16;
+      const h = Math.max(1, Math.round(w / (bmp.width / bmp.height)));
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(bmp, 0, 0, w, h);
+      return { blur: c.toDataURL("image/jpeg", 0.5), w: bmp.width, h: bmp.height };
+    } catch { return null; }
+  }
+
+  const handleUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Selecione uma imagem"); return; }
+    if (file.size > MAX_BYTES) { toast.error("A foto deve ter no máximo 5MB"); return; }
+    setBusy(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const id = (crypto as any).randomUUID?.() ?? Math.random().toString(36).slice(2);
+      const path = `${obra.empresa_id}/${obra.id}/${id}.${ext}`;
+      const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw up.error;
+      const meta = await makeBlur(file);
+      await registerFn({
+        data: {
+          obra_id: obra.id, storage_path: path, nome: file.name, mime_type: file.type,
+          tamanho_bytes: file.size, largura: meta?.w ?? null, altura: meta?.h ?? null,
+          blur_data_url: meta?.blur ?? null, set_capa: true,
+        },
+      });
+      toast.success("Foto de capa atualizada");
+      qc.invalidateQueries({ queryKey: ["obras"] });
+      qc.invalidateQueries({ queryKey: ["obra-fotos", obra.id] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao enviar foto");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setBusy(true);
+    try {
+      await setCapaFn({ data: { obra_id: obra.id, foto_id: null } });
+      toast.success("Capa removida");
+      qc.invalidateQueries({ queryKey: ["obras"] });
+      qc.invalidateQueries({ queryKey: ["obra-fotos", obra.id] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao remover");
+    } finally {
+      setBusy(false);
+      setConfirmRemove(false);
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) handleUpload(f);
+        }}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="bg-background/80 backdrop-blur border border-border hover:bg-background"
+            aria-label="Alterar foto de capa"
+            disabled={busy}
+          >
+            <Camera className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => fileRef.current?.click()}>
+            <ImageIcon className="h-4 w-4 mr-2" /> {hasCapa ? "Trocar capa" : "Adicionar capa"}
+          </DropdownMenuItem>
+          {hasCapa && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={(e) => { e.preventDefault(); setConfirmRemove(true); }}
+              >
+                <ImageOff className="h-4 w-4 mr-2" /> Remover capa
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover foto de capa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A foto continuará disponível na galeria da obra, mas deixará de ser a capa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemove}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
