@@ -8,6 +8,8 @@ import {
   logRdoView, getRdoAuditSummary, logRdoClimaUpdate, logRdoAuditView,
   updateRdoClimaRascunho,
 } from "@/lib/rdo.functions";
+import { requestRevisionRdo, reopenRdo } from "@/lib/rdo-avancos.functions";
+import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
@@ -112,6 +114,18 @@ function RdoDetailPage() {
   const decide = useMutation({
     mutationFn: (aprovar: boolean) => approveFn({ data: { id: rdoId, aprovar, motivo } }),
     onSuccess: () => { toast.success("Decisão registrada"); refresh(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const revisionFn = useServerFn(requestRevisionRdo);
+  const reopenSFn = useServerFn(reopenRdo);
+  const requestRev = useMutation({
+    mutationFn: (m: string) => revisionFn({ data: { id: rdoId, motivo: m } }),
+    onSuccess: () => { toast.success("Revisão solicitada"); refresh(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const reopen = useMutation({
+    mutationFn: () => reopenSFn({ data: { id: rdoId } }),
+    onSuccess: () => { toast.success("RDO reaberto"); refresh(); },
     onError: (e: any) => toast.error(e.message),
   });
   const removerAnx = useMutation({
@@ -263,7 +277,23 @@ function RdoDetailPage() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline"><History className="h-4 w-4 mr-1" />Solicitar revisão</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader><AlertDialogTitle>Solicitar revisão</AlertDialogTitle></AlertDialogHeader>
+                  <Textarea placeholder="Descreva o que precisa ser revisado..." value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => motivo.trim() && requestRev.mutate(motivo)}>Solicitar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
+          )}
+          {(r.status === "aprovado" || r.status === "revisao_solicitada") && canApprove && (
+            <Button variant="outline" onClick={() => reopen.mutate()}><History className="h-4 w-4 mr-1" />Reabrir</Button>
           )}
           {canDeleteRascunho && (
             <AlertDialog>
@@ -385,6 +415,15 @@ function RdoDetailPage() {
           </div>
         ))}
       </SectionList>
+
+      {(r.obras?.id ?? r.obra_id) && (
+        <RdoAvancosSection
+          rdoId={rdoId}
+          obraId={r.obras?.id ?? r.obra_id}
+          readOnly={!(r.status === "rascunho" || r.status === "revisao_solicitada" || r.status === "reaberto") || !isAuthor}
+        />
+      )}
+
 
       <SectionList title="Mão de obra" empty="Nenhuma pessoa registrada.">
         {data.mao_de_obra.map((m: any) => (
