@@ -14,6 +14,8 @@ import {
 import { obraStatusMeta, rdoStatusMeta } from "@/components/status";
 import { cn } from "@/lib/utils";
 import { ObraFotos } from "@/components/obra/ObraFotos";
+import { ObraVinculacoes } from "@/components/obra/ObraVinculacoes";
+import { NewBadge } from "@/components/NewBadge";
 
 export const Route = createFileRoute("/_authenticated/obras/$obraId")({
   component: ObraDetail,
