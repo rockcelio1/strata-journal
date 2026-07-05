@@ -18,9 +18,20 @@ export const RESOURCES: AppResource[] = [
   "convites",
   "empresa",
   "permissoes",
+  "templates_tarefas",
+  "listas_tarefas",
 ];
 
-export const ACTIONS: AppAction[] = ["ver", "criar", "editar", "excluir", "aprovar", "exportar"];
+export const ACTIONS: AppAction[] = [
+  "ver",
+  "criar",
+  "editar",
+  "excluir",
+  "aprovar",
+  "exportar",
+  "importar",
+  "solicitar_revisao",
+];
 
 export const ROLES: AppRole[] = ["admin", "master", "gestor_acessos", "engenheiro", "mestre", "visualizador"];
 
@@ -35,6 +46,8 @@ export const RESOURCE_LABELS: Record<AppResource, string> = {
   convites: "Convites",
   empresa: "Empresa",
   permissoes: "Permissões",
+  templates_tarefas: "Templates de tarefas",
+  listas_tarefas: "Listas de tarefas",
 };
 
 export const ACTION_LABELS: Record<AppAction, string> = {
@@ -44,6 +57,8 @@ export const ACTION_LABELS: Record<AppAction, string> = {
   excluir: "Excluir",
   aprovar: "Aprovar",
   exportar: "Exportar",
+  importar: "Importar",
+  solicitar_revisao: "Solicitar revisão",
 };
 
 export const ROLE_LABELS: Record<AppRole, string> = {
@@ -66,8 +81,10 @@ const resourceEnum = z.enum([
   "convites",
   "empresa",
   "permissoes",
+  "templates_tarefas",
+  "listas_tarefas",
 ]);
-const actionEnum = z.enum(["ver", "criar", "editar", "excluir", "aprovar", "exportar"]);
+const actionEnum = z.enum(["ver", "criar", "editar", "excluir", "aprovar", "exportar", "importar", "solicitar_revisao"]);
 const roleEnum = z.enum(["admin", "master", "gestor_acessos", "engenheiro", "mestre", "visualizador"]);
 
 async function getEmpresaId(supabase: any, userId: string): Promise<string> {
