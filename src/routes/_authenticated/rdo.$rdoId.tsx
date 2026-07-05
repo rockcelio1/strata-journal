@@ -10,6 +10,7 @@ import {
 } from "@/lib/rdo.functions";
 import { requestRevisionRdo, reopenRdo, listRdoAvancos } from "@/lib/rdo-avancos.functions";
 import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
+import { setAnexoTaskItem } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
