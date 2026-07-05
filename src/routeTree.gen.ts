@@ -38,11 +38,13 @@ import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_
 import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
 import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
+import { Route as AuthenticatedCadastrosTemplatesTarefasRouteImport } from './routes/_authenticated/cadastros.templates-tarefas'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -204,6 +206,12 @@ const AuthenticatedConfiguracoesAplicativoRoute =
     path: '/aplicativo',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedCadastrosTemplatesTarefasRoute =
+  AuthenticatedCadastrosTemplatesTarefasRouteImport.update({
+    id: '/cadastros/templates-tarefas',
+    path: '/cadastros/templates-tarefas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCadastrosOcorrenciasRoute =
   AuthenticatedCadastrosOcorrenciasRouteImport.update({
     id: '/cadastros/ocorrencias',
@@ -233,6 +241,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedCadastrosTemplatesTarefasIdRoute =
+  AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -251,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
@@ -268,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -285,6 +301,7 @@ export interface FileRoutesByTo {
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
@@ -302,6 +319,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
+  '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -322,6 +340,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
+  '/_authenticated/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/_authenticated/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
@@ -339,6 +358,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -359,6 +379,7 @@ export interface FileRouteTypes {
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
+    | '/cadastros/templates-tarefas'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/botoes-efeitos'
@@ -376,6 +397,7 @@ export interface FileRouteTypes {
     | '/configuracoes/'
     | '/obras/'
     | '/rdo/'
+    | '/cadastros/templates-tarefas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -393,6 +415,7 @@ export interface FileRouteTypes {
     | '/cadastros/equipamentos'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
+    | '/cadastros/templates-tarefas'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/botoes-efeitos'
@@ -410,6 +433,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/obras'
     | '/rdo'
+    | '/cadastros/templates-tarefas/$id'
   id:
     | '__root__'
     | '/'
@@ -429,6 +453,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
+    | '/_authenticated/cadastros/templates-tarefas'
     | '/_authenticated/configuracoes/aplicativo'
     | '/_authenticated/configuracoes/auditoria'
     | '/_authenticated/configuracoes/botoes-efeitos'
@@ -446,6 +471,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/'
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
+    | '/_authenticated/cadastros/templates-tarefas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -666,6 +692,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesAplicativoRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/cadastros/templates-tarefas': {
+      id: '/_authenticated/cadastros/templates-tarefas'
+      path: '/cadastros/templates-tarefas'
+      fullPath: '/cadastros/templates-tarefas'
+      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cadastros/ocorrencias': {
       id: '/_authenticated/cadastros/ocorrencias'
       path: '/cadastros/ocorrencias'
@@ -700,6 +733,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.lovable/oauth/consent'
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/cadastros/templates-tarefas/$id': {
+      id: '/_authenticated/cadastros/templates-tarefas/$id'
+      path: '/$id'
+      fullPath: '/cadastros/templates-tarefas/$id'
+      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
+      parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
     }
   }
 }
@@ -745,6 +785,21 @@ const AuthenticatedConfiguracoesRouteWithChildren =
     AuthenticatedConfiguracoesRouteChildren,
   )
 
+interface AuthenticatedCadastrosTemplatesTarefasRouteChildren {
+  AuthenticatedCadastrosTemplatesTarefasIdRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+}
+
+const AuthenticatedCadastrosTemplatesTarefasRouteChildren: AuthenticatedCadastrosTemplatesTarefasRouteChildren =
+  {
+    AuthenticatedCadastrosTemplatesTarefasIdRoute:
+      AuthenticatedCadastrosTemplatesTarefasIdRoute,
+  }
+
+const AuthenticatedCadastrosTemplatesTarefasRouteWithChildren =
+  AuthenticatedCadastrosTemplatesTarefasRoute._addFileChildren(
+    AuthenticatedCadastrosTemplatesTarefasRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -753,6 +808,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
   AuthenticatedCadastrosOcorrenciasRoute: typeof AuthenticatedCadastrosOcorrenciasRoute
+  AuthenticatedCadastrosTemplatesTarefasRoute: typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
   AuthenticatedObrasObraIdRoute: typeof AuthenticatedObrasObraIdRoute
   AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
   AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
@@ -772,6 +828,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,
   AuthenticatedCadastrosOcorrenciasRoute:
     AuthenticatedCadastrosOcorrenciasRoute,
+  AuthenticatedCadastrosTemplatesTarefasRoute:
+    AuthenticatedCadastrosTemplatesTarefasRouteWithChildren,
   AuthenticatedObrasObraIdRoute: AuthenticatedObrasObraIdRoute,
   AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
   AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
