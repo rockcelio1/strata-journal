@@ -67,30 +67,42 @@ function ObrasPage() {
           {filtered.map((o) => {
             const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
             return (
-              <Card key={o.id} className="p-5 hover:shadow-md transition-shadow group">
-                <div className="flex items-start justify-between mb-3">
-                  <Badge variant="outline" className={m.className}>{m.label}</Badge>
-                  <span className="text-xs text-muted-foreground tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</span>
-                </div>
-                <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block">
-                  <h3 className="font-serif text-xl group-hover:underline">{o.nome}</h3>
-                  {o.cliente && <p className="text-sm text-muted-foreground mt-0.5">{o.cliente}</p>}
-                  {o.endereco && (
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />{o.endereco}
-                    </p>
+              <Card key={o.id} className="overflow-hidden hover:shadow-md transition-shadow group">
+                <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block relative aspect-[16/9] bg-muted overflow-hidden">
+                  {o.foto_capa_url ? (
+                    <img src={o.foto_capa_url} alt={o.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
+                      <Building2 className="h-10 w-10" />
+                    </div>
                   )}
                 </Link>
-                <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-brand" style={{ width: `${o.avanco_pct}%` }} />
-                </div>
-                <div className="flex justify-end gap-1 mt-3 -mb-1">
-                  <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
-                  <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                    <span className="text-xs text-muted-foreground tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</span>
+                  </div>
+                  <Link to="/obras/$obraId" params={{ obraId: o.id }} className="block">
+                    <h3 className="font-serif text-xl group-hover:underline">{o.nome}</h3>
+                    {o.cliente && <p className="text-sm text-muted-foreground mt-0.5">{o.cliente}</p>}
+                    {o.endereco && (
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{o.endereco}
+                      </p>
+                    )}
+                  </Link>
+                  <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-brand" style={{ width: `${o.avanco_pct}%` }} />
+                  </div>
+                  <div className="flex justify-end gap-1 mt-3 -mb-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+                    <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                  </div>
                 </div>
               </Card>
             );
           })}
+
         </div>
       ) : (
         <>
@@ -100,21 +112,33 @@ function ObrasPage() {
               const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
               return (
                 <Card key={o.id} className="p-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline min-w-0 truncate">{o.nome}</Link>
-                    <Badge variant="outline" className={m.className}>{m.label}</Badge>
-                  </div>
-                  {o.cliente && <p className="text-xs text-muted-foreground truncate">{o.cliente}</p>}
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
-                      <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                  <div className="flex items-start gap-3">
+                    <Link to="/obras/$obraId" params={{ obraId: o.id }} className="shrink-0 w-16 h-16 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                      {o.foto_capa_url ? (
+                        <img src={o.foto_capa_url} alt={o.nome} loading="lazy" className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-muted-foreground/60" />
+                      )}
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline min-w-0 truncate">{o.nome}</Link>
+                        <Badge variant="outline" className={m.className}>{m.label}</Badge>
+                      </div>
+                      {o.cliente && <p className="text-xs text-muted-foreground truncate">{o.cliente}</p>}
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs tabular-nums text-muted-foreground">{Number(o.avanco_pct).toFixed(0)}%</span>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="min-h-[44px]" onClick={() => { setEditing(o); setOpen(true); }}>Editar</Button>
+                          <DeleteBtn onConfirm={() => del.mutate(o.id)} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Card>
               );
             })}
+
           </div>
           {/* Desktop: tabela */}
           <Card className="hidden md:block">
@@ -133,7 +157,18 @@ function ObrasPage() {
                   const m = obraStatusMeta[o.status as keyof typeof obraStatusMeta];
                   return (
                     <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                      <td className="p-3"><Link to="/obras/$obraId" params={{ obraId: o.id }} className="font-medium hover:underline">{o.nome}</Link></td>
+                      <td className="p-3">
+                        <Link to="/obras/$obraId" params={{ obraId: o.id }} className="flex items-center gap-3 font-medium hover:underline">
+                          <span className="shrink-0 w-10 h-10 rounded overflow-hidden bg-muted flex items-center justify-center">
+                            {o.foto_capa_url ? (
+                              <img src={o.foto_capa_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                            ) : (
+                              <Building2 className="h-4 w-4 text-muted-foreground/60" />
+                            )}
+                          </span>
+                          <span className="truncate">{o.nome}</span>
+                        </Link>
+                      </td>
                       <td className="p-3 text-muted-foreground">{o.cliente ?? "—"}</td>
                       <td className="p-3"><Badge variant="outline" className={m.className}>{m.label}</Badge></td>
                       <td className="p-3 text-right tabular-nums">{Number(o.avanco_pct).toFixed(0)}%</td>
