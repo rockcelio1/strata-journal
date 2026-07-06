@@ -90,23 +90,37 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const hasServerDraft = !!rascunhoServer?.hasOpen;
 
-  // Realtime: quando o autor cria/atualiza/exclui um RDO em qualquer aba/dispositivo,
-  // invalida a query para refletir instantaneamente aqui.
+  // Realtime + fallback de polling: se o canal não conectar em 5s
+  // (bloqueio de WebSocket, etc.), inicia polling curto (15s) até conectar.
+  const [realtimeReady, setRealtimeReady] = useState(false);
   useEffect(() => {
     const uid = me?.profile?.id;
     if (!uid) return;
+    const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
     const channel = supabase
       .channel(`rdos-owner-${uid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rdos", filter: `autor_id=eq.${uid}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
-        },
+        invalidate,
       )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRealtimeReady(true);
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setRealtimeReady(false);
+      });
+    const readinessTimer = setTimeout(() => setRealtimeReady((r) => r), 5000);
+    return () => { clearTimeout(readinessTimer); supabase.removeChannel(channel); setRealtimeReady(false); };
   }, [me?.profile?.id, queryClient]);
+
+  useEffect(() => {
+    const uid = me?.profile?.id;
+    if (!uid || realtimeReady) return;
+    const id = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [me?.profile?.id, queryClient, realtimeReady]);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
