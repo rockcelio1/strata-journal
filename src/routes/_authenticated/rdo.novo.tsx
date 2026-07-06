@@ -655,10 +655,8 @@ function NovoRdoPage() {
   if (stepIdx === 7 && !assinaturaBlob)
     stepIssues.push({ step: 7, label: "Assinatura", message: "Desenhe ou envie a assinatura." });
 
-  const canNext =
-    stepIdx === 0 ? !!form.obra_id && obraSelecionadaExiste
-    : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
-    : true;
+  const currentStepIssues = stepIssues.filter((iss) => iss.step === stepIdx);
+  const canNext = currentStepIssues.length === 0;
   const isLast = stepIdx === steps.length - 1;
   const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id && obraSelecionadaExiste;
 
@@ -1349,9 +1347,16 @@ function NovoRdoPage() {
           <ArrowLeft size={16} className="mr-1" /> Voltar
         </Button>
         {!isLast ? (
-          <Button disabled={!canNext} onClick={() => setStepIdx((s) => Math.min(steps.length - 1, s + 1))} className="bg-brand text-brand-foreground">
-            Próximo <ArrowRight size={16} className="ml-1" />
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            {currentStepIssues.length > 0 && (
+              <p className="text-xs text-destructive text-right" role="alert">
+                {currentStepIssues.map((i) => i.message).join(" ")}
+              </p>
+            )}
+            <Button disabled={!canNext} onClick={() => setStepIdx((s) => Math.min(steps.length - 1, s + 1))} className="bg-brand text-brand-foreground">
+              Próximo <ArrowRight size={16} className="ml-1" />
+            </Button>
+          </div>
         ) : (
           <div className="flex flex-col items-end gap-1">
             {stepIssues.length > 0 && (
