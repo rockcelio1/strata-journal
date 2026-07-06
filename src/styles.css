@@ -572,3 +572,15 @@
   50% { border-color: color-mix(in oklab, var(--brand, #f97316) 80%, transparent); }
   100% { border-color: color-mix(in oklab, var(--brand, #f97316) 20%, transparent); }
 }
+
+/* Luz vermelha piscando — alerta de RDO em rascunho */
+@keyframes rdo-alert-blink {
+  0%, 100% { opacity: 0.25; transform: scale(0.95); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+.animate-rdo-alert-blink {
+  animation: rdo-alert-blink 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-rdo-alert-blink { animation: none; opacity: 0.6; }
+}
