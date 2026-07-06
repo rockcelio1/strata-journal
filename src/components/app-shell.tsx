@@ -387,6 +387,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
+      <AlertDialog open={confirmDismiss} onOpenChange={setConfirmDismiss}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ocultar aviso do rascunho?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O rascunho continua salvo no seu backend e no dispositivo. O aviso ficará oculto apenas nesta sessão e voltará a aparecer em um novo acesso.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter aviso</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { dismissDraftAlertForSession(); setConfirmDismiss(false); }}>
+              Ocultar nesta sessão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
         <ul className="grid grid-cols-5">
