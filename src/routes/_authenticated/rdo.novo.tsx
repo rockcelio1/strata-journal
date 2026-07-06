@@ -30,6 +30,7 @@ import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { ButtonEffectRenderer } from "@/components/button-effects";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { markDraftActive, clearDraftActive } from "@/lib/draft-active";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
@@ -137,6 +138,7 @@ function NovoRdoPage() {
   // ---- Rascunho local (IndexedDB) — salva automaticamente e restaura ao reabrir
   const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   useEffect(() => {
     if (!me?.profile?.id || draftLoaded) return;
     (async () => {
@@ -151,17 +153,8 @@ function NovoRdoPage() {
             b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
           ));
         }
-        toast.success("✓ Rascunho restaurado com sucesso", {
-          description: "Continuamos de onde você parou. Seus dados estão salvos.",
-          position: "top-center",
-          duration: 6000,
-          closeButton: true,
-          className:
-            "toast-brand animate-in fade-in slide-in-from-top-4 duration-300 " +
-            "!bg-brand !text-brand-foreground !border-2 !border-brand-foreground/25 " +
-            "!shadow-[0_10px_40px_-8px_color-mix(in_oklab,var(--brand)_55%,transparent)] " +
-            "!font-semibold !text-base !rounded-xl",
-        });
+        markDraftActive();
+        setShowResumePrompt(true);
       }
       setDraftLoaded(true);
     })();
@@ -170,10 +163,28 @@ function NovoRdoPage() {
     if (!draftLoaded) return;
     const t = setTimeout(() => {
       saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos });
+      const hasData = !!form.obra_id || (form.atividades?.length ?? 0) > 0 || fotos.length > 0
+        || (form.mao_de_obra?.length ?? 0) > 0 || (form.equipamentos?.length ?? 0) > 0
+        || (form.ocorrencias?.length ?? 0) > 0;
+      if (hasData) markDraftActive();
       channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: fotos.length });
     }, 400);
     return () => clearTimeout(t);
   }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
+
+  // ---- Avisa antes de sair da página quando há dados não salvos
+  useEffect(() => {
+    const hasData = !!form.obra_id || (form.atividades?.length ?? 0) > 0 || fotos.length > 0
+      || (form.mao_de_obra?.length ?? 0) > 0 || (form.equipamentos?.length ?? 0) > 0
+      || (form.ocorrencias?.length ?? 0) > 0;
+    if (!hasData) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [form, fotos]);
 
   // ---- BroadcastChannel: sincroniza rascunho entre abas
   const channelRef = useRef<ReturnType<typeof createDraftChannel> | null>(null);
@@ -577,6 +588,7 @@ function NovoRdoPage() {
     },
     onSuccess: (r: any) => {
       clearDraft(draftKey);
+      clearDraftActive();
       const enviadoCount =
         (form.atividades?.length ?? 0) + (form.mao_de_obra?.length ?? 0) +
         (form.equipamentos?.length ?? 0) + (form.ocorrencias?.length ?? 0) - (r.total_dropped ?? 0);
@@ -660,8 +672,42 @@ function NovoRdoPage() {
   const isLast = stepIdx === steps.length - 1;
   const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id && obraSelecionadaExiste;
 
+  // ---- Navegação por teclado: Alt+←/→ (Voltar/Próximo), Alt+1..8 (etapa)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.key === "ArrowRight") {
+        if (canNext && !isLast) { e.preventDefault(); setStepIdx((s) => Math.min(steps.length - 1, s + 1)); }
+      } else if (e.key === "ArrowLeft") {
+        if (stepIdx > 0) { e.preventDefault(); setStepIdx((s) => Math.max(0, s - 1)); }
+      } else if (/^[1-8]$/.test(e.key)) {
+        e.preventDefault();
+        gotoStep(Number(e.key) - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canNext, isLast, stepIdx]);
+
+
   return (
-    <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
+    <>
+      {showResumePrompt && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="max-w-md w-full rounded-xl border-2 border-brand bg-card shadow-2xl p-6 text-center space-y-4">
+            <h2 className="font-serif text-xl">RDO em rascunho aberto</h2>
+            <p className="text-sm text-muted-foreground">
+              Você já tem um RDO salvo em rascunho. Finalize-o antes de criar um novo.
+              Clique abaixo para continuar de onde parou.
+            </p>
+            <Button className="bg-brand text-brand-foreground w-full" onClick={() => setShowResumePrompt(false)}>
+              Continuar edição
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
+        <p className="text-[10px] text-muted-foreground mb-1">Dica: Alt + ← / → alterna etapas · Alt + 1..8 vai direto à etapa</p>
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-3">
         <ArrowLeft size={14} /> RDOs
       </Link>
@@ -1382,6 +1428,7 @@ function NovoRdoPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
