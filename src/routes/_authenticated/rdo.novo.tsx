@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown, CircleNotch,
+  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown, CircleNotch, UploadSimple as Upload,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, fetchClimaPorCep, fetchPrevisao5DiasPorCep, detectarCepAutomaticamente, validarCep, diffPrevisoes, WeatherError, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
@@ -375,11 +375,29 @@ function NovoRdoPage() {
 
 
   async function onAddFotos(files: FileList) {
-    // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
-    const out: File[] = Array.from(files);
-    setFotos((p) => [...p, ...out]);
-    setLegendas((p) => [...p, ...out.map(() => "")]);
+    const MAX_BYTES = 5 * 1024 * 1024;
+    setCompressing(true);
+    try {
+      const out: File[] = [];
+      for (const f of Array.from(files)) {
+        if (f.type.startsWith("image/") && f.size > MAX_BYTES) {
+          try {
+            const compressed = await compressImage(f, { maxDim: 2560, quality: 0.9, maxBytes: MAX_BYTES });
+            out.push(compressed);
+          } catch {
+            out.push(f);
+          }
+        } else {
+          out.push(f);
+        }
+      }
+      setFotos((p) => [...p, ...out]);
+      setLegendas((p) => [...p, ...out.map(() => "")]);
+    } finally {
+      setCompressing(false);
+    }
   }
+
 
   async function blobToBase64(blob: Blob): Promise<string> {
     const buf = await blob.arrayBuffer();
@@ -1026,12 +1044,13 @@ function NovoRdoPage() {
                     <Camera size={14} className="mr-1" /> Abrir câmera
                   </Button>
                   <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                    <Camera size={14} /> {compressing ? "Comprimindo…" : "Galeria"}
+                    <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
                     <input
                       type="file" accept="image/*" multiple className="sr-only"
                       onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
                     />
                   </label>
+
                 </div>
               </div>
               <CameraCapture
