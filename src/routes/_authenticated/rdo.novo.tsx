@@ -125,10 +125,11 @@ function NovoRdoPage() {
   const climaLoading = climaStatus === "loading";
   const obraSelecionadaExiste = !form.obra_id || (obras as any[]).some((o) => o.id === form.obra_id);
 
+  const [showObraDesvinculada, setShowObraDesvinculada] = useState(false);
   useEffect(() => {
     if (!form.obra_id || obras.length === 0 || obraSelecionadaExiste) return;
     setForm((f: any) => ({ ...f, obra_id: "" }));
-    toast.warning("A obra salva no rascunho não está mais disponível. Selecione a obra correta para continuar.");
+    setShowObraDesvinculada(true);
   }, [form.obra_id, obras, obraSelecionadaExiste]);
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
@@ -702,6 +703,19 @@ function NovoRdoPage() {
             </p>
             <Button className="bg-brand text-brand-foreground w-full" onClick={() => setShowResumePrompt(false)}>
               Continuar edição
+            </Button>
+          </div>
+        </div>
+      )}
+      {showObraDesvinculada && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="max-w-md w-full rounded-xl border-2 border-destructive bg-card shadow-2xl p-6 text-center space-y-4">
+            <h2 className="font-serif text-xl text-destructive">Obra desvinculada</h2>
+            <p className="text-sm text-muted-foreground">
+              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar.
+            </p>
+            <Button className="bg-brand text-brand-foreground w-full" onClick={() => { setShowObraDesvinculada(false); setStepIdx(0); }}>
+              Selecionar obra
             </Button>
           </div>
         </div>
