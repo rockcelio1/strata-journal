@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalHoverHints } from "@/components/global-hover-hints";
 import { useDraftActive, clearDraftActive, dismissDraftAlertForSession } from "@/lib/draft-active";
+import { useDraftSaveStatus } from "@/lib/draft-status";
 import { FileText as FileTextIcon, X as XIcon } from "lucide-react";
 import { loadDraft } from "@/lib/draft-storage";
 
@@ -69,6 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Bottom bar: 4 primários + botão "Mais"
   const bottomNav = mainNav.slice(0, 4);
   const draftActive = useDraftActive();
+  const { status: draftSaveStatus, lastSavedAt } = useDraftSaveStatus();
   const onNovoRdo = pathname.startsWith("/rdo/novo");
 
 
@@ -279,24 +281,50 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {draftActive && !onNovoRdo && (
-        <div className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 rounded-full animate-rdo-alert-border flex items-stretch animate-in fade-in slide-in-from-bottom-2">
-          <Link
-            to="/rdo/novo"
-            className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Continuar edição de RDO em rascunho"
-          >
-            <FileTextIcon className="h-4 w-4" />
-            RDO em rascunho — Continuar
-          </Link>
-          <button
-            type="button"
-            onClick={() => dismissDraftAlertForSession()}
-            aria-label="Ocultar aviso (rascunho continua salvo)"
-            title="Ocultar aviso (rascunho continua salvo)"
-            className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 border-l border-brand-foreground/20 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
+        <div
+          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 animate-in fade-in slide-in-from-bottom-2"
+          role="region"
+          aria-label="Rascunho de RDO em andamento"
+        >
+          {draftSaveStatus !== "idle" && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "text-[11px] leading-none px-2 py-1 rounded-full shadow-sm bg-background/90 border",
+                draftSaveStatus === "error"
+                  ? "text-destructive border-destructive/40"
+                  : "text-muted-foreground border-border",
+              )}
+            >
+              {draftSaveStatus === "saving" && "Salvando…"}
+              {draftSaveStatus === "saved" && (
+                lastSavedAt
+                  ? `Rascunho salvo · ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                  : "Rascunho salvo"
+              )}
+              {draftSaveStatus === "error" && "Erro ao salvar"}
+            </span>
+          )}
+          <div className="rounded-full animate-rdo-alert-border flex items-stretch">
+            <Link
+              to="/rdo/novo"
+              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="Continuar edição do RDO em rascunho — abre o formulário"
+            >
+              <FileTextIcon className="h-4 w-4" aria-hidden="true" />
+              <span>RDO em rascunho — Continuar</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => dismissDraftAlertForSession()}
+              aria-label="Ocultar aviso de RDO em rascunho nesta sessão (o rascunho continua salvo)"
+              title="Ocultar aviso (rascunho continua salvo)"
+              className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <XIcon className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
 

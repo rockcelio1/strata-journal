@@ -29,8 +29,10 @@ import { sha256OfJson } from "@/lib/hash";
 import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { ButtonEffectRenderer } from "@/components/button-effects";
-import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { saveDraftStrict, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { setDraftSaveStatus } from "@/lib/draft-status";
 import { markDraftActive, clearDraftActive } from "@/lib/draft-active";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
@@ -141,7 +143,10 @@ function NovoRdoPage() {
   const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [draftError, setDraftError] = useState<{ message: string } | null>(null);
   const loadedOnceRef = useRef(false);
+  const baseSavedAtRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<{ form: any; legendas: any; signer: any; stepIdx: number; fotos: any } | null>(null);
   useEffect(() => {
     if (!me?.profile?.id || draftLoaded || loadedOnceRef.current) return;
     loadedOnceRef.current = true;
@@ -157,6 +162,7 @@ function NovoRdoPage() {
             b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
           ));
         }
+        baseSavedAtRef.current = d.savedAt;
         markDraftActive();
         setShowResumePrompt(true);
         toast.success("Rascunho restaurado com sucesso", { id: "rdo-draft-restored", duration: 2500 });
@@ -164,18 +170,45 @@ function NovoRdoPage() {
       setDraftLoaded(true);
     })();
   }, [me?.profile?.id]);
+
+  const doSaveDraft = async (snapshot: { form: any; legendas: any; signer: any; stepIdx: number; fotos: any }) => {
+    setDraftSaveStatus("saving");
+    try {
+      const { savedAt } = await saveDraftStrict(draftKey, snapshot, { baseSavedAt: baseSavedAtRef.current });
+      baseSavedAtRef.current = savedAt;
+      setDraftError(null);
+      setDraftSaveStatus("saved");
+      const hasData = !!snapshot.form.obra_id || (snapshot.form.atividades?.length ?? 0) > 0 || snapshot.fotos.length > 0
+        || (snapshot.form.mao_de_obra?.length ?? 0) > 0 || (snapshot.form.equipamentos?.length ?? 0) > 0
+        || (snapshot.form.ocorrencias?.length ?? 0) > 0;
+      if (hasData) markDraftActive();
+      channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: snapshot.fotos.length });
+    } catch (e: any) {
+      setDraftSaveStatus("error");
+      if (e?.code === "STALE") {
+        // Outra aba escreveu antes — recarrega o remoto e não sobrescreve.
+        const d = await loadDraft<any>(draftKey);
+        if (d) baseSavedAtRef.current = d.savedAt;
+        setDraftError({ message: "Outra aba salvou alterações mais recentes. Recarregue para continuar." });
+      } else {
+        pendingSaveRef.current = snapshot;
+        setDraftError({ message: e?.message || "Falha ao salvar o rascunho local." });
+      }
+    }
+  };
+
   useEffect(() => {
     if (!draftLoaded) return;
-    const t = setTimeout(() => {
-      saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos });
-      const hasData = !!form.obra_id || (form.atividades?.length ?? 0) > 0 || fotos.length > 0
-        || (form.mao_de_obra?.length ?? 0) > 0 || (form.equipamentos?.length ?? 0) > 0
-        || (form.ocorrencias?.length ?? 0) > 0;
-      if (hasData) markDraftActive();
-      channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: fotos.length });
-    }, 400);
+    const snapshot = { form, legendas, signer, stepIdx, fotos };
+    const t = setTimeout(() => { doSaveDraft(snapshot); }, 400);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
+
+  const retryDraftSave = () => {
+    const snap = pendingSaveRef.current ?? { form, legendas, signer, stepIdx, fotos };
+    doSaveDraft(snap);
+  };
 
   // ---- Avisa antes de sair da página quando há dados não salvos
   useEffect(() => {
@@ -1483,6 +1516,23 @@ function NovoRdoPage() {
         )}
       </div>
     </div>
+
+    <AlertDialog open={!!draftError} onOpenChange={(o) => { if (!o) setDraftError(null); }}>
+      <AlertDialogContent className="max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Não foi possível salvar o rascunho</AlertDialogTitle>
+          <AlertDialogDescription>
+            {draftError?.message ?? "Falha ao salvar o rascunho local."} Seus dados continuam no formulário — você pode tentar novamente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+          <AlertDialogAction onClick={(e) => { e.preventDefault(); retryDraftSave(); setDraftError(null); }}>
+            Tentar novamente
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
