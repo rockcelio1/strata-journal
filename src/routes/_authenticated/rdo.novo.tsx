@@ -980,8 +980,8 @@ function NovoRdoPage() {
                 }}
               />
               {fotosSemLegenda > 0 && (
-                <div role="alert" className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
-                  {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
+                <div role="alert" className="rounded-md border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-sm font-medium">
+                  ⚠ {fotosSemLegenda} foto(s) com legenda incompleta — cada legenda precisa ter no mínimo {MIN_WORDS_LEGENDA} palavras para concluir o RDO.
                 </div>
               )}
               {lowResIdxs.length > 0 && (
