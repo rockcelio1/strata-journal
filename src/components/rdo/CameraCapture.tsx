@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Camera, RefreshCw, X, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { countWords } from "@/lib/text";
 
 type Props = {
   open: boolean;
@@ -13,7 +14,6 @@ type Props = {
 };
 
 const MIN_WORDS = 5;
-const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
 export function CameraCapture({ open, onClose, onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
