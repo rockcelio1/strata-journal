@@ -585,22 +585,25 @@
   .animate-rdo-alert-blink { animation: none; opacity: 0.6; }
 }
 
-/* Borda piscando em laranja (brand) — alerta RDO rascunho */
+/* Borda piscando leve em laranja (brand) — alerta RDO rascunho */
 @keyframes rdo-alert-border {
   0%, 100% {
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand, #f97316) 40%, transparent),
-                0 0 12px 2px color-mix(in oklab, var(--brand, #f97316) 25%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand, #f97316) 35%, transparent),
+                0 0 6px 1px color-mix(in oklab, var(--brand, #f97316) 15%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 4px var(--brand, #f97316),
-                0 0 24px 6px color-mix(in oklab, var(--brand, #f97316) 70%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand, #f97316) 75%, transparent),
+                0 0 12px 3px color-mix(in oklab, var(--brand, #f97316) 35%, transparent);
   }
 }
 .animate-rdo-alert-border {
-  animation: rdo-alert-border 1s ease-in-out infinite;
+  animation: rdo-alert-border 1.8s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-rdo-alert-border { animation: none; }
+  .animate-rdo-alert-border {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand, #f97316) 60%, transparent);
+  }
 }
 
 /* Luz discreta piscando atrás dos botões Abrir câmera / Upload */
