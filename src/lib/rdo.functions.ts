@@ -683,3 +683,52 @@ export const getRdoAuditSummary = createServerFn({ method: "GET" })
       totais,
     };
   });
+
+// ============== ANEXOS: reordenação e histórico ==============
+export const reorderRdoAnexos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      ordem: z.array(z.string().uuid()).min(1).max(500),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    // Valida que todos os anexos pertencem ao RDO informado
+    const { data: rows, error: qerr } = await context.supabase
+      .from("rdo_anexos").select("id").eq("rdo_id", data.rdo_id);
+    if (qerr) throw qerr;
+    const validos = new Set((rows ?? []).map((r: any) => r.id));
+    if (data.ordem.some((id) => !validos.has(id))) {
+      throw new Error("Ordem contém anexos que não pertencem a este RDO.");
+    }
+    for (let i = 0; i < data.ordem.length; i++) {
+      const { error } = await context.supabase
+        .from("rdo_anexos").update({ ordem: i } as any).eq("id", data.ordem[i]);
+      if (error) throw error;
+    }
+    return { ok: true };
+  });
+
+export const listRdoAnexosHist = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from("rdo_anexos_hist")
+      .select("*, autor:profiles!rdo_anexos_hist_autor_id_fkey(id, nome, email)")
+      .eq("rdo_id", data.rdo_id)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) {
+      // fallback sem join se FK não estiver mapeada
+      const alt = await context.supabase
+        .from("rdo_anexos_hist").select("*")
+        .eq("rdo_id", data.rdo_id)
+        .order("created_at", { ascending: false }).limit(500);
+      if (alt.error) throw alt.error;
+      return alt.data ?? [];
+    }
+    return rows ?? [];
+  });
+
