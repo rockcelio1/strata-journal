@@ -76,6 +76,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
 
+  // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
+  // não tem mais rascunho para este usuário (RDO finalizado / limpo em outra
+  // aba ou dispositivo), remove a flag imediatamente para esconder o botão.
+  useEffect(() => {
+    if (!me?.profile?.id || !draftActive) return;
+    let cancelled = false;
+    (async () => {
+      const d = await loadDraft(`rdo-novo:${me.profile.id}`);
+      if (!cancelled && !d) clearDraftActive();
+    })();
+    return () => { cancelled = true; };
+  }, [me?.profile?.id, draftActive, pathname]);
+
 
   const isCadastros = pathname.startsWith("/cadastros");
   const initials = (me?.profile?.nome ?? "U").split(" ").map((s: string) => s[0]).slice(0, 2).join("").toUpperCase();
