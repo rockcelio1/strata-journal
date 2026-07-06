@@ -670,9 +670,23 @@ function NovoRdoPage() {
       <h1 className="font-serif text-2xl md:text-3xl mb-1">Novo RDO</h1>
       <p className="text-xs text-muted-foreground mb-4">Etapa {stepIdx + 1} de {steps.length} · {steps[stepIdx].label}</p>
 
-      <div className="flex gap-1.5 mb-5">
+      <div className="flex gap-1.5 mb-5" role="tablist" aria-label="Etapas do RDO">
         {steps.map((s, i) => (
-          <div key={s.key} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-brand" : "bg-muted")} />
+          <button
+            key={s.key}
+            type="button"
+            role="tab"
+            aria-selected={i === stepIdx}
+            aria-label={`Etapa ${i + 1}: ${s.label}`}
+            title={`Ir para etapa ${i + 1} — ${s.label}`}
+            onClick={() => gotoStep(i)}
+            className={cn(
+              "h-3 flex-1 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/60",
+              i < stepIdx && "bg-brand hover:bg-brand/80",
+              i === stepIdx && "bg-brand ring-2 ring-brand/40",
+              i > stepIdx && "bg-muted hover:bg-muted-foreground/30",
+            )}
+          />
         ))}
       </div>
 
