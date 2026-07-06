@@ -1516,6 +1516,23 @@ function NovoRdoPage() {
         )}
       </div>
     </div>
+
+    <AlertDialog open={!!draftError} onOpenChange={(o) => { if (!o) setDraftError(null); }}>
+      <AlertDialogContent className="max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Não foi possível salvar o rascunho</AlertDialogTitle>
+          <AlertDialogDescription>
+            {draftError?.message ?? "Falha ao salvar o rascunho local."} Seus dados continuam no formulário — você pode tentar novamente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+          <AlertDialogAction onClick={(e) => { e.preventDefault(); retryDraftSave(); setDraftError(null); }}>
+            Tentar novamente
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
