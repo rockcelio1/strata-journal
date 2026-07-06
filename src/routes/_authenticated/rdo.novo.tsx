@@ -126,6 +126,7 @@ function NovoRdoPage() {
   const obraSelecionadaExiste = !form.obra_id || (obras as any[]).some((o) => o.id === form.obra_id);
 
   const [showObraDesvinculada, setShowObraDesvinculada] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   useEffect(() => {
     if (!form.obra_id || obras.length === 0 || obraSelecionadaExiste) return;
     setForm((f: any) => ({ ...f, obra_id: "" }));
@@ -715,11 +716,50 @@ function NovoRdoPage() {
           <div className="max-w-md w-full rounded-xl border-2 border-destructive bg-card shadow-2xl p-6 text-center space-y-4">
             <h2 className="font-serif text-xl text-destructive">Obra desvinculada</h2>
             <p className="text-sm text-muted-foreground">
-              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar.
+              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar
+              ou descarte o rascunho e comece um novo RDO.
             </p>
-            <Button className="bg-brand text-brand-foreground w-full" onClick={() => { setShowObraDesvinculada(false); setStepIdx(0); }}>
+            <Button
+              className="bg-brand text-brand-foreground w-full"
+              onClick={() => {
+                setShowObraDesvinculada(false);
+                setStepIdx(0);
+                setTimeout(() => {
+                  document.querySelector<HTMLElement>('[role="combobox"]')?.focus();
+                }, 50);
+              }}
+            >
               Selecionar obra
             </Button>
+            {!confirmDiscard ? (
+              <Button variant="outline" className="w-full" onClick={() => setConfirmDiscard(true)}>
+                Descartar rascunho e iniciar novo RDO
+              </Button>
+            ) : (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                <p className="text-xs text-destructive font-medium">
+                  Tem certeza? Todos os dados do rascunho serão perdidos.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setConfirmDiscard(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={async () => {
+                      await clearDraft(draftKey);
+                      clearDraftActive();
+                      setConfirmDiscard(false);
+                      setShowObraDesvinculada(false);
+                      window.location.reload();
+                    }}
+                  >
+                    Sim, descartar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -801,11 +841,6 @@ function NovoRdoPage() {
                   {(obras as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {!obraSelecionadaExiste && (
-                <p role="alert" className="mt-1 text-xs text-destructive">
-                  A obra deste rascunho não está mais disponível. Selecione novamente.
-                </p>
-              )}
             </div>
             <div>
               <Label>Data</Label>
@@ -1115,17 +1150,20 @@ function NovoRdoPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
                 <div className="flex items-center gap-2">
-                  <Button type="button" size="sm" variant="default" onClick={() => setCameraOpen(true)}>
-                    <Camera size={14} className="mr-1" /> Abrir câmera
-                  </Button>
-                  <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                    <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
-                    <input
-                      type="file" accept="image/*" multiple className="sr-only"
-                      onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
-                    />
-                  </label>
-
+                  <span className="relative inline-block rounded-md animate-rdo-photo-hint">
+                    <Button type="button" size="sm" variant="default" onClick={() => setCameraOpen(true)}>
+                      <Camera size={14} className="mr-1" /> Abrir câmera
+                    </Button>
+                  </span>
+                  <span className="relative inline-block rounded-md animate-rdo-photo-hint">
+                    <label className="inline-flex items-center gap-1 text-sm px-3 h-9 rounded-md bg-primary text-primary-foreground cursor-pointer hover:opacity-90 font-medium">
+                      <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
+                      <input
+                        type="file" accept="image/*" multiple className="sr-only"
+                        onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
+                      />
+                    </label>
+                  </span>
                 </div>
               </div>
               <CameraCapture
