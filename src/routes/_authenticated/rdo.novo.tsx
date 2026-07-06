@@ -1428,6 +1428,7 @@ function NovoRdoPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
