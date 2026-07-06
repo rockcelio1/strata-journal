@@ -121,6 +121,13 @@ function NovoRdoPage() {
   const [cepInput, setCepInput] = useState("");
   const [cepDetecting, setCepDetecting] = useState(false);
   const climaLoading = climaStatus === "loading";
+  const obraSelecionadaExiste = !form.obra_id || (obras as any[]).some((o) => o.id === form.obra_id);
+
+  useEffect(() => {
+    if (!form.obra_id || obras.length === 0 || obraSelecionadaExiste) return;
+    setForm((f: any) => ({ ...f, obra_id: "" }));
+    toast.warning("A obra salva no rascunho não está mais disponível. Selecione a obra correta para continuar.");
+  }, [form.obra_id, obras, obraSelecionadaExiste]);
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
   const [signer, setSigner] = useState({ nome: me?.profile?.nome ?? "", cargo: "" });
@@ -605,6 +612,7 @@ function NovoRdoPage() {
   // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
   const stepIssues: { step: number; label: string; message: string }[] = [];
   if (!form.obra_id) stepIssues.push({ step: 0, label: "Obra", message: "Selecione a obra do RDO." });
+  else if (!obraSelecionadaExiste) stepIssues.push({ step: 0, label: "Obra", message: "A obra selecionada no rascunho não existe mais. Selecione a obra correta." });
   if ((form.atividades ?? []).length === 0)
     stepIssues.push({ step: 2, label: "Atividades", message: "Adicione ao menos uma atividade." });
   if (maoInvalidIdx.length > 0)
@@ -623,11 +631,11 @@ function NovoRdoPage() {
     stepIssues.push({ step: 7, label: "Assinatura", message: "Desenhe ou envie a assinatura." });
 
   const canNext =
-    stepIdx === 0 ? !!form.obra_id
+    stepIdx === 0 ? !!form.obra_id && obraSelecionadaExiste
     : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
     : true;
   const isLast = stepIdx === steps.length - 1;
-  const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id;
+  const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id && obraSelecionadaExiste;
 
   return (
     <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
@@ -693,6 +701,11 @@ function NovoRdoPage() {
                   {(obras as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {!obraSelecionadaExiste && (
+                <p role="alert" className="mt-1 text-xs text-destructive">
+                  A obra deste rascunho não está mais disponível. Selecione novamente.
+                </p>
+              )}
             </div>
             <div>
               <Label>Data</Label>

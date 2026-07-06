@@ -24,7 +24,7 @@ import {
 import { rdoStatusMeta } from "@/components/status";
 import { Highlight } from "@/components/Highlight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { listQueued, flushQueue, removeQueued, retryQueued, type QueuedRdo } from "@/lib/offline-queue";
+import { listQueued, flushQueue, removeQueued, retryQueued, updateQueuedPayload, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
 import { fuzzyFilter, normalizeForSearch, fuzzyScore } from "@/lib/fuzzy-search";
 import { toast } from "sonner";
@@ -69,7 +69,7 @@ function RdoListPage() {
   const deleteFn = useServerFn(deleteRdo);
   const adminDeleteFn = useServerFn(adminDeleteRdo);
   const { data: rdos = [], isLoading } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
-  const { data: obras = [] } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
+  const { data: obras = [], isLoading: obrasLoading } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
 
   const search = Route.useSearch();
@@ -143,6 +143,25 @@ function RdoListPage() {
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const syncingRef = useRef(false);
+  const obrasById = useMemo(() => new Map((obras as any[]).map((o) => [o.id, o])), [obras]);
+  const obraIds = useMemo(() => new Set((obras as any[]).map((o) => o.id)), [obras]);
+
+  function queueObraId(q: QueuedRdo) {
+    return typeof q.payload?.obra_id === "string" ? q.payload.obra_id : "";
+  }
+
+  function isQueuedObraInvalid(q: QueuedRdo) {
+    const id = queueObraId(q);
+    return !id || (!obrasLoading && obras.length > 0 && !obraIds.has(id));
+  }
+
+  function displayQueueError(error?: string) {
+    if (!error) return "";
+    if (/rdos_obra_id_fkey|foreign key constraint|obra selecionada|obra do rascunho|obra_id/i.test(error)) {
+      return "Obra do rascunho inválida ou removida. Selecione a obra correta e tente sincronizar novamente.";
+    }
+    return error;
+  }
 
   const refreshQueue = useCallback(async () => { setQueue(await listQueued()); }, []);
   useEffect(() => { refreshQueue(); }, [refreshQueue]);
@@ -157,11 +176,19 @@ function RdoListPage() {
       const res = await flushQueue(
         async (payload) => {
           const { sane, dropped } = sanitizeRdoPayload(payload);
+          const obraAtual = sane.obra_id;
+          if (!obraAtual || (!obrasLoading && obras.length > 0 && !obraIds.has(obraAtual))) {
+            throw new Error("Obra do rascunho inválida ou removida. Selecione a obra correta e tente sincronizar novamente.");
+          }
           totals.equipamentos += dropped.equipamentos;
           totals.ocorrencias += dropped.ocorrencias;
           totals.mao_de_obra += dropped.mao_de_obra;
           totals.atividades += dropped.atividades;
-          const r: any = await createFn({ data: sane }); return { id: r.id };
+          try {
+            const r: any = await createFn({ data: sane }); return { id: r.id };
+          } catch (e: any) {
+            throw new Error(displayQueueError(e?.message ?? "Falha ao sincronizar RDO"));
+          }
         },
         ({ index, total }) => setProgress({ done: index, total }),
       );
@@ -184,7 +211,7 @@ function RdoListPage() {
       setSyncing(false);
       setProgress(null);
     }
-  }, [createFn, qc, refreshQueue]);
+  }, [createFn, obras.length, obrasLoading, obraIds, qc, refreshQueue]);
 
   useEffect(() => {
     const on = () => { setOnline(true); sincronizar(); };
@@ -197,6 +224,11 @@ function RdoListPage() {
 
   async function descartar(id: string) { await removeQueued(id); await refreshQueue(); }
   async function retry(id: string) { await retryQueued(id); await refreshQueue(); sincronizar(); }
+  async function corrigirObra(localId: string, obra_id: string) {
+    await updateQueuedPayload(localId, (payload) => ({ ...payload, obra_id }));
+    await refreshQueue();
+    toast.success("Obra corrigida. Sincronize novamente.");
+  }
 
   // Conjuntos únicos para alimentar selects (autor/assinou/aprovou)
   const autoresOpts = useMemo(() => {
@@ -295,8 +327,8 @@ function RdoListPage() {
                   : <><b>{pendentes.length}</b> RDOs aguardando sincronização local.</>}
               </span>
             </div>
-            <Button size="sm" onClick={sincronizar} disabled={!online || syncing || pendentes.length === 0} className="bg-brand text-brand-foreground">
-              {syncing ? "Sincronizando…" : online ? "Sincronizar agora" : "Aguardando conexão"}
+            <Button size="sm" onClick={sincronizar} disabled={!online || syncing || pendentes.length === 0 || obrasLoading} className="bg-brand text-brand-foreground">
+              {syncing ? "Sincronizando…" : obrasLoading ? "Carregando obras…" : online ? "Sincronizar agora" : "Aguardando conexão"}
             </Button>
           </div>
           {syncing && progress && progress.total > 0 && (
@@ -304,9 +336,27 @@ function RdoListPage() {
           )}
           {pendentes.length > 0 && (
             <ul className="mt-3 divide-y divide-amber-200/70 text-xs">
-              {pendentes.map((q) => (
-                <li key={q.local_id} className="py-1.5 flex items-center justify-between gap-2">
-                  <span className="font-mono truncate flex-1">{q.local_id.slice(0, 8)}…{q.error ? <span className="ml-2 text-rose-700">— {q.error}</span> : null}</span>
+              {pendentes.map((q) => {
+                const obraIdFila = queueObraId(q);
+                const obraInvalida = isQueuedObraInvalid(q);
+                const erroFila = displayQueueError(q.error);
+                return (
+                <li key={q.local_id} className="py-1.5 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="font-mono truncate flex-1 min-w-[180px]">
+                    {q.local_id.slice(0, 8)}…
+                    {erroFila ? <span className="ml-2 text-rose-700">— {erroFila}</span> : null}
+                    {!erroFila && obraInvalida ? <span className="ml-2 text-rose-700">— obra inválida</span> : null}
+                  </span>
+                  {obraInvalida && obras.length > 0 && (
+                    <Select value={obraIds.has(obraIdFila) ? obraIdFila : undefined} onValueChange={(v) => corrigirObra(q.local_id, v)}>
+                      <SelectTrigger className="h-7 w-[190px] text-xs bg-background">
+                        <SelectValue placeholder="Corrigir obra" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(obras as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <Badge variant="outline" className={
                     q.status === "erro" ? "border-rose-300 text-rose-700 bg-rose-50" :
                     q.status === "enviando" ? "border-blue-300 text-blue-700 bg-blue-50" :
@@ -324,7 +374,7 @@ function RdoListPage() {
                     <X size={11} /> descartar
                   </button>
                 </li>
-              ))}
+              );})}
             </ul>
           )}
         </Card>

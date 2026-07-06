@@ -148,8 +148,11 @@ export const createRdo = createServerFn({ method: "POST" })
     // uma obra excluída ou de outra empresa.
     const obraCheck = await context.supabase
       .from("obras").select("id").eq("id", data.obra_id).eq("empresa_id", me.data.empresa_id).maybeSingle();
+    if (obraCheck.error) {
+      throw new Error("Não foi possível validar a obra selecionada. Atualize a lista de obras e tente novamente.");
+    }
     if (!obraCheck.data) {
-      throw new Error("Obra selecionada não existe mais (ou não pertence à sua empresa). Escolha outra obra para continuar.");
+      throw new Error("Obra selecionada não existe mais (ou não pertence à sua empresa). Escolha a obra correta e tente sincronizar novamente.");
     }
 
 
@@ -166,7 +169,13 @@ export const createRdo = createServerFn({ method: "POST" })
       status: data.enviar ? "enviado" : "rascunho",
       enviado_em: data.enviar ? new Date().toISOString() : null,
     }).select().single();
-    if (error) throw error;
+    if (error) {
+      const msg = error.message ?? "";
+      if (error.code === "23503" && /rdos_obra_id_fkey|obra_id/i.test(msg)) {
+        throw new Error("Obra selecionada não existe mais (ou não pertence à sua empresa). Escolha a obra correta e tente sincronizar novamente.");
+      }
+      throw error;
+    }
 
     const rdoId = rdo.id;
     if (data.atividades.length) {

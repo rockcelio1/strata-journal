@@ -53,6 +53,21 @@ export async function markQueued(local_id: string, patch: Partial<QueuedRdo>) {
   await db.put(STORE, { ...cur, ...patch });
 }
 
+export async function updateQueuedPayload(
+  local_id: string,
+  updater: (payload: any) => any,
+) {
+  const db = await getDb();
+  const cur = (await db.get(STORE, local_id)) as QueuedRdo | undefined;
+  if (!cur) return;
+  await db.put(STORE, {
+    ...cur,
+    payload: updater(cur.payload),
+    status: "pendente",
+    error: undefined,
+  });
+}
+
 export async function listQueued(): Promise<QueuedRdo[]> {
   const db = await getDb();
   return (await db.getAll(STORE)) as QueuedRdo[];
