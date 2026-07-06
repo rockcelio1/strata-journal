@@ -971,10 +971,9 @@ function NovoRdoPage() {
               <CameraCapture
                 open={cameraOpen}
                 onClose={() => setCameraOpen(false)}
-                onCapture={(files) => {
-                  const dt = new DataTransfer();
-                  files.forEach((f) => dt.items.add(f));
-                  onAddFotos(dt.files);
+                onCapture={(files, caps) => {
+                  setFotos((p) => [...p, ...files]);
+                  setLegendas((p) => [...p, ...caps]);
                 }}
               />
               {fotosSemLegenda > 0 && (
