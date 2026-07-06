@@ -140,6 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Aviso flutuante aparece se existir rascunho local OU rascunho no backend.
   const showDraftAlert = (draftActive || hasServerDraft) && !onNovoRdo;
+  const [confirmDismiss, setConfirmDismiss] = useState(false);
 
 
   const isCadastros = pathname.startsWith("/cadastros");
