@@ -776,46 +776,6 @@ function NovoRdoPage() {
               </div>
             </div>
 
-            {/* CEP manual + detecção automática */}
-            <div className="border border-border rounded-md p-3 bg-muted/20 space-y-2">
-              <Label className="text-xs">Consultar clima por CEP</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  inputMode="numeric"
-                  placeholder="00000-000"
-                  maxLength={9}
-                  value={cepInput}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    setCepInput(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
-                  }}
-                  className="sm:max-w-[160px]"
-                />
-                <div className="flex gap-2 flex-wrap">
-                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || cepDetecting || !cepInput} onClick={importarClimaPorCep}>
-                    {climaLoading
-                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
-                      : <CloudSun size={16} className="mr-1" />}
-                    {climaLoading ? "Consultando CEP…" : "Consultar pelo CEP"}
-                  </Button>
-                  <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
-                    {cepDetecting
-                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
-                      : <MapPin size={16} className="mr-1" />}
-                    {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
-                  </Button>
-                </div>
-              </div>
-              {(climaLoading || cepDetecting) && (
-                <div role="status" aria-live="polite" className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CircleNotch size={14} className="animate-spin" />
-                  {cepDetecting ? "Detectando CEP pela sua localização…" : "Consultando previsão pelo CEP…"}
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground">
-                Digite o CEP manualmente ou use a detecção automática (geolocalização + IA de reverse-geocoding).
-              </p>
-            </div>
 
             {climaStatus === "error" && (
               <div role="alert" className="text-xs border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 rounded-md p-3 flex items-start justify-between gap-3">
