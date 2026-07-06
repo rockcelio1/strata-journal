@@ -143,6 +143,17 @@ export const createRdo = createServerFn({ method: "POST" })
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
 
+    // Preflight: garante que a obra existe e pertence à empresa do usuário.
+    // Evita o erro cru de FK "rdos_obra_id_fkey" quando o draft aponta para
+    // uma obra excluída ou de outra empresa.
+    const obraCheck = await context.supabase
+      .from("obras").select("id").eq("id", data.obra_id).eq("empresa_id", me.data.empresa_id).maybeSingle();
+    if (!obraCheck.data) {
+      throw new Error("Obra selecionada não existe mais (ou não pertence à sua empresa). Escolha outra obra para continuar.");
+    }
+
+
+
     const { data: rdo, error } = await context.supabase.from("rdos").insert({
       empresa_id: me.data.empresa_id,
       obra_id: data.obra_id,
