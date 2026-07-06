@@ -66,12 +66,22 @@ export function sanitizeRdoPayload<T extends RdoFormLike>(
   const atividades = (payload.atividades ?? []).filter((a) =>
     a?.descricao?.trim(),
   );
-  const mao_de_obra = (payload.mao_de_obra ?? []).filter((m) =>
-    isUuid(m?.mao_de_obra_id),
-  );
-  const equipamentos = (payload.equipamentos ?? []).filter((e) =>
-    isUuid(e?.equipamento_id),
-  );
+  const mao_de_obra = (payload.mao_de_obra ?? [])
+    .filter((m: any) => isUuid(m?.mao_de_obra_id))
+    .map((m: any) => {
+      const n = Math.min(999, Math.max(0, Math.trunc(Number(m?.horas ?? 0)) || 0));
+      // Remove campos legados (atividade) que não existem mais no schema.
+      const { atividade: _a, ...rest } = m ?? {};
+      return { ...rest, horas: n };
+    });
+  const equipamentos = (payload.equipamentos ?? [])
+    .filter((e: any) => isUuid(e?.equipamento_id))
+    .map((e: any) => {
+      const n = Math.min(999, Math.max(0, Math.trunc(Number(e?.horas_uso ?? 0)) || 0));
+      // Remove campos legados (status_uso/Observação) que não existem mais no schema.
+      const { status_uso: _s, ...rest } = e ?? {};
+      return { ...rest, horas_uso: n };
+    });
   const ocorrencias = (payload.ocorrencias ?? []).filter((o) =>
     o?.descricao?.trim(),
   );
