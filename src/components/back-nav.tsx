@@ -93,7 +93,8 @@ export function BackNav({ hidden, hideBreadcrumb, className }: BackNavProps) {
         title="Voltar (Alt + ←)"
         className="facom-glow brand-arrow group inline-flex items-center gap-1.5 min-w-12 min-h-11 px-3 rounded-lg bg-brand text-brand-foreground ring-2 ring-brand/40 shadow-[0_0_0_2px_rgba(255,255,255,0.15),0_6px_20px_-4px_var(--brand)] hover:brightness-110 hover:-translate-x-0.5 active:translate-x-0 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/50"
       >
-        <ArrowLeft className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
+        <ArrowLeft className="h-6 w-6 transition-transform group-hover:-translate-x-0.5" strokeWidth={3.25} aria-hidden="true" />
+        <span className="text-sm font-semibold hidden sm:inline">Voltar</span>
         <span className="sr-only">Voltar</span>
       </button>
 
