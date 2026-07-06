@@ -17,9 +17,10 @@ import {
 } from "lucide-react";
 import { BackNav } from "@/components/back-nav";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
+import { hasOpenRascunho } from "@/lib/rdo.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { LogoMark } from "@/routes/_authenticated/configuracoes.sistema";
 import { LogoWallpaper } from "@/components/logo-wallpaper";
