@@ -375,11 +375,29 @@ function NovoRdoPage() {
 
 
   async function onAddFotos(files: FileList) {
-    // Mantém a qualidade original da câmera do celular: sem compressão e sem limite de quantidade/tamanho.
-    const out: File[] = Array.from(files);
-    setFotos((p) => [...p, ...out]);
-    setLegendas((p) => [...p, ...out.map(() => "")]);
+    const MAX_BYTES = 5 * 1024 * 1024;
+    setCompressing(true);
+    try {
+      const out: File[] = [];
+      for (const f of Array.from(files)) {
+        if (f.type.startsWith("image/") && f.size > MAX_BYTES) {
+          try {
+            const compressed = await compressImage(f, { maxDim: 2560, quality: 0.9, maxBytes: MAX_BYTES });
+            out.push(compressed);
+          } catch {
+            out.push(f);
+          }
+        } else {
+          out.push(f);
+        }
+      }
+      setFotos((p) => [...p, ...out]);
+      setLegendas((p) => [...p, ...out.map(() => "")]);
+    } finally {
+      setCompressing(false);
+    }
   }
+
 
   async function blobToBase64(blob: Blob): Promise<string> {
     const buf = await blob.arrayBuffer();
