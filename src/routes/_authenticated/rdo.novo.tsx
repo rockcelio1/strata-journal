@@ -125,10 +125,11 @@ function NovoRdoPage() {
   const climaLoading = climaStatus === "loading";
   const obraSelecionadaExiste = !form.obra_id || (obras as any[]).some((o) => o.id === form.obra_id);
 
+  const [showObraDesvinculada, setShowObraDesvinculada] = useState(false);
   useEffect(() => {
     if (!form.obra_id || obras.length === 0 || obraSelecionadaExiste) return;
     setForm((f: any) => ({ ...f, obra_id: "" }));
-    toast.warning("A obra salva no rascunho não está mais disponível. Selecione a obra correta para continuar.");
+    setShowObraDesvinculada(true);
   }, [form.obra_id, obras, obraSelecionadaExiste]);
 
   const [assinaturaBlob, setAssinaturaBlob] = useState<Blob | null>(null);
