@@ -30,8 +30,9 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalHoverHints } from "@/components/global-hover-hints";
-import { useDraftActive } from "@/lib/draft-active";
-import { FileText as FileTextIcon } from "lucide-react";
+import { useDraftActive, clearDraftActive, dismissDraftAlertForSession } from "@/lib/draft-active";
+import { FileText as FileTextIcon, X as XIcon } from "lucide-react";
+import { loadDraft } from "@/lib/draft-storage";
 
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
