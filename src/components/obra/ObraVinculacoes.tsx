@@ -124,27 +124,101 @@ function FuncoesPanel({ obraId }: { obraId: string }) {
   const listFn = useServerFn(listRecursos);
   const toggleFn = useServerFn(toggleFuncaoPermitida);
   const { data } = useQuery({ queryKey: ["obra-recursos", obraId], queryFn: () => listFn({ data: { obra_id: obraId } }) });
-  const set = new Set(data?.funcoesPermitidas ?? []);
+  const selected = new Set(data?.funcoesPermitidas ?? []);
   const toggle = useMutation({
     mutationFn: (p: { id: string; enabled: boolean }) => toggleFn({ data: { obra_id: obraId, mao_de_obra_id: p.id, enabled: p.enabled } }),
     onSuccess: async () => qc.invalidateQueries({ queryKey: ["obra-recursos", obraId] }),
     onError: (e: any) => toast.error(e?.message ?? "Erro"),
   });
-  return (
-    <div className="space-y-2">
-      {(data?.maoDeObra ?? []).length === 0 && <div className="text-sm text-muted-foreground">Nenhuma função cadastrada.</div>}
-      {(data?.maoDeObra ?? []).map((mo: any) => (
-        <label key={mo.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/40 cursor-pointer">
-          <Checkbox checked={set.has(mo.id)} onCheckedChange={(v) => toggle.mutate({ id: mo.id, enabled: Boolean(v) })} />
-          <div className="flex-1">
-            <div className="text-sm">{mo.nome} — <span className="text-muted-foreground">{mo.funcao}</span></div>
-            {mo.disciplina && <div className="text-xs text-muted-foreground">{mo.disciplina}</div>}
+
+  const all = (data?.maoDeObra ?? []) as any[];
+  const globais = all.filter((m) => !selected.has(m.id));
+  const predefinidas = all.filter((m) => selected.has(m.id));
+
+  const grupos = Array.from(new Set(all.map((m) => m.disciplina).filter(Boolean))) as string[];
+
+  const [qEsq, setQEsq] = useState("");
+  const [gEsq, setGEsq] = useState<string>("__all__");
+  const [qDir, setQDir] = useState("");
+  const [gDir, setGDir] = useState<string>("__all__");
+
+  const filtra = (rows: any[], q: string, g: string) => rows.filter((m) => {
+    const okQ = !q || `${m.nome} ${m.funcao ?? ""}`.toLowerCase().includes(q.toLowerCase());
+    const okG = g === "__all__" || m.disciplina === g;
+    return okQ && okG;
+  });
+
+  const esq = filtra(globais, qEsq, gEsq);
+  const dir = filtra(predefinidas, qDir, gDir);
+
+  const Coluna = ({
+    titulo, cor, rows, q, setQ, g, setG, action, actionLabel, actionClass,
+  }: any) => (
+    <div className="flex flex-col min-h-0">
+      <div className={`font-semibold mb-2 ${cor}`}>{titulo}</div>
+      <div className="flex gap-2 mb-2">
+        <Input placeholder="Pesquisa" value={q} onChange={(e) => setQ(e.target.value)} className="flex-1" />
+        <Select value={g} onValueChange={setG}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">Todos os grupos</SelectItem>
+            {grupos.map((gr) => <SelectItem key={gr} value={gr}>{gr}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="border border-border rounded-md divide-y divide-border max-h-[420px] overflow-y-auto">
+        {rows.length === 0 ? (
+          <div className="p-4 text-center text-xs text-muted-foreground">Nenhum item.</div>
+        ) : rows.map((m: any) => (
+          <div key={m.id} className="flex items-center gap-2 p-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm truncate">{m.funcao || m.nome}</div>
+            </div>
+            <div className="text-xs text-brand shrink-0 max-w-[160px] truncate">{m.disciplina ?? "—"}</div>
+            <Button size="icon" variant="ghost"
+              className={`h-7 w-7 ${actionClass}`}
+              title={actionLabel}
+              onClick={() => action(m.id)}
+              disabled={toggle.isPending}>
+              {actionLabel === "Adicionar" ? <Plus className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            </Button>
           </div>
-        </label>
-      ))}
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Coluna
+          titulo={`Padrão - Cadastro global (${globais.length})`}
+          cor="text-brand"
+          rows={esq}
+          q={qEsq} setQ={setQEsq}
+          g={gEsq} setG={setGEsq}
+          action={(id: string) => toggle.mutate({ id, enabled: true })}
+          actionLabel="Adicionar"
+          actionClass="bg-brand text-brand-foreground hover:bg-brand/90"
+        />
+        <Coluna
+          titulo={`Lista predefinida (${predefinidas.length})`}
+          cor="text-brand"
+          rows={dir}
+          q={qDir} setQ={setQDir}
+          g={gDir} setG={setGDir}
+          action={(id: string) => toggle.mutate({ id, enabled: false })}
+          actionLabel="Remover"
+          actionClass="text-destructive hover:text-destructive"
+        />
+      </div>
+      <p className="text-xs text-muted-foreground text-center">
+        Mãos de obras que serão exibidas ao criar e editar um relatório.
+      </p>
     </div>
   );
 }
+
 
 function EquipamentosPanel({ obraId }: { obraId: string }) {
   const qc = useQueryClient();
