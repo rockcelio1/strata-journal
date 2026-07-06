@@ -91,6 +91,7 @@ function NovoRdoPage() {
     obra_id: search.obra ?? "",
     data: new Date().toISOString().slice(0, 10),
     clima_manha: null, clima_tarde: null, clima_noite: null,
+    obs_clima_manha: "", obs_clima_tarde: "",
     observacoes: "",
     atividades: [] as any[],
     mao_de_obra: [] as any[],
