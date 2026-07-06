@@ -30,7 +30,7 @@ import { fuzzyFilter, normalizeForSearch, fuzzyScore } from "@/lib/fuzzy-search"
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/rdo/")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { status?: string } => ({
     status: typeof s.status === "string" ? s.status : undefined,
   }),
   component: RdoListPage,
