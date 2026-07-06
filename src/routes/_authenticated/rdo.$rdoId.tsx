@@ -464,7 +464,7 @@ function RdoDetailPage() {
         {data.mao_de_obra.map((m: any) => (
           <div key={m.id} className="flex justify-between py-2 border-b border-border last:border-0 text-sm">
             <span>{m.mao_de_obra?.nome} — <span className="text-muted-foreground">{m.mao_de_obra?.funcao}</span></span>
-            <span className="text-muted-foreground">{m.atividade ?? "—"} · {m.horas}h</span>
+            <span className="text-muted-foreground">{m.horas} UN</span>
           </div>
         ))}
       </SectionList>

@@ -117,8 +117,9 @@ export async function exportRdoPdf(args: {
     );
   }
 
-  section("Mão de obra", ["Pessoa", "Função", "Atividade", "Horas"],
-    mao_de_obra.map((m) => [m.mao_de_obra?.nome ?? "—", m.mao_de_obra?.funcao ?? "—", m.atividade ?? "—", String(m.horas ?? 0)]));
+  section("Mão de obra", ["Pessoa", "Função", "UN"],
+    mao_de_obra.map((m) => [m.mao_de_obra?.nome ?? "—", m.mao_de_obra?.funcao ?? "—", String(m.horas ?? 0)]));
+
 
   section("Equipamentos", ["Equipamento", "Tipo", "Status", "Horas"],
     equipamentos.map((e) => [e.equipamentos?.nome ?? "—", e.equipamentos?.tipo ?? "—", e.status_uso ?? "—", String(e.horas_uso ?? 0)]));
