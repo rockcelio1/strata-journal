@@ -438,8 +438,9 @@ function NovoRdoPage() {
             const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
             if (up.error) throw up.error;
             await registrarFn({ data: {
-              rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+              rdo_id: rdoId, nome: a.name,
               storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+              legenda: a.legenda,
             }});
             setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
             pushHist({ name: a.name, status: "fallback", provider: "supabase" });
