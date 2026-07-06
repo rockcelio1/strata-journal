@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown, CircleNotch,
+  ArrowLeft, ArrowRight, Plus, X, Camera, Eraser, Check, CloudSun, MapPin, ShieldCheck, ArrowUp, ArrowDown, CircleNotch, UploadSimple as Upload,
 } from "@phosphor-icons/react";
 import { compressImage } from "@/lib/image-compress";
 import { fetchPosicao, fetchClima, fetchClimaPorEndereco, classificaClima, fetchPrevisao5DiasPorEndereco, fetchClimaPorCep, fetchPrevisao5DiasPorCep, detectarCepAutomaticamente, validarCep, diffPrevisoes, WeatherError, type ClimaSnapshot, type DiaPrevisao } from "@/lib/weather";
