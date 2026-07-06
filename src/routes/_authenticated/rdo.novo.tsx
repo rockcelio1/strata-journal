@@ -801,11 +801,6 @@ function NovoRdoPage() {
                   {(obras as any[]).map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {!obraSelecionadaExiste && (
-                <p role="alert" className="mt-1 text-xs text-destructive">
-                  A obra deste rascunho não está mais disponível. Selecione novamente.
-                </p>
-              )}
             </div>
             <div>
               <Label>Data</Label>
