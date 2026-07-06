@@ -1345,7 +1345,7 @@ function NovoRdoPage() {
       </div>
 
       <div className="sticky bottom-16 md:bottom-0 mt-6 -mx-4 md:mx-0 bg-background/95 backdrop-blur border-t border-border md:border-0 px-4 py-3 flex justify-between gap-2">
-        <Button variant="ghost" disabled={stepIdx === 0} onClick={() => setStepIdx((s) => Math.max(0, s - 1))}>
+        <Button disabled={stepIdx === 0} onClick={() => setStepIdx((s) => Math.max(0, s - 1))} className="bg-brand text-brand-foreground">
           <ArrowLeft size={16} className="mr-1" /> Voltar
         </Button>
         {!isLast ? (
