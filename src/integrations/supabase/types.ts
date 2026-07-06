@@ -428,6 +428,63 @@ export type Database = {
           },
         ]
       }
+      lista_tarefas_itens: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          empresa_id: string
+          id: string
+          is_etapa: boolean
+          nome: string
+          ordem: number
+          parent_id: string | null
+          percentual: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          empresa_id: string
+          id?: string
+          is_etapa?: boolean
+          nome: string
+          ordem?: number
+          parent_id?: string | null
+          percentual?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          is_etapa?: boolean
+          nome?: string
+          ordem?: number
+          parent_id?: string | null
+          percentual?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lista_tarefas_itens_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lista_tarefas_itens_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "lista_tarefas_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mao_de_obra: {
         Row: {
           ativo: boolean
