@@ -140,8 +140,10 @@ function NovoRdoPage() {
   const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const loadedOnceRef = useRef(false);
   useEffect(() => {
-    if (!me?.profile?.id || draftLoaded) return;
+    if (!me?.profile?.id || draftLoaded || loadedOnceRef.current) return;
+    loadedOnceRef.current = true;
     (async () => {
       const d = await loadDraft<{ form: any; legendas: string[]; signer: any; stepIdx: number; fotos?: Blob[] }>(draftKey);
       if (d?.value?.form) {
@@ -156,6 +158,7 @@ function NovoRdoPage() {
         }
         markDraftActive();
         setShowResumePrompt(true);
+        toast.success("Rascunho restaurado com sucesso", { id: "rdo-draft-restored", duration: 2500 });
       }
       setDraftLoaded(true);
     })();
