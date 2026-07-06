@@ -346,7 +346,7 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
       if (a.storage_provider === "onedrive") {
         return { ...a, url: a.onedrive_download_url ?? a.onedrive_web_url ?? null };
       }
-      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+      const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
       return { ...a, url: signed.data?.signedUrl ?? null };
     }));
     return withUrls;
@@ -486,7 +486,7 @@ export const listGaleria = createServerFn({ method: "GET" })
       if (a.storage_provider === "onedrive") {
         url = a.onedrive_download_url ?? a.onedrive_web_url ?? null;
       } else {
-        const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 3600);
+        const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
         url = signed.data?.signedUrl ?? null;
       }
       return { ...a, tipo: tipoDe(a.mime_type, a.storage_path, a.nome), url };
