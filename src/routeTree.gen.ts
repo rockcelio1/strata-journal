@@ -41,6 +41,7 @@ import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './rout
 import { Route as AuthenticatedCadastrosTemplatesTarefasRouteImport } from './routes/_authenticated/cadastros.templates-tarefas'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
+import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes/_authenticated/cadastros.lista-tarefas'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -224,6 +225,12 @@ const AuthenticatedCadastrosMaoDeObraRoute =
     path: '/cadastros/mao-de-obra',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCadastrosListaTarefasRoute =
+  AuthenticatedCadastrosListaTarefasRouteImport.update({
+    id: '/cadastros/lista-tarefas',
+    path: '/cadastros/lista-tarefas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCadastrosEquipamentosRoute =
   AuthenticatedCadastrosEquipamentosRouteImport.update({
     id: '/cadastros/equipamentos',
@@ -263,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
@@ -299,6 +307,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
@@ -338,6 +347,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
+  '/_authenticated/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
@@ -377,6 +387,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/cadastros/equipamentos'
+    | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/cadastros/templates-tarefas'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/cadastros/equipamentos'
+    | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/cadastros/templates-tarefas'
@@ -451,6 +463,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/cadastros/equipamentos'
+    | '/_authenticated/cadastros/lista-tarefas'
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/cadastros/templates-tarefas'
@@ -713,6 +726,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosMaoDeObraRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cadastros/lista-tarefas': {
+      id: '/_authenticated/cadastros/lista-tarefas'
+      path: '/cadastros/lista-tarefas'
+      fullPath: '/cadastros/lista-tarefas'
+      preLoaderRoute: typeof AuthenticatedCadastrosListaTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cadastros/equipamentos': {
       id: '/_authenticated/cadastros/equipamentos'
       path: '/cadastros/equipamentos'
@@ -806,6 +826,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
   AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
+  AuthenticatedCadastrosListaTarefasRoute: typeof AuthenticatedCadastrosListaTarefasRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
   AuthenticatedCadastrosOcorrenciasRoute: typeof AuthenticatedCadastrosOcorrenciasRoute
   AuthenticatedCadastrosTemplatesTarefasRoute: typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
@@ -825,6 +846,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
   AuthenticatedCadastrosEquipamentosRoute:
     AuthenticatedCadastrosEquipamentosRoute,
+  AuthenticatedCadastrosListaTarefasRoute:
+    AuthenticatedCadastrosListaTarefasRoute,
   AuthenticatedCadastrosMaoDeObraRoute: AuthenticatedCadastrosMaoDeObraRoute,
   AuthenticatedCadastrosOcorrenciasRoute:
     AuthenticatedCadastrosOcorrenciasRoute,
