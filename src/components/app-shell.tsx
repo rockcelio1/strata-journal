@@ -33,8 +33,12 @@ import { NotificationBell } from "@/components/notification-bell";
 import { GlobalHoverHints } from "@/components/global-hover-hints";
 import { useDraftActive, clearDraftActive, dismissDraftAlertForSession } from "@/lib/draft-active";
 import { useDraftSaveStatus } from "@/lib/draft-status";
-import { FileText as FileTextIcon, X as XIcon } from "lucide-react";
+import { FileText as FileTextIcon, X as XIcon, CircleDashed } from "lucide-react";
 import { loadDraft } from "@/lib/draft-storage";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
