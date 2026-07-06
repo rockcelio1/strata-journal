@@ -716,11 +716,50 @@ function NovoRdoPage() {
           <div className="max-w-md w-full rounded-xl border-2 border-destructive bg-card shadow-2xl p-6 text-center space-y-4">
             <h2 className="font-serif text-xl text-destructive">Obra desvinculada</h2>
             <p className="text-sm text-muted-foreground">
-              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar.
+              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar
+              ou descarte o rascunho e comece um novo RDO.
             </p>
-            <Button className="bg-brand text-brand-foreground w-full" onClick={() => { setShowObraDesvinculada(false); setStepIdx(0); }}>
+            <Button
+              className="bg-brand text-brand-foreground w-full"
+              onClick={() => {
+                setShowObraDesvinculada(false);
+                setStepIdx(0);
+                setTimeout(() => {
+                  document.querySelector<HTMLElement>('[role="combobox"]')?.focus();
+                }, 50);
+              }}
+            >
               Selecionar obra
             </Button>
+            {!confirmDiscard ? (
+              <Button variant="outline" className="w-full" onClick={() => setConfirmDiscard(true)}>
+                Descartar rascunho e iniciar novo RDO
+              </Button>
+            ) : (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                <p className="text-xs text-destructive font-medium">
+                  Tem certeza? Todos os dados do rascunho serão perdidos.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setConfirmDiscard(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={async () => {
+                      await clearDraft(draftKey);
+                      clearDraftActive();
+                      setConfirmDiscard(false);
+                      setShowObraDesvinculada(false);
+                      window.location.reload();
+                    }}
+                  >
+                    Sim, descartar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
