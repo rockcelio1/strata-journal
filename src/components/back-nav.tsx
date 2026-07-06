@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +48,7 @@ export interface BackNavProps {
  * Dashboard. Reaproveitado por todas as telas via AppShell.
  */
 export function BackNav({ hidden, hideBreadcrumb, className }: BackNavProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (hidden) return null;
@@ -65,11 +65,17 @@ export function BackNav({ hidden, hideBreadcrumb, className }: BackNavProps) {
   }));
 
   function goBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate({ to: "/dashboard" });
+    // Volta uma tela por vez no histórico do SPA (não pula direto ao início).
+    // Se não houver histórico do router, sobe um nível pela URL atual.
+    const canGoBack =
+      router.history.canGoBack?.() ??
+      (typeof window !== "undefined" && window.history.length > 1);
+    if (canGoBack) {
+      router.history.back();
+      return;
     }
+    const parent = "/" + segments.slice(0, -1).join("/");
+    router.navigate({ to: parent === "/" ? "/dashboard" : (parent as any) });
   }
 
   return (
