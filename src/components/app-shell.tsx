@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!me?.profile?.id || !draftActive) return;
     let cancelled = false;
     (async () => {
-      const d = await loadDraft(`rdo-novo:${me.profile.id}`);
+      const d = await loadDraft(`rdo-novo:${me!.profile!.id}`);
       if (!cancelled && !d) clearDraftActive();
     })();
     return () => { cancelled = true; };
