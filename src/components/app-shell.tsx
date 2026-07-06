@@ -337,7 +337,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           role="region"
           aria-label="Rascunho de RDO em andamento"
           onKeyDown={(e) => {
-            if (e.key === "Escape") { e.preventDefault(); dismissDraftAlertForSession(); }
+            if (e.key === "Escape") { e.preventDefault(); setConfirmDismiss(true); }
           }}
         >
           {draftSaveStatus !== "idle" && (
