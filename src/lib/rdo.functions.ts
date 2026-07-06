@@ -338,7 +338,9 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
-      .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
+      .eq("rdo_id", data.rdo_id)
+      .order("ordem", { ascending: true })
+      .order("created_at", { ascending: true });
     if (error) throw error;
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
       if (a.storage_provider === "onedrive") {
