@@ -923,14 +923,24 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 4 && (
-          <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 0, status_uso: "" })}>
+          <Section title="Equipamentos" onAdd={() => add("equipamentos", { equipamento_id: "", horas_uso: 1, status_uso: "" })}>
             {form.equipamentos.map((it: any, i: number) => {
               const invalid = !isUuid(it.equipamento_id);
               const errId = `rdo-equipamentos-${i}-err`;
+              const unId = `rdo-equipamentos-${i}-un`;
               return (
               <Card key={i} id={`rdo-equipamentos-${i}`} className={cn("p-3 space-y-2", invalid && "border-destructive", flashRow?.key === "equipamentos" && flashRow.idx === i && "ring-4 ring-destructive animate-pulse")}>
                 <div><Label className="text-xs">Equipamento</Label>
-                  <Select value={it.equipamento_id} onValueChange={(v) => upd("equipamentos", i, "equipamento_id", v)}>
+                  <Select
+                    value={it.equipamento_id}
+                    onValueChange={(v) => {
+                      upd("equipamentos", i, "equipamento_id", v);
+                      setTimeout(() => {
+                        const el = document.getElementById(unId) as HTMLInputElement | null;
+                        el?.focus(); el?.select();
+                      }, 60);
+                    }}
+                  >
                     <SelectTrigger data-row-focus aria-invalid={invalid} aria-describedby={invalid ? errId : undefined}>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
@@ -940,10 +950,21 @@ function NovoRdoPage() {
                   </Select>
                   {invalid && <p id={errId} aria-live="polite" className="text-xs text-destructive mt-1">Selecione um equipamento.</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><Label className="text-xs">Observação</Label><Input value={it.status_uso ?? ""} onChange={(e) => upd("equipamentos", i, "status_uso", e.target.value)} /></div>
-                  <div><Label className="text-xs">Horas</Label><Input type="number" step={0.5} value={it.horas_uso} onChange={(e) => upd("equipamentos", i, "horas_uso", Number(e.target.value))} /></div>
+                <div>
+                  <Label className="text-xs" htmlFor={unId}>UN</Label>
+                  <Input
+                    id={unId}
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    step={1}
+                    value={it.horas_uso}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onChange={(e) => upd("equipamentos", i, "horas_uso", Number(e.target.value))}
+                  />
                 </div>
+
                 <div className="flex justify-end"><RmBtn onClick={() => rm("equipamentos", i)} /></div>
               </Card>
               );
