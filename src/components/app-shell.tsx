@@ -30,8 +30,9 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalHoverHints } from "@/components/global-hover-hints";
-import { useDraftActive } from "@/lib/draft-active";
-import { FileText as FileTextIcon } from "lucide-react";
+import { useDraftActive, clearDraftActive, dismissDraftAlertForSession } from "@/lib/draft-active";
+import { FileText as FileTextIcon, X as XIcon } from "lucide-react";
+import { loadDraft } from "@/lib/draft-storage";
 
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
@@ -74,6 +75,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
+
+  // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
+  // não tem mais rascunho para este usuário (RDO finalizado / limpo em outra
+  // aba ou dispositivo), remove a flag imediatamente para esconder o botão.
+  useEffect(() => {
+    if (!me?.profile?.id || !draftActive) return;
+    let cancelled = false;
+    (async () => {
+      const d = await loadDraft(`rdo-novo:${me!.profile!.id}`);
+      if (!cancelled && !d) clearDraftActive();
+    })();
+    return () => { cancelled = true; };
+  }, [me?.profile?.id, draftActive, pathname]);
 
 
   const isCadastros = pathname.startsWith("/cadastros");
@@ -265,15 +279,24 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {draftActive && !onNovoRdo && (
-        <div className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 rounded-full animate-rdo-alert-border">
+        <div className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 rounded-full animate-rdo-alert-border flex items-stretch animate-in fade-in slide-in-from-bottom-2">
           <Link
             to="/rdo/novo"
-            className="relative rounded-full bg-brand text-brand-foreground shadow-lg px-4 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring animate-in fade-in slide-in-from-bottom-2"
+            className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Continuar edição de RDO em rascunho"
           >
             <FileTextIcon className="h-4 w-4" />
             RDO em rascunho — Continuar
           </Link>
+          <button
+            type="button"
+            onClick={() => dismissDraftAlertForSession()}
+            aria-label="Ocultar aviso (rascunho continua salvo)"
+            title="Ocultar aviso (rascunho continua salvo)"
+            className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 border-l border-brand-foreground/20 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
         </div>
       )}
 
