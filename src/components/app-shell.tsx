@@ -264,6 +264,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
+      {draftActive && !onNovoRdo && (
+        <Link
+          to="/rdo/novo"
+          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 rounded-full bg-brand text-brand-foreground shadow-lg border-2 border-brand-foreground/25 px-4 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring animate-in fade-in slide-in-from-bottom-2"
+          aria-label="Continuar edição de RDO em rascunho"
+        >
+          <FileTextIcon className="h-4 w-4" />
+          RDO em rascunho — Continuar
+        </Link>
+      )}
+
       {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
         <ul className="grid grid-cols-5">
