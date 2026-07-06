@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
