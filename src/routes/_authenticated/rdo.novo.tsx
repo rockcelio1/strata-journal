@@ -588,6 +588,7 @@ function NovoRdoPage() {
     },
     onSuccess: (r: any) => {
       clearDraft(draftKey);
+      clearDraftActive();
       const enviadoCount =
         (form.atividades?.length ?? 0) + (form.mao_de_obra?.length ?? 0) +
         (form.equipamentos?.length ?? 0) + (form.ocorrencias?.length ?? 0) - (r.total_dropped ?? 0);
