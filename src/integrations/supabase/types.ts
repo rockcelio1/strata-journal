@@ -437,6 +437,7 @@ export type Database = {
           id: string
           is_etapa: boolean
           nome: string
+          obra_id: string | null
           ordem: number
           parent_id: string | null
           percentual: number
@@ -450,6 +451,7 @@ export type Database = {
           id?: string
           is_etapa?: boolean
           nome: string
+          obra_id?: string | null
           ordem?: number
           parent_id?: string | null
           percentual?: number
@@ -463,6 +465,7 @@ export type Database = {
           id?: string
           is_etapa?: boolean
           nome?: string
+          obra_id?: string | null
           ordem?: number
           parent_id?: string | null
           percentual?: number
@@ -477,10 +480,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lista_tarefas_itens_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lista_tarefas_itens_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "lista_tarefas_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lista_tarefas_progresso_hist: {
+        Row: {
+          autor_id: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          item_id: string
+          obra_id: string | null
+          percentual_anterior: number | null
+          percentual_novo: number
+        }
+        Insert: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          item_id: string
+          obra_id?: string | null
+          percentual_anterior?: number | null
+          percentual_novo: number
+        }
+        Update: {
+          autor_id?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          item_id?: string
+          obra_id?: string | null
+          percentual_anterior?: number | null
+          percentual_novo?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lista_tarefas_progresso_hist_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lista_tarefas_progresso_hist_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "lista_tarefas_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lista_tarefas_progresso_hist_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
         ]
