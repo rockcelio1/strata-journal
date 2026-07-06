@@ -375,7 +375,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <button
               type="button"
-              onClick={() => dismissDraftAlertForSession()}
+              onClick={() => setConfirmDismiss(true)}
               aria-label="Ocultar aviso de RDO em rascunho nesta sessão (o rascunho continua salvo)"
               title="Ocultar aviso (rascunho continua salvo)"
               className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 min-h-11 min-w-11 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
