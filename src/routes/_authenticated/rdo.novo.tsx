@@ -158,6 +158,7 @@ function NovoRdoPage() {
         }
         markDraftActive();
         setShowResumePrompt(true);
+        toast.success("Rascunho restaurado com sucesso", { id: "rdo-draft-restored", duration: 2500 });
       }
       setDraftLoaded(true);
     })();
