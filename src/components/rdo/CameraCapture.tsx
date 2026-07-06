@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, RefreshCw, X, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -177,10 +178,15 @@ export function CameraCapture({ open, onClose, onCapture }: Props) {
                 rows={2}
                 aria-required="true"
                 aria-invalid={faltam > 0}
-                className="flex-1"
+                className={cn(
+                  "flex-1 font-bold border-4 transition-colors",
+                  faltam > 0
+                    ? "border-amber-500 focus-visible:ring-amber-500"
+                    : "border-emerald-500 focus-visible:ring-emerald-500",
+                )}
               />
             </div>
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs font-semibold">
               <span
                 className={faltam > 0 ? "text-amber-800 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-400"}
                 aria-live="polite"
