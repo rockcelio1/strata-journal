@@ -374,6 +374,18 @@ export const registrarAnexo = createServerFn({ method: "POST" })
     if (!tipoOk) {
       throw new Error("Tipo de arquivo não suportado. Envie apenas imagens, vídeos, PDFs ou assinaturas.");
     }
+    // Limite de 5MB para imagens (compressão deve ocorrer no cliente antes do upload)
+    const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+    if (!isAssinatura && mime.startsWith("image/") && typeof data.tamanho_bytes === "number" && data.tamanho_bytes > MAX_IMAGE_BYTES) {
+      throw new Error(`Foto "${data.nome}" excede 5MB (${(data.tamanho_bytes / 1024 / 1024).toFixed(2)}MB). Comprima antes de enviar.`);
+    }
+    // Legenda obrigatória com mínimo de 5 palavras para fotos do canteiro
+    if (!isAssinatura && mime.startsWith("image/")) {
+      const words = (data.legenda ?? "").trim().split(/\s+/).filter(Boolean).length;
+      if (words < 5) {
+        throw new Error(`Foto "${data.nome}" precisa de legenda com no mínimo 5 palavras.`);
+      }
+    }
     const { error, data: created } = await context.supabase.from("rdo_anexos").insert({
       rdo_id: data.rdo_id,
       empresa_id: me.data.empresa_id,
