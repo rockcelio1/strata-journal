@@ -1044,12 +1044,13 @@ function NovoRdoPage() {
                     <Camera size={14} className="mr-1" /> Abrir câmera
                   </Button>
                   <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                    <Camera size={14} /> {compressing ? "Comprimindo…" : "Galeria"}
+                    <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
                     <input
                       type="file" accept="image/*" multiple className="sr-only"
                       onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
                     />
                   </label>
+
                 </div>
               </div>
               <CameraCapture
