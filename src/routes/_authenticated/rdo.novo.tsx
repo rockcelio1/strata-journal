@@ -33,6 +33,9 @@ import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
+
+const MIN_WORDS_LEGENDA = 5;
+const countWords = (s: string) => (s ?? "").trim().split(/\s+/).filter(Boolean).length;
 import { createDraftChannel } from "@/lib/draft-channel";
 
 const searchSchema = z.object({ obra: z.string().optional() });
@@ -435,8 +438,9 @@ function NovoRdoPage() {
             const up = await supabase.storage.from("rdo-anexos").upload(path, a.file, { contentType: a.mime, upsert: false });
             if (up.error) throw up.error;
             await registrarFn({ data: {
-              rdo_id: rdoId, nome: a.legenda ? `${a.name} — ${a.legenda}` : a.name,
+              rdo_id: rdoId, nome: a.name,
               storage_path: path, mime_type: a.mime, tamanho_bytes: size,
+              legenda: a.legenda,
             }});
             setUploadProgress((p) => p.map((x, i) => i === idx ? { ...x, status: "fallback", provider: "supabase" } : x));
             pushHist({ name: a.name, status: "fallback", provider: "supabase" });
@@ -577,7 +581,7 @@ function NovoRdoPage() {
     if (step === 5 && ocInvalidIdx[0] != null) return scrollToRow("ocorrencias", ocInvalidIdx[0], 5);
     setStepIdx(step);
     if (step === 6) {
-      const idx = legendas.findIndex((l, i) => i < fotos.length && !(l ?? "").trim());
+      const idx = legendas.findIndex((l, i) => i < fotos.length && countWords(l) < MIN_WORDS_LEGENDA);
       const target = idx >= 0 ? idx : lowResIdxs[0];
       if (target != null) setTimeout(() => {
         document.getElementById(`rdo-foto-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -585,7 +589,7 @@ function NovoRdoPage() {
     }
   }
 
-  const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
+  const fotosSemLegenda = fotos.reduce((n, _f, i) => n + (countWords(legendas[i] ?? "") >= MIN_WORDS_LEGENDA ? 0 : 1), 0);
 
   // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
   const stepIssues: { step: number; label: string; message: string }[] = [];
@@ -599,7 +603,7 @@ function NovoRdoPage() {
   if (ocInvalidIdx.length > 0)
     stepIssues.push({ step: 5, label: "Ocorrências", message: `${ocInvalidIdx.length} ocorrência(s) sem descrição.` });
   if (fotosSemLegenda > 0)
-    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) sem legenda.` });
+    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) com legenda inválida (mínimo ${MIN_WORDS_LEGENDA} palavras).` });
   if (lowResIdxs.length > 0)
     stepIssues.push({ step: 6, label: "Fotos", message: `${lowResIdxs.length} foto(s) abaixo da resolução mínima (${MIN_IMAGE_DIM}px).` });
   if (stepIdx === 7 && !signer.nome.trim())
@@ -977,8 +981,8 @@ function NovoRdoPage() {
                 }}
               />
               {fotosSemLegenda > 0 && (
-                <div role="alert" className="rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-xs">
-                  {fotosSemLegenda} foto(s) sem legenda. Preencha todas para avançar.
+                <div role="alert" className="rounded-md border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-3 py-2 text-sm font-medium">
+                  ⚠ {fotosSemLegenda} foto(s) com legenda incompleta — cada legenda precisa ter no mínimo {MIN_WORDS_LEGENDA} palavras para concluir o RDO.
                 </div>
               )}
               {lowResIdxs.length > 0 && (
@@ -1009,11 +1013,13 @@ function NovoRdoPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {fotos.map((f, i) => {
-                      const semLegenda = !(legendas[i] ?? "").trim();
+                      const palavras = countWords(legendas[i] ?? "");
+                      const faltam = Math.max(0, MIN_WORDS_LEGENDA - palavras);
+                      const legendaInvalida = faltam > 0;
                       const baixa = lowResIdxs.includes(i);
                       const realce = flashRow?.key === "foto" && flashRow.idx === i;
                       return (
-                      <div key={i} id={`rdo-foto-${i}`} className={cn("space-y-1.5 rounded-md transition-shadow", (semLegenda || baixa) && "ring-1 ring-destructive/60", realce && "ring-4 ring-destructive animate-pulse")}>
+                      <div key={i} id={`rdo-foto-${i}`} className={cn("space-y-1.5 rounded-md transition-shadow", (legendaInvalida || baixa) && "ring-1 ring-destructive/60", realce && "ring-4 ring-destructive animate-pulse")}>
                         <div className="relative aspect-square overflow-hidden rounded-md border border-border">
                           <img src={URL.createObjectURL(f)} className="object-cover w-full h-full" alt={f.name} />
                           <span className="absolute top-1 left-1 bg-background/80 text-[10px] font-medium rounded px-1.5 py-0.5">#{i + 1}</span>
@@ -1050,9 +1056,32 @@ function NovoRdoPage() {
                             ><ArrowDown size={12} /></button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                          <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                        <div className="space-y-1">
+                          <div className="flex items-start gap-2">
+                            <Textarea
+                              rows={2}
+                              placeholder={`Legenda obrigatória (mín. ${MIN_WORDS_LEGENDA} palavras)`}
+                              value={legendas[i] ?? ""}
+                              onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))}
+                              aria-required="true"
+                              aria-invalid={legendaInvalida}
+                              className={cn("flex-1 text-sm", legendaInvalida && "border-destructive focus-visible:ring-destructive")}
+                            />
+                            <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                          </div>
+                          <div
+                            aria-live="polite"
+                            className={cn(
+                              "text-xs font-semibold px-2 py-1 rounded",
+                              legendaInvalida
+                                ? "bg-destructive/10 text-destructive border border-destructive/40"
+                                : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40",
+                            )}
+                          >
+                            {legendaInvalida
+                              ? `⚠ Legenda obrigatória — faltam ${faltam} palavra${faltam > 1 ? "s" : ""} (${palavras}/${MIN_WORDS_LEGENDA})`
+                              : `✓ Legenda válida (${palavras} palavras)`}
+                          </div>
                         </div>
                         <p className="text-[10px] text-muted-foreground flex items-center justify-between">
                           <span>{Math.round(f.size / 1024)} KB</span>

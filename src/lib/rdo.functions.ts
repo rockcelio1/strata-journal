@@ -341,6 +341,7 @@ export const registrarAnexo = createServerFn({ method: "POST" })
       mime_type: z.string().optional(),
       tamanho_bytes: z.number().optional(),
       task_item_id: z.string().uuid().nullable().optional(),
+      legenda: z.string().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -362,6 +363,7 @@ export const registrarAnexo = createServerFn({ method: "POST" })
       mime_type: data.mime_type ?? null,
       tamanho_bytes: data.tamanho_bytes ?? null,
       task_item_id: data.task_item_id ?? null,
+      legenda: data.legenda?.trim() || null,
     } as any).select().single();
     if (error) throw error;
     return created;
