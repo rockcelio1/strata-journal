@@ -1150,17 +1150,20 @@ function NovoRdoPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
                 <div className="flex items-center gap-2">
-                  <Button type="button" size="sm" variant="default" onClick={() => setCameraOpen(true)}>
-                    <Camera size={14} className="mr-1" /> Abrir câmera
-                  </Button>
-                  <label className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border cursor-pointer hover:bg-accent">
-                    <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
-                    <input
-                      type="file" accept="image/*" multiple className="sr-only"
-                      onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
-                    />
-                  </label>
-
+                  <span className="relative inline-block rounded-md animate-rdo-photo-hint">
+                    <Button type="button" size="sm" variant="default" onClick={() => setCameraOpen(true)}>
+                      <Camera size={14} className="mr-1" /> Abrir câmera
+                    </Button>
+                  </span>
+                  <span className="relative inline-block rounded-md animate-rdo-photo-hint">
+                    <label className="inline-flex items-center gap-1 text-sm px-3 h-9 rounded-md bg-primary text-primary-foreground cursor-pointer hover:opacity-90 font-medium">
+                      <Upload size={14} /> {compressing ? "Comprimindo…" : "Upload"}
+                      <input
+                        type="file" accept="image/*" multiple className="sr-only"
+                        onChange={(e) => { if (e.target.files) { onAddFotos(e.target.files); e.target.value = ""; } }}
+                      />
+                    </label>
+                  </span>
                 </div>
               </div>
               <CameraCapture
