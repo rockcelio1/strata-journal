@@ -48,6 +48,7 @@ const cadastrosNav = [
   { to: "/cadastros/mao-de-obra", label: "Mão de obra", icon: HardHat },
   { to: "/cadastros/equipamentos", label: "Equipamentos", icon: Truck },
   { to: "/cadastros/ocorrencias", label: "Tipos de ocorrência", icon: AlertTriangle },
+  { to: "/cadastros/lista-tarefas", label: "Lista de tarefas", icon: FileText },
   { to: "/cadastros/templates-tarefas", label: "Templates de tarefas", icon: Database },
 ];
 
