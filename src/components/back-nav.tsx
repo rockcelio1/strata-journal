@@ -79,7 +79,7 @@ export function BackNav({ hidden, hideBreadcrumb, className }: BackNavProps) {
         className,
       )}
     >
-      {/* Botão voltar — seta grossa, glow na cor da logomarca */}
+      {/* Botão voltar — seta grossa e destacada na cor da logomarca */}
       <button
         type="button"
         onClick={goBack}
@@ -91,7 +91,7 @@ export function BackNav({ hidden, hideBreadcrumb, className }: BackNavProps) {
         }}
         aria-label="Voltar para a tela anterior"
         title="Voltar (Alt + ←)"
-        className="facom-glow brand-arrow inline-flex items-center justify-center min-w-11 min-h-11 rounded-md bg-foreground/5 ring-1 ring-border hover:bg-foreground/10"
+        className="facom-glow brand-arrow group inline-flex items-center gap-1.5 min-w-12 min-h-11 px-3 rounded-lg bg-brand text-brand-foreground ring-2 ring-brand/40 shadow-[0_0_0_2px_rgba(255,255,255,0.15),0_6px_20px_-4px_var(--brand)] hover:brightness-110 hover:-translate-x-0.5 active:translate-x-0 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/50"
       >
         <ArrowLeft className="h-6 w-6" strokeWidth={3} aria-hidden="true" />
         <span className="sr-only">Voltar</span>
