@@ -35,7 +35,8 @@ import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
 
 const MIN_WORDS_LEGENDA = 5;
-const countWords = (s: string) => (s ?? "").trim().split(/\s+/).filter(Boolean).length;
+import { countWords as countWordsBase } from "@/lib/text";
+const countWords = (s: string) => countWordsBase(s ?? "");
 import { createDraftChannel } from "@/lib/draft-channel";
 
 const searchSchema = z.object({ obra: z.string().optional() });
@@ -145,8 +146,13 @@ function NovoRdoPage() {
         toast.success("✓ Rascunho restaurado com sucesso", {
           description: "Continuamos de onde você parou. Seus dados estão salvos.",
           position: "top-center",
-          duration: 4500,
-          className: "!bg-brand !text-brand-foreground !border-2 !border-brand-foreground/30 !shadow-[0_10px_40px_-8px_var(--brand)] !font-semibold !text-base !rounded-xl",
+          duration: 6000,
+          closeButton: true,
+          className:
+            "toast-brand animate-in fade-in slide-in-from-top-4 duration-300 " +
+            "!bg-brand !text-brand-foreground !border-2 !border-brand-foreground/25 " +
+            "!shadow-[0_10px_40px_-8px_color-mix(in_oklab,var(--brand)_55%,transparent)] " +
+            "!font-semibold !text-base !rounded-xl",
         });
       }
       setDraftLoaded(true);
