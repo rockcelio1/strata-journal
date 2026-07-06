@@ -5,8 +5,8 @@ import { z } from "zod";
 const climaEnum = z.enum(["ensolarado", "nublado", "chuvoso", "chuva_forte", "impraticavel"]).nullable().optional();
 
 const atividadeSchema = z.object({ descricao: z.string().min(1), pct_executado: z.number().min(0).max(100).default(0) });
-const maoItemSchema = z.object({ mao_de_obra_id: z.string().uuid(), horas: z.number().min(0).default(8) });
-const equipItemSchema = z.object({ equipamento_id: z.string().uuid(), horas_uso: z.number().min(0).default(0), status_uso: z.string().nullable().optional() });
+const maoItemSchema = z.object({ mao_de_obra_id: z.string().uuid(), horas: z.number().int().min(0).max(999).default(1) });
+const equipItemSchema = z.object({ equipamento_id: z.string().uuid(), horas_uso: z.number().int().min(0).max(999).default(1) });
 const ocItemSchema = z.object({ tipo_ocorrencia_id: z.string().uuid().nullable().optional(), descricao: z.string().min(1), foto_url: z.string().nullable().optional() });
 
 const rdoSchema = z.object({
