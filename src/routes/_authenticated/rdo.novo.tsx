@@ -655,10 +655,8 @@ function NovoRdoPage() {
   if (stepIdx === 7 && !assinaturaBlob)
     stepIssues.push({ step: 7, label: "Assinatura", message: "Desenhe ou envie a assinatura." });
 
-  const canNext =
-    stepIdx === 0 ? !!form.obra_id && obraSelecionadaExiste
-    : stepIdx === 6 ? fotosSemLegenda === 0 && lowResIdxs.length === 0
-    : true;
+  const currentStepIssues = stepIssues.filter((iss) => iss.step === stepIdx);
+  const canNext = currentStepIssues.length === 0;
   const isLast = stepIdx === steps.length - 1;
   const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id && obraSelecionadaExiste;
 
