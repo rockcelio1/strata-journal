@@ -691,7 +691,23 @@ function NovoRdoPage() {
 
 
   return (
-    <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
+    <>
+      {showResumePrompt && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="max-w-md w-full rounded-xl border-2 border-brand bg-card shadow-2xl p-6 text-center space-y-4">
+            <h2 className="font-serif text-xl">RDO em rascunho aberto</h2>
+            <p className="text-sm text-muted-foreground">
+              Você já tem um RDO salvo em rascunho. Finalize-o antes de criar um novo.
+              Clique abaixo para continuar de onde parou.
+            </p>
+            <Button className="bg-brand text-brand-foreground w-full" onClick={() => setShowResumePrompt(false)}>
+              Continuar edição
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
+        <p className="text-[10px] text-muted-foreground mb-1">Dica: Alt + ← / → alterna etapas · Alt + 1..8 vai direto à etapa</p>
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-3">
         <ArrowLeft size={14} /> RDOs
       </Link>
