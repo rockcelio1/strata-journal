@@ -590,6 +590,8 @@ function NovoRdoPage() {
 
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
 
+  const fotosSemLegenda = fotos.reduce((n, _f, i) => n + (countWords(legendas[i] ?? "") >= MIN_WORDS_LEGENDA ? 0 : 1), 0);
+
   // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
   const stepIssues: { step: number; label: string; message: string }[] = [];
   if (!form.obra_id) stepIssues.push({ step: 0, label: "Obra", message: "Selecione a obra do RDO." });
@@ -602,7 +604,7 @@ function NovoRdoPage() {
   if (ocInvalidIdx.length > 0)
     stepIssues.push({ step: 5, label: "Ocorrências", message: `${ocInvalidIdx.length} ocorrência(s) sem descrição.` });
   if (fotosSemLegenda > 0)
-    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) sem legenda.` });
+    stepIssues.push({ step: 6, label: "Fotos", message: `${fotosSemLegenda} foto(s) com legenda inválida (mínimo ${MIN_WORDS_LEGENDA} palavras).` });
   if (lowResIdxs.length > 0)
     stepIssues.push({ step: 6, label: "Fotos", message: `${lowResIdxs.length} foto(s) abaixo da resolução mínima (${MIN_IMAGE_DIM}px).` });
   if (stepIdx === 7 && !signer.nome.trim())
