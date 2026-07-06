@@ -74,14 +74,42 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { status: draftSaveStatus, lastSavedAt } = useDraftSaveStatus();
   const onNovoRdo = pathname.startsWith("/rdo/novo");
 
+  // ---- Fonte de verdade no backend: existe algum RDO em rascunho do usuário?
+  const queryClient = useQueryClient();
+  const hasOpenRascunhoFn = useServerFn(hasOpenRascunho);
+  const { data: rascunhoServer } = useQuery({
+    queryKey: ["rdo", "has-open-rascunho", me?.profile?.id ?? ""],
+    queryFn: () => hasOpenRascunhoFn(),
+    enabled: !!me?.profile?.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const hasServerDraft = !!rascunhoServer?.hasOpen;
+
+  // Realtime: quando o autor cria/atualiza/exclui um RDO em qualquer aba/dispositivo,
+  // invalida a query para refletir instantaneamente aqui.
+  useEffect(() => {
+    const uid = me?.profile?.id;
+    if (!uid) return;
+    const channel = supabase
+      .channel(`rdos-owner-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rdos", filter: `autor_id=eq.${uid}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [me?.profile?.id, queryClient]);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
 
   // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
-  // não tem mais rascunho para este usuário (RDO finalizado / limpo em outra
-  // aba ou dispositivo), remove a flag imediatamente para esconder o botão.
+  // não tem mais rascunho para este usuário, remove a flag imediatamente.
   useEffect(() => {
     if (!me?.profile?.id || !draftActive) return;
     let cancelled = false;
@@ -91,6 +119,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     })();
     return () => { cancelled = true; };
   }, [me?.profile?.id, draftActive, pathname]);
+
+  // Aviso flutuante aparece se existir rascunho local OU rascunho no backend.
+  const showDraftAlert = (draftActive || hasServerDraft) && !onNovoRdo;
 
 
   const isCadastros = pathname.startsWith("/cadastros");
