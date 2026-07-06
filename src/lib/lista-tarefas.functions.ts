@@ -92,10 +92,17 @@ export const listListaTarefaHistorico = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("lista_tarefas_progresso_hist")
-      .select("id, percentual_anterior, percentual_novo, created_at, autor_id, profiles:autor_id(nome, email)")
+      .select("id, percentual_anterior, percentual_novo, created_at, autor_id")
       .eq("item_id", data.item_id)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw error;
-    return rows;
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.autor_id).filter(Boolean))) as string[];
+    let authors: Record<string, { nome: string | null; email: string | null }> = {};
+    if (ids.length) {
+      const { data: profs } = await context.supabase
+        .from("profiles").select("id, nome, email").in("id", ids);
+      for (const p of profs ?? []) authors[p.id] = { nome: p.nome, email: p.email };
+    }
+    return (rows ?? []).map((r) => ({ ...r, autor: r.autor_id ? authors[r.autor_id] ?? null : null }));
   });
