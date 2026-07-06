@@ -602,3 +602,16 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-rdo-alert-border { animation: none; }
 }
+
+/* Luz discreta piscando atrás dos botões Abrir câmera / Upload */
+@keyframes rdo-photo-hint {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand, #f97316) 0%, transparent); }
+  50%      { box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand, #f97316) 30%, transparent),
+                         0 0 14px 3px color-mix(in oklab, var(--brand, #f97316) 25%, transparent); }
+}
+.animate-rdo-photo-hint {
+  animation: rdo-photo-hint 2.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-rdo-photo-hint { animation: none; }
+}
