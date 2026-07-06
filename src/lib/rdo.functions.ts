@@ -338,7 +338,9 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
-      .eq("rdo_id", data.rdo_id).order("created_at", { ascending: false });
+      .eq("rdo_id", data.rdo_id)
+      .order("ordem", { ascending: true })
+      .order("created_at", { ascending: true });
     if (error) throw error;
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
       if (a.storage_provider === "onedrive") {
@@ -681,3 +683,51 @@ export const getRdoAuditSummary = createServerFn({ method: "GET" })
       totais,
     };
   });
+
+// ============== ANEXOS: reordenação e histórico ==============
+export const reorderRdoAnexos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      rdo_id: z.string().uuid(),
+      ordem: z.array(z.string().uuid()).min(1).max(500),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    // Valida que todos os anexos pertencem ao RDO informado
+    const { data: rows, error: qerr } = await context.supabase
+      .from("rdo_anexos").select("id").eq("rdo_id", data.rdo_id);
+    if (qerr) throw qerr;
+    const validos = new Set((rows ?? []).map((r: any) => r.id));
+    if (data.ordem.some((id) => !validos.has(id))) {
+      throw new Error("Ordem contém anexos que não pertencem a este RDO.");
+    }
+    for (let i = 0; i < data.ordem.length; i++) {
+      const { error } = await context.supabase
+        .from("rdo_anexos").update({ ordem: i } as any).eq("id", data.ordem[i]);
+      if (error) throw error;
+    }
+    return { ok: true };
+  });
+
+export const listRdoAnexosHist = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ rdo_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from("rdo_anexos_hist")
+      .select("*")
+      .eq("rdo_id", data.rdo_id)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.autor_id).filter(Boolean)));
+    const autores = new Map<string, { nome: string; email: string | null }>();
+    if (ids.length) {
+      const { data: perfis } = await context.supabase
+        .from("profiles").select("id, nome, email").in("id", ids);
+      for (const p of (perfis ?? []) as any[]) autores.set(p.id, { nome: p.nome, email: p.email });
+    }
+    return (rows ?? []).map((r: any) => ({ ...r, autor: r.autor_id ? autores.get(r.autor_id) ?? null : null }));
+  });
+

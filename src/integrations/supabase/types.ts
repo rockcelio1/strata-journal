@@ -1202,6 +1202,7 @@ export type Database = {
           onedrive_download_url: string | null
           onedrive_item_id: string | null
           onedrive_web_url: string | null
+          ordem: number
           rdo_id: string
           rdo_tarefa_avanco_id: string | null
           storage_path: string
@@ -1224,6 +1225,7 @@ export type Database = {
           onedrive_download_url?: string | null
           onedrive_item_id?: string | null
           onedrive_web_url?: string | null
+          ordem?: number
           rdo_id: string
           rdo_tarefa_avanco_id?: string | null
           storage_path: string
@@ -1246,6 +1248,7 @@ export type Database = {
           onedrive_download_url?: string | null
           onedrive_item_id?: string | null
           onedrive_web_url?: string | null
+          ordem?: number
           rdo_id?: string
           rdo_tarefa_avanco_id?: string | null
           storage_path?: string
@@ -1285,6 +1288,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rdo_anexos_hist: {
+        Row: {
+          acao: string
+          anexo_id: string | null
+          autor_id: string | null
+          created_at: string
+          detalhes: Json | null
+          empresa_id: string
+          id: string
+          rdo_id: string
+        }
+        Insert: {
+          acao: string
+          anexo_id?: string | null
+          autor_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          empresa_id: string
+          id?: string
+          rdo_id: string
+        }
+        Update: {
+          acao?: string
+          anexo_id?: string | null
+          autor_id?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          empresa_id?: string
+          id?: string
+          rdo_id?: string
+        }
+        Relationships: []
       }
       rdo_assinaturas: {
         Row: {
