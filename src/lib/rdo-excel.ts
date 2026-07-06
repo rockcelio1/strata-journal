@@ -73,9 +73,9 @@ export function exportRdoExcel(args: {
   addSheet(wb, "Mao de obra", mao_de_obra.map((m) => ({
     pessoa: m.mao_de_obra?.nome ?? "",
     funcao: m.mao_de_obra?.funcao ?? "",
-    atividade: m.atividade ?? "",
-    horas: Number(m.horas ?? 0),
+    un: Number(m.horas ?? 0),
   })));
+
 
   addSheet(wb, "Equipamentos", equipamentos.map((e) => ({
     equipamento: e.equipamentos?.nome ?? "",
