@@ -588,8 +588,6 @@ function NovoRdoPage() {
     }
   }
 
-  const fotosSemLegenda = fotos.reduce((n, _f, i) => n + ((legendas[i] ?? "").trim() ? 0 : 1), 0);
-
   const fotosSemLegenda = fotos.reduce((n, _f, i) => n + (countWords(legendas[i] ?? "") >= MIN_WORDS_LEGENDA ? 0 : 1), 0);
 
   // Issues por etapa (para listar erros na etapa 8 e permitir voltar).
