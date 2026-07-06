@@ -33,6 +33,9 @@ import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
+
+const MIN_WORDS_LEGENDA = 5;
+const countWords = (s: string) => (s ?? "").trim().split(/\s+/).filter(Boolean).length;
 import { createDraftChannel } from "@/lib/draft-channel";
 
 const searchSchema = z.object({ obra: z.string().optional() });
