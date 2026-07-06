@@ -17,9 +17,10 @@ import {
 } from "lucide-react";
 import { BackNav } from "@/components/back-nav";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "@/lib/core.functions";
+import { hasOpenRascunho } from "@/lib/rdo.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { LogoMark } from "@/routes/_authenticated/configuracoes.sistema";
 import { LogoWallpaper } from "@/components/logo-wallpaper";
@@ -73,14 +74,42 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { status: draftSaveStatus, lastSavedAt } = useDraftSaveStatus();
   const onNovoRdo = pathname.startsWith("/rdo/novo");
 
+  // ---- Fonte de verdade no backend: existe algum RDO em rascunho do usuário?
+  const queryClient = useQueryClient();
+  const hasOpenRascunhoFn = useServerFn(hasOpenRascunho);
+  const { data: rascunhoServer } = useQuery({
+    queryKey: ["rdo", "has-open-rascunho", me?.profile?.id ?? ""],
+    queryFn: () => hasOpenRascunhoFn(),
+    enabled: !!me?.profile?.id,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const hasServerDraft = !!rascunhoServer?.hasOpen;
+
+  // Realtime: quando o autor cria/atualiza/exclui um RDO em qualquer aba/dispositivo,
+  // invalida a query para refletir instantaneamente aqui.
+  useEffect(() => {
+    const uid = me?.profile?.id;
+    if (!uid) return;
+    const channel = supabase
+      .channel(`rdos-owner-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rdos", filter: `autor_id=eq.${uid}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [me?.profile?.id, queryClient]);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
   }, [me]);
 
   // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
-  // não tem mais rascunho para este usuário (RDO finalizado / limpo em outra
-  // aba ou dispositivo), remove a flag imediatamente para esconder o botão.
+  // não tem mais rascunho para este usuário, remove a flag imediatamente.
   useEffect(() => {
     if (!me?.profile?.id || !draftActive) return;
     let cancelled = false;
@@ -90,6 +119,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     })();
     return () => { cancelled = true; };
   }, [me?.profile?.id, draftActive, pathname]);
+
+  // Aviso flutuante aparece se existir rascunho local OU rascunho no backend.
+  const showDraftAlert = (draftActive || hasServerDraft) && !onNovoRdo;
 
 
   const isCadastros = pathname.startsWith("/cadastros");
@@ -280,11 +312,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {draftActive && !onNovoRdo && (
+      {showDraftAlert && (
         <div
-          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 animate-in fade-in slide-in-from-bottom-2"
+          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
           role="region"
           aria-label="Rascunho de RDO em andamento"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { e.preventDefault(); dismissDraftAlertForSession(); }
+          }}
         >
           {draftSaveStatus !== "idle" && (
             <span
@@ -306,11 +341,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               {draftSaveStatus === "error" && "Erro ao salvar"}
             </span>
           )}
-          <div className="rounded-full animate-rdo-alert-border flex items-stretch">
+          <div className="rounded-full motion-safe:animate-rdo-alert-border flex items-stretch">
             <Link
               to="/rdo/novo"
-              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Continuar edição do RDO em rascunho — abre o formulário"
+              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={
+                hasServerDraft && !draftActive
+                  ? "Continuar RDO em rascunho salvo no servidor — abre a lista de RDOs"
+                  : "Continuar edição do RDO em rascunho — abre o formulário"
+              }
             >
               <FileTextIcon className="h-4 w-4" aria-hidden="true" />
               <span>RDO em rascunho — Continuar</span>
@@ -320,9 +359,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => dismissDraftAlertForSession()}
               aria-label="Ocultar aviso de RDO em rascunho nesta sessão (o rascunho continua salvo)"
               title="Ocultar aviso (rascunho continua salvo)"
-              className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 min-h-11 min-w-11 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <XIcon className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Dispensar aviso</span>
             </button>
           </div>
         </div>

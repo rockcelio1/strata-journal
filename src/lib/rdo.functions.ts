@@ -23,6 +23,19 @@ const rdoSchema = z.object({
   enviar: z.boolean().default(false),
 });
 
+export const hasOpenRascunho = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { count, error } = await context.supabase
+      .from("rdos")
+      .select("id", { count: "exact", head: true })
+      .eq("autor_id", context.userId)
+      .eq("status", "rascunho")
+      .is("deleted_at", null);
+    if (error) throw error;
+    return { hasOpen: (count ?? 0) > 0, count: count ?? 0 };
+  });
+
 export const listRdos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
