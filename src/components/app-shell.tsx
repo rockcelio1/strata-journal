@@ -264,6 +264,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <span
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "hidden md:inline-flex items-center gap-1.5 text-[11px] leading-none px-2 py-1 rounded-full border",
+                hasServerDraft
+                  ? "bg-brand-foreground/10 border-brand-foreground/30 text-brand-foreground"
+                  : "bg-brand-foreground/5 border-brand-foreground/20 text-brand-foreground/70",
+              )}
+              title={hasServerDraft ? "Você possui um RDO em rascunho no servidor" : "Nenhum RDO em rascunho"}
+            >
+              <CircleDashed className="h-3 w-3" aria-hidden="true" />
+              {hasServerDraft ? "RDO em rascunho" : "RDO finalizado"}
+            </span>
             <span className="text-xs text-brand-foreground/70 hidden md:inline">{empresaName}</span>
             <NotificationBell />
             <DropdownMenu>
