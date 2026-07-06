@@ -30,6 +30,7 @@ import { enqueueRdo, markQueued } from "@/lib/offline-queue";
 import { isUuid, sanitizeRdoPayload, validateRdoForm } from "@/lib/rdo-validate";
 import { ButtonEffectRenderer } from "@/components/button-effects";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-storage";
+import { markDraftActive, clearDraftActive } from "@/lib/draft-active";
 import { CameraCapture } from "@/components/rdo/CameraCapture";
 import { PhotoEditor } from "@/components/rdo/PhotoEditor";
 import { getImageDimensions, MIN_IMAGE_DIM } from "@/lib/image-utils";
