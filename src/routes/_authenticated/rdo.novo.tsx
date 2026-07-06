@@ -506,7 +506,13 @@ function NovoRdoPage() {
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
       pushLog({ kind: "start", mensagem: enviar ? "Iniciando envio do RDO…" : "Salvando rascunho…" });
-      const { sane: cleaned, dropped, total_dropped } = sanitizeRdoPayload(form);
+      const obsExtras = [
+        form.obs_clima_manha?.trim() && `Clima manhã: ${form.obs_clima_manha.trim()}`,
+        form.obs_clima_tarde?.trim() && `Clima tarde: ${form.obs_clima_tarde.trim()}`,
+      ].filter(Boolean).join("\n");
+      const mergedObservacoes = [form.observacoes?.trim(), obsExtras].filter(Boolean).join("\n\n");
+      const formForSave = { ...form, observacoes: mergedObservacoes };
+      const { sane: cleaned, dropped, total_dropped } = sanitizeRdoPayload(formForSave);
       // Índices descartados (sobre o array original) para feedback ao usuário.
       const droppedIdx = {
         equipamentos: (form.equipamentos ?? [])
