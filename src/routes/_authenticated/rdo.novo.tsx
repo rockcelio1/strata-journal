@@ -823,17 +823,31 @@ function NovoRdoPage() {
             )}
             <div className="grid grid-cols-1 gap-3">
               {(["manha", "tarde", "noite"] as const).map((p) => (
-                <div key={p}>
-                  <Label className="capitalize">Clima {p}</Label>
-                  <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div key={p} className="space-y-2">
+                  <div>
+                    <Label className="capitalize">Clima {p}</Label>
+                    <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(p === "manha" || p === "tarde") && (
+                    <div>
+                      <Label className="text-xs">Observação do clima ({p === "manha" ? "manhã" : "tarde"})</Label>
+                      <Textarea
+                        rows={2}
+                        placeholder={`Observações sobre o clima da ${p === "manha" ? "manhã" : "tarde"} (opcional)`}
+                        value={form[`obs_clima_${p}`] ?? ""}
+                        onChange={(e) => setForm({ ...form, [`obs_clima_${p}`]: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
           </Card>
         )}
 
