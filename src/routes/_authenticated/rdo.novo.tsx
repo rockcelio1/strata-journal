@@ -580,7 +580,7 @@ function NovoRdoPage() {
     if (step === 5 && ocInvalidIdx[0] != null) return scrollToRow("ocorrencias", ocInvalidIdx[0], 5);
     setStepIdx(step);
     if (step === 6) {
-      const idx = legendas.findIndex((l, i) => i < fotos.length && !(l ?? "").trim());
+      const idx = legendas.findIndex((l, i) => i < fotos.length && countWords(l) < MIN_WORDS_LEGENDA);
       const target = idx >= 0 ? idx : lowResIdxs[0];
       if (target != null) setTimeout(() => {
         document.getElementById(`rdo-foto-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
