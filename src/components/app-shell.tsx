@@ -33,8 +33,12 @@ import { NotificationBell } from "@/components/notification-bell";
 import { GlobalHoverHints } from "@/components/global-hover-hints";
 import { useDraftActive, clearDraftActive, dismissDraftAlertForSession } from "@/lib/draft-active";
 import { useDraftSaveStatus } from "@/lib/draft-status";
-import { FileText as FileTextIcon, X as XIcon } from "lucide-react";
+import { FileText as FileTextIcon, X as XIcon, CircleDashed } from "lucide-react";
 import { loadDraft } from "@/lib/draft-storage";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
@@ -86,23 +90,37 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const hasServerDraft = !!rascunhoServer?.hasOpen;
 
-  // Realtime: quando o autor cria/atualiza/exclui um RDO em qualquer aba/dispositivo,
-  // invalida a query para refletir instantaneamente aqui.
+  // Realtime + fallback de polling: se o canal não conectar em 5s
+  // (bloqueio de WebSocket, etc.), inicia polling curto (15s) até conectar.
+  const [realtimeReady, setRealtimeReady] = useState(false);
   useEffect(() => {
     const uid = me?.profile?.id;
     if (!uid) return;
+    const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
     const channel = supabase
       .channel(`rdos-owner-${uid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rdos", filter: `autor_id=eq.${uid}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
-        },
+        invalidate,
       )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRealtimeReady(true);
+        else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setRealtimeReady(false);
+      });
+    const readinessTimer = setTimeout(() => setRealtimeReady((r) => r), 5000);
+    return () => { clearTimeout(readinessTimer); supabase.removeChannel(channel); setRealtimeReady(false); };
   }, [me?.profile?.id, queryClient]);
+
+  useEffect(() => {
+    const uid = me?.profile?.id;
+    if (!uid || realtimeReady) return;
+    const id = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [me?.profile?.id, queryClient, realtimeReady]);
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
@@ -122,6 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Aviso flutuante aparece se existir rascunho local OU rascunho no backend.
   const showDraftAlert = (draftActive || hasServerDraft) && !onNovoRdo;
+  const [confirmDismiss, setConfirmDismiss] = useState(false);
 
 
   const isCadastros = pathname.startsWith("/cadastros");
@@ -245,6 +264,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <span
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "hidden md:inline-flex items-center gap-1.5 text-[11px] leading-none px-2 py-1 rounded-full border",
+                hasServerDraft
+                  ? "bg-brand-foreground/10 border-brand-foreground/30 text-brand-foreground"
+                  : "bg-brand-foreground/5 border-brand-foreground/20 text-brand-foreground/70",
+              )}
+              title={hasServerDraft ? "Você possui um RDO em rascunho no servidor" : "Nenhum RDO em rascunho"}
+            >
+              <CircleDashed className="h-3 w-3" aria-hidden="true" />
+              {hasServerDraft ? "RDO em rascunho" : "RDO finalizado"}
+            </span>
             <span className="text-xs text-brand-foreground/70 hidden md:inline">{empresaName}</span>
             <NotificationBell />
             <DropdownMenu>
@@ -318,7 +351,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           role="region"
           aria-label="Rascunho de RDO em andamento"
           onKeyDown={(e) => {
-            if (e.key === "Escape") { e.preventDefault(); dismissDraftAlertForSession(); }
+            if (e.key === "Escape") { e.preventDefault(); setConfirmDismiss(true); }
           }}
         >
           {draftSaveStatus !== "idle" && (
@@ -356,7 +389,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
             <button
               type="button"
-              onClick={() => dismissDraftAlertForSession()}
+              onClick={() => setConfirmDismiss(true)}
               aria-label="Ocultar aviso de RDO em rascunho nesta sessão (o rascunho continua salvo)"
               title="Ocultar aviso (rascunho continua salvo)"
               className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 min-h-11 min-w-11 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -367,6 +400,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
+
+      <AlertDialog open={confirmDismiss} onOpenChange={setConfirmDismiss}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ocultar aviso do rascunho?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O rascunho continua salvo no seu backend e no dispositivo. O aviso ficará oculto apenas nesta sessão e voltará a aparecer em um novo acesso.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter aviso</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { dismissDraftAlertForSession(); setConfirmDismiss(false); }}>
+              Ocultar nesta sessão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
