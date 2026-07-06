@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Trash2, Upload, FileText, Plus } from "lucide-react";
+import { Trash2, Upload, FileText, Plus, X } from "lucide-react";
 import { listTemplates } from "@/lib/templates-tarefas.functions";
 import {
   listObraTaskLists, createObraListFromTemplate, deleteObraList,
