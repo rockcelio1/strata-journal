@@ -590,7 +590,7 @@ function RdoDetailPage() {
                   <li key={a.id} className="border border-border rounded-md overflow-hidden group flex flex-col">
                     {isImg && a.url ? (
                       <a href={a.url} target="_blank" rel="noreferrer" className="block aspect-square bg-muted overflow-hidden">
-                        <img src={a.url} alt={a.nome} className="w-full h-full object-cover" />
+                        <img src={a.url} alt={a.nome} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       </a>
                     ) : (
                       <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
