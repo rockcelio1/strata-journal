@@ -1055,9 +1055,32 @@ function NovoRdoPage() {
                             ><ArrowDown size={12} /></button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <Input placeholder="Legenda" value={legendas[i] ?? ""} onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))} />
-                          <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                        <div className="space-y-1">
+                          <div className="flex items-start gap-2">
+                            <Textarea
+                              rows={2}
+                              placeholder={`Legenda obrigatória (mín. ${MIN_WORDS_LEGENDA} palavras)`}
+                              value={legendas[i] ?? ""}
+                              onChange={(e) => setLegendas((p) => p.map((v, j) => j === i ? e.target.value : v))}
+                              aria-required="true"
+                              aria-invalid={legendaInvalida}
+                              className={cn("flex-1 text-sm", legendaInvalida && "border-destructive focus-visible:ring-destructive")}
+                            />
+                            <Button type="button" variant="outline" size="sm" onClick={() => setEditorIdx(i)}>Ajustar</Button>
+                          </div>
+                          <div
+                            aria-live="polite"
+                            className={cn(
+                              "text-xs font-semibold px-2 py-1 rounded",
+                              legendaInvalida
+                                ? "bg-destructive/10 text-destructive border border-destructive/40"
+                                : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40",
+                            )}
+                          >
+                            {legendaInvalida
+                              ? `⚠ Legenda obrigatória — faltam ${faltam} palavra${faltam > 1 ? "s" : ""} (${palavras}/${MIN_WORDS_LEGENDA})`
+                              : `✓ Legenda válida (${palavras} palavras)`}
+                          </div>
                         </div>
                         <p className="text-[10px] text-muted-foreground flex items-center justify-between">
                           <span>{Math.round(f.size / 1024)} KB</span>
