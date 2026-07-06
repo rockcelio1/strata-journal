@@ -91,6 +91,7 @@ function NovoRdoPage() {
     obra_id: search.obra ?? "",
     data: new Date().toISOString().slice(0, 10),
     clima_manha: null, clima_tarde: null, clima_noite: null,
+    obs_clima_manha: "", obs_clima_tarde: "",
     observacoes: "",
     atividades: [] as any[],
     mao_de_obra: [] as any[],
@@ -505,7 +506,13 @@ function NovoRdoPage() {
   const save = useMutation({
     mutationFn: async (enviar: boolean) => {
       pushLog({ kind: "start", mensagem: enviar ? "Iniciando envio do RDO…" : "Salvando rascunho…" });
-      const { sane: cleaned, dropped, total_dropped } = sanitizeRdoPayload(form);
+      const obsExtras = [
+        form.obs_clima_manha?.trim() && `Clima manhã: ${form.obs_clima_manha.trim()}`,
+        form.obs_clima_tarde?.trim() && `Clima tarde: ${form.obs_clima_tarde.trim()}`,
+      ].filter(Boolean).join("\n");
+      const mergedObservacoes = [form.observacoes?.trim(), obsExtras].filter(Boolean).join("\n\n");
+      const formForSave = { ...form, observacoes: mergedObservacoes };
+      const { sane: cleaned, dropped, total_dropped } = sanitizeRdoPayload(formForSave);
       // Índices descartados (sobre o array original) para feedback ao usuário.
       const droppedIdx = {
         equipamentos: (form.equipamentos ?? [])
@@ -776,46 +783,6 @@ function NovoRdoPage() {
               </div>
             </div>
 
-            {/* CEP manual + detecção automática */}
-            <div className="border border-border rounded-md p-3 bg-muted/20 space-y-2">
-              <Label className="text-xs">Consultar clima por CEP</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  inputMode="numeric"
-                  placeholder="00000-000"
-                  maxLength={9}
-                  value={cepInput}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    setCepInput(v.length > 5 ? `${v.slice(0, 5)}-${v.slice(5)}` : v);
-                  }}
-                  className="sm:max-w-[160px]"
-                />
-                <div className="flex gap-2 flex-wrap">
-                  <Button type="button" size="sm" variant="outline" disabled={climaLoading || cepDetecting || !cepInput} onClick={importarClimaPorCep}>
-                    {climaLoading
-                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
-                      : <CloudSun size={16} className="mr-1" />}
-                    {climaLoading ? "Consultando CEP…" : "Consultar pelo CEP"}
-                  </Button>
-                  <Button type="button" size="sm" variant="default" disabled={cepDetecting || climaLoading} onClick={detectarCep}>
-                    {cepDetecting
-                      ? <CircleNotch size={16} className="mr-1 animate-spin" />
-                      : <MapPin size={16} className="mr-1" />}
-                    {cepDetecting ? "Detectando…" : "Detectar CEP automaticamente"}
-                  </Button>
-                </div>
-              </div>
-              {(climaLoading || cepDetecting) && (
-                <div role="status" aria-live="polite" className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CircleNotch size={14} className="animate-spin" />
-                  {cepDetecting ? "Detectando CEP pela sua localização…" : "Consultando previsão pelo CEP…"}
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground">
-                Digite o CEP manualmente ou use a detecção automática (geolocalização + IA de reverse-geocoding).
-              </p>
-            </div>
 
             {climaStatus === "error" && (
               <div role="alert" className="text-xs border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 rounded-md p-3 flex items-start justify-between gap-3">
@@ -862,17 +829,31 @@ function NovoRdoPage() {
             )}
             <div className="grid grid-cols-1 gap-3">
               {(["manha", "tarde", "noite"] as const).map((p) => (
-                <div key={p}>
-                  <Label className="capitalize">Clima {p}</Label>
-                  <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div key={p} className="space-y-2">
+                  <div>
+                    <Label className="capitalize">Clima {p}</Label>
+                    <Select value={form[`clima_${p}`] ?? ""} onValueChange={(v) => setForm({ ...form, [`clima_${p}`]: v || null })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {climas.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(p === "manha" || p === "tarde") && (
+                    <div>
+                      <Label className="text-xs">Observação do clima ({p === "manha" ? "manhã" : "tarde"})</Label>
+                      <Textarea
+                        rows={2}
+                        placeholder={`Observações sobre o clima da ${p === "manha" ? "manhã" : "tarde"} (opcional)`}
+                        value={form[`obs_clima_${p}`] ?? ""}
+                        onChange={(e) => setForm({ ...form, [`obs_clima_${p}`]: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
           </Card>
         )}
 
