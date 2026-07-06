@@ -716,19 +716,18 @@ export const listRdoAnexosHist = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos_hist")
-      .select("*, autor:profiles!rdo_anexos_hist_autor_id_fkey(id, nome, email)")
+      .select("*")
       .eq("rdo_id", data.rdo_id)
       .order("created_at", { ascending: false })
       .limit(500);
-    if (error) {
-      // fallback sem join se FK não estiver mapeada
-      const alt = await context.supabase
-        .from("rdo_anexos_hist").select("*")
-        .eq("rdo_id", data.rdo_id)
-        .order("created_at", { ascending: false }).limit(500);
-      if (alt.error) throw alt.error;
-      return alt.data ?? [];
+    if (error) throw error;
+    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.autor_id).filter(Boolean)));
+    const autores = new Map<string, { nome: string; email: string | null }>();
+    if (ids.length) {
+      const { data: perfis } = await context.supabase
+        .from("profiles").select("id, nome, email").in("id", ids);
+      for (const p of (perfis ?? []) as any[]) autores.set(p.id, { nome: p.nome, email: p.email });
     }
-    return rows ?? [];
+    return (rows ?? []).map((r: any) => ({ ...r, autor: r.autor_id ? autores.get(r.autor_id) ?? null : null }));
   });
 
