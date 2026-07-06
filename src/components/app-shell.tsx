@@ -265,13 +265,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {draftActive && !onNovoRdo && (
-        <div className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6">
-          {/* Luz vermelha piscando atrás do alerta */}
-          <span aria-hidden className="pointer-events-none absolute inset-0 -m-3 rounded-full bg-red-600 blur-2xl opacity-80 animate-rdo-alert-blink" />
-          <span aria-hidden className="pointer-events-none absolute inset-0 -m-1 rounded-full ring-4 ring-red-500/80 animate-rdo-alert-blink" />
+        <div className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 rounded-full animate-rdo-alert-border">
           <Link
             to="/rdo/novo"
-            className="relative rounded-full bg-brand text-brand-foreground shadow-lg border-2 border-brand-foreground/25 px-4 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring animate-in fade-in slide-in-from-bottom-2"
+            className="relative rounded-full bg-brand text-brand-foreground shadow-lg px-4 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring animate-in fade-in slide-in-from-bottom-2"
             aria-label="Continuar edição de RDO em rascunho"
           >
             <FileTextIcon className="h-4 w-4" />
