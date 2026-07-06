@@ -672,6 +672,24 @@ function NovoRdoPage() {
   const isLast = stepIdx === steps.length - 1;
   const canSubmit = stepIssues.length === 0 && formValid && !!form.obra_id && obraSelecionadaExiste;
 
+  // ---- Navegação por teclado: Alt+←/→ (Voltar/Próximo), Alt+1..8 (etapa)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.key === "ArrowRight") {
+        if (canNext && !isLast) { e.preventDefault(); setStepIdx((s) => Math.min(steps.length - 1, s + 1)); }
+      } else if (e.key === "ArrowLeft") {
+        if (stepIdx > 0) { e.preventDefault(); setStepIdx((s) => Math.max(0, s - 1)); }
+      } else if (/^[1-8]$/.test(e.key)) {
+        e.preventDefault();
+        gotoStep(Number(e.key) - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canNext, isLast, stepIdx]);
+
+
   return (
     <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-3">
