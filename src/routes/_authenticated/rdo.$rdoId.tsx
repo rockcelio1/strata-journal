@@ -400,6 +400,29 @@ function RdoDetailPage() {
         </Card>
       )}
 
+      {(() => {
+        const editavel = (r.status === "rascunho" || r.status === "revisao_solicitada" || r.status === "reaberto") && isAuthor && !r.disabled_at;
+        return (
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className={cn(
+              "mb-4 rounded-md border px-3 py-2 text-sm",
+              editavel
+                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                : "border-muted bg-muted/40 text-muted-foreground"
+            )}
+          >
+            {editavel ? (
+              <>RDO em <strong>rascunho</strong> — edição habilitada.</>
+            ) : (
+              <>RDO <strong>{m?.label ?? r.status}</strong> — ações de edição desativadas. Somente rascunhos podem ser editados ou enviados.</>
+            )}
+          </div>
+        );
+      })()}
+
 
       {r.status === "reprovado" && r.motivo_reprovacao && (
         <Card className="p-4 border-destructive/50 bg-destructive/5 mb-4">
