@@ -67,6 +67,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Bottom bar: 4 primários + botão "Mais"
   const bottomNav = mainNav.slice(0, 4);
+  const draftActive = useDraftActive();
+  const onNovoRdo = pathname.startsWith("/rdo/novo");
+
 
   useEffect(() => {
     if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
