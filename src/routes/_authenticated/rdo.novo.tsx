@@ -138,6 +138,7 @@ function NovoRdoPage() {
   // ---- Rascunho local (IndexedDB) — salva automaticamente e restaura ao reabrir
   const draftKey = `rdo-novo:${me?.profile?.id ?? "anon"}`;
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   useEffect(() => {
     if (!me?.profile?.id || draftLoaded) return;
     (async () => {
@@ -152,17 +153,8 @@ function NovoRdoPage() {
             b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
           ));
         }
-        toast.success("✓ Rascunho restaurado com sucesso", {
-          description: "Continuamos de onde você parou. Seus dados estão salvos.",
-          position: "top-center",
-          duration: 6000,
-          closeButton: true,
-          className:
-            "toast-brand animate-in fade-in slide-in-from-top-4 duration-300 " +
-            "!bg-brand !text-brand-foreground !border-2 !border-brand-foreground/25 " +
-            "!shadow-[0_10px_40px_-8px_color-mix(in_oklab,var(--brand)_55%,transparent)] " +
-            "!font-semibold !text-base !rounded-xl",
-        });
+        markDraftActive();
+        setShowResumePrompt(true);
       }
       setDraftLoaded(true);
     })();
@@ -171,10 +163,28 @@ function NovoRdoPage() {
     if (!draftLoaded) return;
     const t = setTimeout(() => {
       saveDraft(draftKey, { form, legendas, signer, stepIdx, fotos });
+      const hasData = !!form.obra_id || (form.atividades?.length ?? 0) > 0 || fotos.length > 0
+        || (form.mao_de_obra?.length ?? 0) > 0 || (form.equipamentos?.length ?? 0) > 0
+        || (form.ocorrencias?.length ?? 0) > 0;
+      if (hasData) markDraftActive();
       channelRef.current?.post({ type: "saved", at: Date.now(), tabId: channelRef.current.tabId, fotosCount: fotos.length });
     }, 400);
     return () => clearTimeout(t);
   }, [form, legendas, signer, stepIdx, fotos, draftLoaded, draftKey]);
+
+  // ---- Avisa antes de sair da página quando há dados não salvos
+  useEffect(() => {
+    const hasData = !!form.obra_id || (form.atividades?.length ?? 0) > 0 || fotos.length > 0
+      || (form.mao_de_obra?.length ?? 0) > 0 || (form.equipamentos?.length ?? 0) > 0
+      || (form.ocorrencias?.length ?? 0) > 0;
+    if (!hasData) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [form, fotos]);
 
   // ---- BroadcastChannel: sincroniza rascunho entre abas
   const channelRef = useRef<ReturnType<typeof createDraftChannel> | null>(null);
