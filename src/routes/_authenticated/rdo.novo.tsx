@@ -126,6 +126,7 @@ function NovoRdoPage() {
   const obraSelecionadaExiste = !form.obra_id || (obras as any[]).some((o) => o.id === form.obra_id);
 
   const [showObraDesvinculada, setShowObraDesvinculada] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   useEffect(() => {
     if (!form.obra_id || obras.length === 0 || obraSelecionadaExiste) return;
     setForm((f: any) => ({ ...f, obra_id: "" }));
