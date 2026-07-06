@@ -908,11 +908,18 @@ function NovoRdoPage() {
                     inputMode="numeric"
                     pattern="[0-9]*"
                     min={0}
+                    max={999}
                     step={1}
-                    value={it.horas}
+                    value={it.horas ?? 0}
+                    aria-invalid={!Number.isInteger(Number(it.horas)) || it.horas < 0 || it.horas > 999}
                     onFocus={(e) => e.currentTarget.select()}
-                    onChange={(e) => upd("mao_de_obra", i, "horas", Number(e.target.value))}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "");
+                      const n = raw === "" ? 0 : Math.min(999, Math.max(0, parseInt(raw, 10)));
+                      upd("mao_de_obra", i, "horas", n);
+                    }}
                   />
+                  <p className="text-[11px] text-muted-foreground mt-1">Inteiro entre 0 e 999.</p>
                 </div>
                 <div className="flex justify-end"><RmBtn onClick={() => rm("mao_de_obra", i)} /></div>
               </Card>
@@ -958,11 +965,18 @@ function NovoRdoPage() {
                     inputMode="numeric"
                     pattern="[0-9]*"
                     min={0}
+                    max={999}
                     step={1}
-                    value={it.horas_uso}
+                    value={it.horas_uso ?? 0}
+                    aria-invalid={!Number.isInteger(Number(it.horas_uso)) || it.horas_uso < 0 || it.horas_uso > 999}
                     onFocus={(e) => e.currentTarget.select()}
-                    onChange={(e) => upd("equipamentos", i, "horas_uso", Number(e.target.value))}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, "");
+                      const n = raw === "" ? 0 : Math.min(999, Math.max(0, parseInt(raw, 10)));
+                      upd("equipamentos", i, "horas_uso", n);
+                    }}
                   />
+                  <p className="text-[11px] text-muted-foreground mt-1">Inteiro entre 0 e 999.</p>
                 </div>
 
                 <div className="flex justify-end"><RmBtn onClick={() => rm("equipamentos", i)} /></div>

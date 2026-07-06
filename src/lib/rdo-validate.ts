@@ -66,12 +66,22 @@ export function sanitizeRdoPayload<T extends RdoFormLike>(
   const atividades = (payload.atividades ?? []).filter((a) =>
     a?.descricao?.trim(),
   );
-  const mao_de_obra = (payload.mao_de_obra ?? []).filter((m) =>
-    isUuid(m?.mao_de_obra_id),
-  );
-  const equipamentos = (payload.equipamentos ?? []).filter((e) =>
-    isUuid(e?.equipamento_id),
-  );
+  const mao_de_obra = (payload.mao_de_obra ?? [])
+    .filter((m: any) => isUuid(m?.mao_de_obra_id))
+    .map((m: any) => {
+      const n = Math.min(999, Math.max(0, Math.trunc(Number(m?.horas ?? 0)) || 0));
+      // Remove campos legados (atividade) que não existem mais no schema.
+      const { atividade: _a, ...rest } = m ?? {};
+      return { ...rest, horas: n };
+    });
+  const equipamentos = (payload.equipamentos ?? [])
+    .filter((e: any) => isUuid(e?.equipamento_id))
+    .map((e: any) => {
+      const n = Math.min(999, Math.max(0, Math.trunc(Number(e?.horas_uso ?? 0)) || 0));
+      // Remove campos legados (status_uso/Observação) que não existem mais no schema.
+      const { status_uso: _s, ...rest } = e ?? {};
+      return { ...rest, horas_uso: n };
+    });
   const ocorrencias = (payload.ocorrencias ?? []).filter((o) =>
     o?.descricao?.trim(),
   );
@@ -125,16 +135,16 @@ export function assertRowsValid(data: any): void {
     if (!m || typeof m.mao_de_obra_id !== "string" || !UUID_RE.test(m.mao_de_obra_id)) {
       push("Etapa 4 · Mão de obra", `linha ${i + 1}: selecione a pessoa`);
     }
-    if (m && m.horas != null && (m.horas < 0 || m.horas > 24)) {
-      push("Etapa 4 · Mão de obra", `linha ${i + 1}: horas devem estar entre 0 e 24`);
+    if (m && m.horas != null && (!Number.isInteger(Number(m.horas)) || m.horas < 0 || m.horas > 999)) {
+      push("Etapa 4 · Mão de obra", `linha ${i + 1}: UN deve ser inteiro entre 0 e 999`);
     }
   });
   (data?.equipamentos ?? []).forEach((e: any, i: number) => {
     if (!e || typeof e.equipamento_id !== "string" || !UUID_RE.test(e.equipamento_id)) {
       push("Etapa 5 · Equipamentos", `linha ${i + 1}: selecione o equipamento`);
     }
-    if (e && e.horas_uso != null && (e.horas_uso < 0 || e.horas_uso > 24)) {
-      push("Etapa 5 · Equipamentos", `linha ${i + 1}: horas de uso devem estar entre 0 e 24`);
+    if (e && e.horas_uso != null && (!Number.isInteger(Number(e.horas_uso)) || e.horas_uso < 0 || e.horas_uso > 999)) {
+      push("Etapa 5 · Equipamentos", `linha ${i + 1}: UN deve ser inteiro entre 0 e 999`);
     }
   });
   (data?.ocorrencias ?? []).forEach((o: any, i: number) => {
