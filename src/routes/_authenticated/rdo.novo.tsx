@@ -142,7 +142,12 @@ function NovoRdoPage() {
             b instanceof File ? b : new File([b], `foto-${i}.jpg`, { type: (b as Blob).type || "image/jpeg" })
           ));
         }
-        toast.info("Rascunho restaurado automaticamente.");
+        toast.success("✓ Rascunho restaurado com sucesso", {
+          description: "Continuamos de onde você parou. Seus dados estão salvos.",
+          position: "top-center",
+          duration: 4500,
+          className: "!bg-brand !text-brand-foreground !border-2 !border-brand-foreground/30 !shadow-[0_10px_40px_-8px_var(--brand)] !font-semibold !text-base !rounded-xl",
+        });
       }
       setDraftLoaded(true);
     })();
