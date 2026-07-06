@@ -70,6 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Bottom bar: 4 primários + botão "Mais"
   const bottomNav = mainNav.slice(0, 4);
   const draftActive = useDraftActive();
+  const { status: draftSaveStatus, lastSavedAt } = useDraftSaveStatus();
   const onNovoRdo = pathname.startsWith("/rdo/novo");
 
 
