@@ -707,6 +707,19 @@ function NovoRdoPage() {
           </div>
         </div>
       )}
+      {showObraDesvinculada && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+          <div className="max-w-md w-full rounded-xl border-2 border-destructive bg-card shadow-2xl p-6 text-center space-y-4">
+            <h2 className="font-serif text-xl text-destructive">Obra desvinculada</h2>
+            <p className="text-sm text-muted-foreground">
+              A obra não está mais vinculada a este RDO. Selecione outra obra para continuar.
+            </p>
+            <Button className="bg-brand text-brand-foreground w-full" onClick={() => { setShowObraDesvinculada(false); setStepIdx(0); }}>
+              Selecionar obra
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="px-4 py-5 md:p-8 max-w-3xl mx-auto">
         <p className="text-[10px] text-muted-foreground mb-1">Dica: Alt + ← / → alterna etapas · Alt + 1..8 vai direto à etapa</p>
       <Link to="/rdo" className="text-sm text-muted-foreground hover:underline flex items-center gap-1 mb-3">
