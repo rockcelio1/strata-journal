@@ -1,0 +1,1 @@
+ALTER TABLE public.rdo_mao_de_obra DROP COLUMN IF EXISTS atividade;

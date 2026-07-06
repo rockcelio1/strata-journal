@@ -1362,7 +1362,6 @@ export type Database = {
       }
       rdo_mao_de_obra: {
         Row: {
-          atividade: string | null
           created_at: string
           horas: number
           id: string
@@ -1370,7 +1369,6 @@ export type Database = {
           rdo_id: string
         }
         Insert: {
-          atividade?: string | null
           created_at?: string
           horas?: number
           id?: string
@@ -1378,7 +1376,6 @@ export type Database = {
           rdo_id: string
         }
         Update: {
-          atividade?: string | null
           created_at?: string
           horas?: number
           id?: string
