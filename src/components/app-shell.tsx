@@ -312,11 +312,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      {draftActive && !onNovoRdo && (
+      {showDraftAlert && (
         <div
-          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 animate-in fade-in slide-in-from-bottom-2"
+          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
           role="region"
           aria-label="Rascunho de RDO em andamento"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { e.preventDefault(); dismissDraftAlertForSession(); }
+          }}
         >
           {draftSaveStatus !== "idle" && (
             <span
@@ -338,11 +341,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               {draftSaveStatus === "error" && "Erro ao salvar"}
             </span>
           )}
-          <div className="rounded-full animate-rdo-alert-border flex items-stretch">
+          <div className="rounded-full motion-safe:animate-rdo-alert-border flex items-stretch">
             <Link
               to="/rdo/novo"
-              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Continuar edição do RDO em rascunho — abre o formulário"
+              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={
+                hasServerDraft && !draftActive
+                  ? "Continuar RDO em rascunho salvo no servidor — abre a lista de RDOs"
+                  : "Continuar edição do RDO em rascunho — abre o formulário"
+              }
             >
               <FileTextIcon className="h-4 w-4" aria-hidden="true" />
               <span>RDO em rascunho — Continuar</span>
@@ -352,9 +359,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => dismissDraftAlertForSession()}
               aria-label="Ocultar aviso de RDO em rascunho nesta sessão (o rascunho continua salvo)"
               title="Ocultar aviso (rascunho continua salvo)"
-              className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="rounded-r-full bg-brand text-brand-foreground shadow-lg pr-3 pl-2 py-3 min-h-11 min-w-11 border-l border-brand-foreground/20 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <XIcon className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Dispensar aviso</span>
             </button>
           </div>
         </div>
