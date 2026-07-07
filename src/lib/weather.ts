@@ -205,17 +205,15 @@ export async function geocodeEndereco(endereco: string): Promise<{ latitude: num
   }
 }
 
-// Valida formato mínimo do endereço (precisa ter número OU CEP).
+// Valida apenas o comprimento mínimo do endereço. Não exige número nem CEP:
+// o geocoder tenta resolver o que for informado e reporta erro amigável só
+// se não conseguir localizar.
 export function validarEnderecoParaGeocoding(endereco: string): { ok: true } | { ok: false; mensagem: string } {
   const e = (endereco ?? "").trim();
-  if (e.length < 6) return { ok: false, mensagem: "Endereço muito curto. Informe rua, número e cidade." };
-  const temCep = /\b\d{5}-?\d{3}\b/.test(e);
-  const temNumero = /\b\d{1,6}\b/.test(e);
-  const temCidade = /,/.test(e) || /\b[A-Za-zÀ-ÿ]{3,}\b\s*[-/]\s*[A-Z]{2}\b/.test(e);
-  if (!temCep && !temNumero) return { ok: false, mensagem: "Informe o número do imóvel ou o CEP no endereço." };
-  if (!temCidade && !temCep) return { ok: false, mensagem: "Inclua a cidade (ex.: \"Rua X, 123, São Paulo - SP\") ou o CEP." };
+  if (e.length < 3) return { ok: false, mensagem: "Endereço muito curto." };
   return { ok: true };
 }
+
 
 export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnapshot & { local: string }> {
   const v = validarEnderecoParaGeocoding(endereco);
