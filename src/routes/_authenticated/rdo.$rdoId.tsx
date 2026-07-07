@@ -63,7 +63,11 @@ function RdoDetailPage() {
   const auditViewFn = useServerFn(logRdoAuditView);
   const auditFn = useServerFn(getRdoAuditSummary);
 
-  const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["rdo", rdoId],
+    queryFn: () => fn({ data: { id: rdoId } }),
+    retry: 2,
+  });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const [logFilters, setLogFilters] = useState<{ autor_id: string; acao: string; from: string; to: string; limit: number }>({ autor_id: "", acao: "", from: "", to: "", limit: 25 });
   const { data: logsData } = useQuery({
