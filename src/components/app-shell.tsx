@@ -349,13 +349,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {showDraftAlert && (
         <div
-          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
+          className="fixed z-40 right-3 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 max-w-[calc(100vw-1.5rem)]"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           role="region"
           aria-label="Rascunho de RDO em andamento"
           onKeyDown={(e) => {
             if (e.key === "Escape") { e.preventDefault(); setConfirmDismiss(true); }
           }}
         >
+
           {draftSaveStatus !== "idle" && (
             <span
               role="status"
