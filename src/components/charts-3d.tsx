@@ -257,7 +257,9 @@ function Slice({
   );
 }
 
-export function Pie3D({ data, onSelect }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void }) {
+export function Pie3D({
+  data, onSelect, storageKey = "chart3d:pie",
+}: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
   let acc = 0;
   const slices = data.map((d) => {
@@ -266,9 +268,23 @@ export function Pie3D({ data, onSelect }: { data: Chart3DDatum[]; onSelect: (d: 
     const end = (acc / total) * Math.PI * 2;
     return { d, start, end };
   });
+  const reducedMotion = usePrefersReducedMotion();
+  const [paused, setPaused] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(`${storageKey}:paused`) === "1";
+  });
+  const autoRotate = !reducedMotion && !paused;
+  const togglePaused = () => {
+    setPaused((p) => {
+      const next = !p;
+      try { sessionStorage.setItem(`${storageKey}:paused`, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
   return (
     <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
       <Hud />
+      <AutoRotateToggle paused={paused || reducedMotion} onToggle={togglePaused} />
       <Canvas shadows camera={{ position: [0, 4.5, 5.5], fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
@@ -276,15 +292,7 @@ export function Pie3D({ data, onSelect }: { data: Chart3DDatum[]; onSelect: (d: 
               <Slice key={s.d.id} d={s.d} index={i} start={s.start} end={s.end} total={total} onClick={onSelect} />
             ))}
           </Stage>
-          <OrbitControls
-            enablePan={false}
-            minDistance={3.5}
-            maxDistance={16}
-            autoRotate
-            autoRotateSpeed={0.6}
-            enableDamping
-            dampingFactor={0.08}
-          />
+          <ManagedControls storageKey={storageKey} autoRotate={autoRotate} minDistance={3.5} maxDistance={16} />
         </Suspense>
       </Canvas>
     </div>
