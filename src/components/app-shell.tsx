@@ -239,7 +239,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
               <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
-            <span className="font-serif text-base sm:text-lg leading-none truncate min-w-0">{empresaName || "Diário de Obra"}</span>
+            <span className="font-serif text-lg sm:text-xl leading-none truncate min-w-0">FACOM</span>
           </Link>
 
 
