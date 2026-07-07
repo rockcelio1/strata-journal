@@ -220,7 +220,7 @@ export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnap
   if (!v.ok) throw new Error(v.mensagem);
   const g = await resolveGeoBrasil(endereco);
   if (!g) {
-    throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+    throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço da obra (cidade e estado) em Cadastros → Obras.");
   }
   const snap = await fetchClima(g.latitude, g.longitude);
   return { ...snap, local: g.nome };
