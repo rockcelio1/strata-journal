@@ -1331,7 +1331,7 @@ function ClimaRelatorio({
         </div>
       </div>
       <p className="text-xs text-muted-foreground mb-2">
-        Previsão/observação para o dia do RDO e 2 dias úteis antes/depois — endereço da obra como referência, horário de Brasília.
+        Previsão/observação para o dia do RDO e 2 dias úteis antes/depois — localização da obra selecionada, horário de Brasília.
       </p>
       {state.status === "error" && (
         <div className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
