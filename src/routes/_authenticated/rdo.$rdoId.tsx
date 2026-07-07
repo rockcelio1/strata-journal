@@ -273,11 +273,13 @@ function RdoDetailPage() {
   if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
-  const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
-  const isAdmin = (me?.roles ?? []).some((x: string) => x === "admin");
+  const roles = (me?.roles ?? []) as string[];
+  const isAdmin = roles.includes("admin");
+  const isMaster = roles.includes("master");
+  const isAdminOrMaster = isAdmin || isMaster;
+  const canApprove = isAdmin || roles.includes("engenheiro");
   const canManageAccess = isAdmin;
   const isAuthor = r.autor?.id === me?.profile?.id;
-  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
   const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
 
   return (
