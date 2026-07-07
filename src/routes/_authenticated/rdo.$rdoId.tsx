@@ -836,9 +836,101 @@ function RdoDetailPage() {
         )}
       </Card>
 
+      {lightbox && (
+        <Lightbox
+          items={lightbox.items}
+          index={lightbox.index}
+          onClose={() => setLightbox(null)}
+          onIndex={(i) => setLightbox((s) => (s ? { ...s, index: i } : s))}
+        />
+      )}
+
     </div>
   );
 }
+
+function Lightbox({
+  items, index, onClose, onIndex,
+}: {
+  items: any[]; index: number; onClose: () => void; onIndex: (i: number) => void;
+}) {
+  const total = items.length;
+  const current = items[Math.max(0, Math.min(index, total - 1))];
+  const go = (delta: number) => {
+    if (total <= 1) return;
+    const next = (index + delta + total) % total;
+    onIndex(next);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") go(1);
+      else if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    // trava scroll do fundo
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, total]);
+
+  if (!current) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Visualizador de imagens (${index + 1} de ${total})`}
+      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        aria-label="Fechar visualizador"
+        className="absolute top-3 right-3 h-11 w-11 rounded-full bg-white/10 text-white grid place-items-center hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      >
+        <XCircle className="h-6 w-6" />
+      </button>
+
+      {total > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+            aria-label="Imagem anterior"
+            className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 text-white grid place-items-center hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+            aria-label="Próxima imagem"
+            className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 text-white grid place-items-center hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <ArrowLeft className="h-6 w-6 rotate-180" />
+          </button>
+        </>
+      )}
+
+      <figure className="max-w-[95vw] max-h-[90dvh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={current.url}
+          alt={current.nome ?? "Imagem do RDO"}
+          className="max-w-[95vw] max-h-[80dvh] object-contain rounded-md shadow-2xl"
+        />
+        <figcaption className="mt-2 text-xs text-white/80 text-center px-3 max-w-[95vw] truncate">
+          {current.nome} · {index + 1} / {total}
+        </figcaption>
+      </figure>
+    </div>
+  );
+}
+
 
 function ExclusoesPanel({ logs }: { logs: any[] }) {
   const exclusoes = useMemo(
