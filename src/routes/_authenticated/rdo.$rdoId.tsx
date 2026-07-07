@@ -776,6 +776,7 @@ function RdoDetailPage() {
       <EventosRdoPanel logs={logs} />
 
       {/* Trilha de auditoria */}
+      {isAdmin && (
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
