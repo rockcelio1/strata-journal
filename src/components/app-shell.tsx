@@ -244,7 +244,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
           {/* Top nav: somente desktop */}
-          <nav className="hidden lg:flex items-center gap-1 ml-4">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 ml-2 xl:ml-4 min-w-0 flex-1">
             {mainNav.map((item) => {
               const active = item.match
                 ? pathname.startsWith(item.match)
@@ -253,19 +253,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to as any}
+                  title={item.label}
                   className={cn(
-                    "facom-flash facom-glow px-3 py-1.5 rounded-md text-sm flex items-center gap-2 transition-colors",
+                    "facom-flash facom-glow px-2 xl:px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 xl:gap-2 transition-colors shrink-0",
                     active ? "bg-brand-foreground/15" : "hover:bg-brand-foreground/10 text-brand-foreground/85",
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className="hidden xl:inline">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
+
+          <div className="ml-auto lg:ml-0 flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span
               role="status"
               aria-live="polite"
