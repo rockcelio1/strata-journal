@@ -1,7 +1,11 @@
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Html, Text, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
+import { Pause, Play } from "@phosphor-icons/react";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
 export type Chart3DDatum = { id: string; name: string; value: number; extra?: string };
 
