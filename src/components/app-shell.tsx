@@ -255,7 +255,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={item.to as any}
                   title={item.label}
                   className={cn(
-                    "facom-flash facom-glow px-2 xl:px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 xl:gap-2 transition-colors shrink-0",
+                    "facom-flash facom-glow px-2 xl:px-3 py-1.5 rounded-md text-sm flex items-center gap-1.5 xl:gap-2 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/80 focus-visible:ring-offset-2 focus-visible:ring-offset-brand",
                     active ? "bg-brand-foreground/15" : "hover:bg-brand-foreground/10 text-brand-foreground/85",
                   )}
                 >
