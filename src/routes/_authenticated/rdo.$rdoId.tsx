@@ -274,7 +274,8 @@ function RdoDetailPage() {
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
   const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
-  const canManageAccess = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master" || x === "gestor_acessos");
+  const isAdmin = (me?.roles ?? []).some((x: string) => x === "admin");
+  const canManageAccess = isAdmin;
   const isAuthor = r.autor?.id === me?.profile?.id;
   const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
   const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
