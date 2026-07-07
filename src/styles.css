@@ -189,9 +189,13 @@
     image-rendering: -webkit-optimize-contrast;
   }
   /* Evita hover "preso" em touch */
+  /* Evita hover "preso" em touch (utilitários hover:*) */
   @media (hover: none) {
     .hover\:bg-accent:hover { background-color: transparent; }
+    .hover\:scale-105:hover { transform: none; }
+    .hover\:opacity-95:hover { opacity: 1; }
   }
+
   /* Scroll suave em toda a app */
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
