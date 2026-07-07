@@ -239,6 +239,28 @@
   scrollbar-gutter: stable;
 }
 
+/* Safety net: qualquer <table> nua ganha scroll horizontal em telas < md,
+ * assumindo o próprio elemento como container. Não afeta o Table shadcn
+ * (já envolvido em div.overflow-auto) nem tabelas dentro de wrappers
+ * com overflow-x-* explícito. */
+@media (max-width: 767px) {
+  table:not([data-scroll="off"]) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table:not([data-scroll="off"]) > thead,
+  table:not([data-scroll="off"]) > tbody,
+  table:not([data-scroll="off"]) > tfoot {
+    display: table;
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+
+
 
 /* ============ Scrollbar ultra fina e quase imperceptível ============ */
 * {
