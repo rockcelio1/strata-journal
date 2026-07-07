@@ -124,11 +124,65 @@ function Hud() {
   );
 }
 
-export function Bars3D({ data, onSelect }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void }) {
+/** OrbitControls com auto-rotate opcional + persistência de câmera. */
+function ManagedControls({
+  storageKey, autoRotate, minDistance, maxDistance,
+}: { storageKey: string; autoRotate: boolean; minDistance: number; maxDistance: number }) {
+  const ref = useRef<OrbitControlsImpl>(null);
+  useCameraPersistence(storageKey, ref);
+  return (
+    <OrbitControls
+      ref={ref}
+      enablePan={false}
+      minDistance={minDistance}
+      maxDistance={maxDistance}
+      autoRotate={autoRotate}
+      autoRotateSpeed={0.6}
+      enableDamping
+      dampingFactor={0.08}
+    />
+  );
+}
+
+/** Botão pausar/retomar rotação, respeitando prefers-reduced-motion. */
+function AutoRotateToggle({
+  paused, onToggle,
+}: { paused: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"}
+      aria-pressed={paused}
+      className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md border bg-background/80 backdrop-blur px-2 py-1 text-[10px] text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {paused ? <Play size={12} weight="fill" /> : <Pause size={12} weight="fill" />}
+      <span>{paused ? "Rotação pausada" : "Girando"}</span>
+    </button>
+  );
+}
+
+export function Bars3D({
+  data, onSelect, storageKey = "chart3d:bars",
+}: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
   const max = Math.max(1, ...data.map((d) => d.value));
+  const reducedMotion = usePrefersReducedMotion();
+  const [paused, setPaused] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(`${storageKey}:paused`) === "1";
+  });
+  const autoRotate = !reducedMotion && !paused;
+  const togglePaused = () => {
+    setPaused((p) => {
+      const next = !p;
+      try { sessionStorage.setItem(`${storageKey}:paused`, next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  };
   return (
     <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
       <Hud />
+      <AutoRotateToggle paused={paused || reducedMotion} onToggle={togglePaused} />
       <Canvas shadows camera={{ position: [0, 4, 8], fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
@@ -136,15 +190,7 @@ export function Bars3D({ data, onSelect }: { data: Chart3DDatum[]; onSelect: (d:
               <Bar key={d.id} d={d} index={i} total={data.length} max={max} onClick={onSelect} />
             ))}
           </Stage>
-          <OrbitControls
-            enablePan={false}
-            minDistance={4}
-            maxDistance={20}
-            autoRotate
-            autoRotateSpeed={0.6}
-            enableDamping
-            dampingFactor={0.08}
-          />
+          <ManagedControls storageKey={storageKey} autoRotate={autoRotate} minDistance={4} maxDistance={20} />
         </Suspense>
       </Canvas>
     </div>
