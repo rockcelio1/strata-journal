@@ -614,6 +614,8 @@ function RdoListPage() {
                       <tr
                         key={r.id}
                         onClick={() => navigate({ to: "/rdo/$rdoId", params: { rdoId: r.id } })}
+                        onMouseEnter={() => prefetchRdo(r.id)}
+                        onFocus={() => prefetchRdo(r.id)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
