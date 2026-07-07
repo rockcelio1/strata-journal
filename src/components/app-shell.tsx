@@ -265,7 +265,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span
               role="status"
               aria-live="polite"
