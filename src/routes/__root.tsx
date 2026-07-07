@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonDebugPanel } from "@/components/skeletons";
+import { AccessibilityProvider } from "@/hooks/useAccessibility";
 
 
 function NotFoundComponent() {
@@ -147,9 +148,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster position="top-right" richColors closeButton theme="system" />
-      <SkeletonDebugPanel />
+      <AccessibilityProvider>
+        <Outlet />
+        <Toaster position="top-right" richColors closeButton theme="system" />
+        <SkeletonDebugPanel />
+      </AccessibilityProvider>
     </QueryClientProvider>
   );
 

@@ -1,10 +1,10 @@
-import { Suspense, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, Text, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import { Pause, Play } from "@phosphor-icons/react";
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { Pause, Play, MagnifyingGlassPlus, MagnifyingGlassMinus, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { useAccessibility } from "@/hooks/useAccessibility";
 import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
 export type Chart3DDatum = { id: string; name: string; value: number; extra?: string };
@@ -124,12 +124,47 @@ function Hud() {
   );
 }
 
-/** OrbitControls com auto-rotate opcional + persistência de câmera. */
-function ManagedControls({
-  storageKey, autoRotate, minDistance, maxDistance,
-}: { storageKey: string; autoRotate: boolean; minDistance: number; maxDistance: number }) {
+/** API imperativa exposta pelo bridge dentro do Canvas. */
+type ChartAPI = { zoom: (factor: number) => void; reset: () => void };
+
+/** OrbitControls + captura de câmera + persistência; expõe API imperativa. */
+function ChartBridge({
+  storageKey, autoRotate, minDistance, maxDistance, initialPos, onAPI,
+}: {
+  storageKey: string; autoRotate: boolean;
+  minDistance: number; maxDistance: number;
+  initialPos: [number, number, number];
+  onAPI: (api: ChartAPI) => void;
+}) {
   const ref = useRef<OrbitControlsImpl>(null);
+  const { camera } = useThree();
   useCameraPersistence(storageKey, ref);
+  useEffect(() => {
+    onAPI({
+      zoom: (factor: number) => {
+        const c = ref.current;
+        if (!c) return;
+        const t = c.target as THREE.Vector3;
+        const dir = camera.position.clone().sub(t);
+        const len = dir.length() * factor;
+        const clamped = Math.min(maxDistance, Math.max(minDistance, len));
+        dir.setLength(clamped);
+        camera.position.copy(t).add(dir);
+        c.update();
+        c.dispatchEvent({ type: "end" } as never);
+      },
+      reset: () => {
+        try { sessionStorage.removeItem(storageKey); } catch { /* ignore */ }
+        camera.position.set(...initialPos);
+        const c = ref.current;
+        if (c) {
+          (c.target as THREE.Vector3).set(0, 0, 0);
+          c.update();
+          c.dispatchEvent({ type: "end" } as never);
+        }
+      },
+    });
+  }, [camera, storageKey, minDistance, maxDistance, initialPos, onAPI]);
   return (
     <OrbitControls
       ref={ref}
@@ -144,53 +179,90 @@ function ManagedControls({
   );
 }
 
-/** Botão pausar/retomar rotação, respeitando prefers-reduced-motion. */
-function AutoRotateToggle({
-  paused, onToggle,
-}: { paused: boolean; onToggle: () => void }) {
+/** Barra de controles: pause/play + zoom + reset. */
+function ChartToolbar({
+  paused, onToggle, onZoomIn, onZoomOut, onReset,
+}: {
+  paused: boolean;
+  onToggle: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onReset: () => void;
+}) {
+  const btn = "inline-flex items-center justify-center h-7 w-7 rounded-md border bg-background/80 backdrop-blur text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"}
-      aria-pressed={paused}
-      className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md border bg-background/80 backdrop-blur px-2 py-1 text-[10px] text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      {paused ? <Play size={12} weight="fill" /> : <Pause size={12} weight="fill" />}
-      <span>{paused ? "Rotação pausada" : "Girando"}</span>
-    </button>
+    <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"}
+        aria-pressed={paused}
+        className={btn}
+      >
+        {paused ? <Play size={12} weight="fill" /> : <Pause size={12} weight="fill" />}
+      </button>
+      <button type="button" onClick={onZoomIn} aria-label="Aproximar (zoom +)" className={btn}>
+        <MagnifyingGlassPlus size={12} weight="bold" />
+      </button>
+      <button type="button" onClick={onZoomOut} aria-label="Afastar (zoom -)" className={btn}>
+        <MagnifyingGlassMinus size={12} weight="bold" />
+      </button>
+      <button type="button" onClick={onReset} aria-label="Restaurar câmera" className={btn}>
+        <ArrowCounterClockwise size={12} weight="bold" />
+      </button>
+    </div>
   );
 }
 
-export function Bars3D({
-  data, onSelect, storageKey = "chart3d:bars",
-}: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
-  const reducedMotion = usePrefersReducedMotion();
+function usePausedState(storageKey: string) {
   const [paused, setPaused] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem(`${storageKey}:paused`) === "1";
   });
-  const autoRotate = !reducedMotion && !paused;
-  const togglePaused = () => {
+  const toggle = () => {
     setPaused((p) => {
       const next = !p;
       try { sessionStorage.setItem(`${storageKey}:paused`, next ? "1" : "0"); } catch { /* ignore */ }
       return next;
     });
   };
+  return [paused, toggle] as const;
+}
+
+export function Bars3D({
+  data, onSelect, storageKey = "chart3d:bars",
+}: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const { effectiveReducedMotion: reducedMotion } = useAccessibility();
+  const [paused, togglePaused] = usePausedState(storageKey);
+  const autoRotate = !reducedMotion && !paused;
+  const apiRef = useRef<ChartAPI | null>(null);
+  const initialPos: [number, number, number] = [0, 4, 8];
   return (
     <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
       <Hud />
-      <AutoRotateToggle paused={paused || reducedMotion} onToggle={togglePaused} />
-      <Canvas shadows camera={{ position: [0, 4, 8], fov: 45 }} dpr={[1, 2]}>
+      <ChartToolbar
+        paused={paused || reducedMotion}
+        onToggle={togglePaused}
+        onZoomIn={() => apiRef.current?.zoom(0.85)}
+        onZoomOut={() => apiRef.current?.zoom(1.18)}
+        onReset={() => apiRef.current?.reset()}
+      />
+      <Canvas shadows camera={{ position: initialPos, fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
             {data.map((d, i) => (
               <Bar key={d.id} d={d} index={i} total={data.length} max={max} onClick={onSelect} />
             ))}
           </Stage>
-          <ManagedControls storageKey={storageKey} autoRotate={autoRotate} minDistance={4} maxDistance={20} />
+          <ChartBridge
+            storageKey={storageKey}
+            autoRotate={autoRotate}
+            minDistance={4}
+            maxDistance={20}
+            initialPos={initialPos}
+            onAPI={(api) => { apiRef.current = api; }}
+          />
         </Suspense>
       </Canvas>
     </div>
@@ -268,31 +340,36 @@ export function Pie3D({
     const end = (acc / total) * Math.PI * 2;
     return { d, start, end };
   });
-  const reducedMotion = usePrefersReducedMotion();
-  const [paused, setPaused] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(`${storageKey}:paused`) === "1";
-  });
+  const { effectiveReducedMotion: reducedMotion } = useAccessibility();
+  const [paused, togglePaused] = usePausedState(storageKey);
   const autoRotate = !reducedMotion && !paused;
-  const togglePaused = () => {
-    setPaused((p) => {
-      const next = !p;
-      try { sessionStorage.setItem(`${storageKey}:paused`, next ? "1" : "0"); } catch { /* ignore */ }
-      return next;
-    });
-  };
+  const apiRef = useRef<ChartAPI | null>(null);
+  const initialPos: [number, number, number] = [0, 4.5, 5.5];
   return (
     <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
       <Hud />
-      <AutoRotateToggle paused={paused || reducedMotion} onToggle={togglePaused} />
-      <Canvas shadows camera={{ position: [0, 4.5, 5.5], fov: 45 }} dpr={[1, 2]}>
+      <ChartToolbar
+        paused={paused || reducedMotion}
+        onToggle={togglePaused}
+        onZoomIn={() => apiRef.current?.zoom(0.85)}
+        onZoomOut={() => apiRef.current?.zoom(1.18)}
+        onReset={() => apiRef.current?.reset()}
+      />
+      <Canvas shadows camera={{ position: initialPos, fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
             {slices.map((s, i) => (
               <Slice key={s.d.id} d={s.d} index={i} start={s.start} end={s.end} total={total} onClick={onSelect} />
             ))}
           </Stage>
-          <ManagedControls storageKey={storageKey} autoRotate={autoRotate} minDistance={3.5} maxDistance={16} />
+          <ChartBridge
+            storageKey={storageKey}
+            autoRotate={autoRotate}
+            minDistance={3.5}
+            maxDistance={16}
+            initialPos={initialPos}
+            onAPI={(api) => { apiRef.current = api; }}
+          />
         </Suspense>
       </Canvas>
     </div>

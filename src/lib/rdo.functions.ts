@@ -318,6 +318,7 @@ export const listEmpresaRdoLogs = createServerFn({ method: "GET" })
     z.object({
       autor_id: z.string().uuid().nullable().optional(),
       acao: z.string().nullable().optional(),
+      obra_id: z.string().uuid().nullable().optional(),
       from: z.string().nullable().optional(),
       to: z.string().nullable().optional(),
       limit: z.number().int().min(1).max(200).default(50),
@@ -327,12 +328,17 @@ export const listEmpresaRdoLogs = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
+    // Usamos !inner para permitir filtrar por obra_id (join obrigatório).
     let q = context.supabase
       .from("rdo_audit_logs")
-      .select("*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email), rdo:rdos(id, numero)", { count: "exact" })
+      .select(
+        "*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email), rdo:rdos!inner(id, numero, obra_id, obra:obras(id, nome))",
+        { count: "exact" },
+      )
       .eq("empresa_id", me.data.empresa_id);
     if (data.autor_id) q = q.eq("autor_id", data.autor_id);
     if (data.acao) q = q.eq("acao", data.acao);
+    if (data.obra_id) q = q.eq("rdo.obra_id", data.obra_id);
     if (data.from) q = q.gte("created_at", data.from);
     if (data.to) q = q.lte("created_at", data.to);
     const { data: rows, error, count } = await q

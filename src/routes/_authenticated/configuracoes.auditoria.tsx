@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { listEmpresaRdoLogs } from "@/lib/rdo.functions";
+import { listObras } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,17 +27,25 @@ const ACOES = [
 
 function AuditoriaPage() {
   const fn = useServerFn(listEmpresaRdoLogs);
+  const obrasFn = useServerFn(listObras);
   const [autorId, setAutorId] = useState("");
   const [acao, setAcao] = useState<string>("");
+  const [obraId, setObraId] = useState<string>("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  const { data: obras } = useQuery({
+    queryKey: ["obras-list-audit"],
+    queryFn: () => obrasFn(),
+  });
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["empresa-audit-logs", autorId, acao, from, to],
+    queryKey: ["empresa-audit-logs", autorId, acao, obraId, from, to],
     queryFn: () => fn({
       data: {
         autor_id: autorId || null,
         acao: acao || null,
+        obra_id: obraId || null,
         from: from ? new Date(from).toISOString() : null,
         to: to ? new Date(to).toISOString() : null,
         limit: 100, offset: 0,
@@ -53,7 +62,19 @@ function AuditoriaPage() {
         <h2 className="font-serif text-xl">Auditoria de RDO</h2>
       </header>
 
-      <Card className="p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Card className="p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <Label className="text-xs">Obra</Label>
+          <Select value={obraId || "_all"} onValueChange={(v) => setObraId(v === "_all" ? "" : v)}>
+            <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Todas as obras</SelectItem>
+              {(obras ?? []).map((o: any) => (
+                <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div>
           <Label className="text-xs">Autor (UUID)</Label>
           <Input value={autorId} onChange={(e) => setAutorId(e.target.value.trim())} placeholder="opcional" />
@@ -76,7 +97,7 @@ function AuditoriaPage() {
           <Label className="text-xs">Até</Label>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
-        <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+        <div className="sm:col-span-2 lg:col-span-5 flex justify-end">
           <Button variant="outline" size="sm" onClick={() => refetch()}>Atualizar</Button>
         </div>
       </Card>
@@ -86,6 +107,7 @@ function AuditoriaPage() {
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
               <th className="p-3">Quando</th>
+              <th className="p-3">Obra</th>
               <th className="p-3">RDO</th>
               <th className="p-3">Autor</th>
               <th className="p-3">Ação</th>
@@ -94,18 +116,19 @@ function AuditoriaPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={5} className="p-3">
+              <tr><td colSpan={6} className="p-3">
                 <SkeletonRenderer screenKey="configuracoesAuditoria" isLoading={true} layout="table" />
               </td></tr>
             )}
             {!isLoading && rows.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhum evento.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhum evento.</td></tr>
             )}
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border last:border-0 align-top">
                 <td className="p-3 whitespace-nowrap tabular-nums text-xs">
                   {new Date(r.created_at).toLocaleString("pt-BR")}
                 </td>
+                <td className="p-3 text-xs">{r.rdo?.obra?.nome ?? "—"}</td>
                 <td className="p-3 text-xs">{r.rdo?.numero ?? r.rdo_id?.slice(0, 8)}</td>
                 <td className="p-3 text-xs">{r.autor?.nome ?? r.autor?.email ?? "—"}</td>
                 <td className="p-3">
