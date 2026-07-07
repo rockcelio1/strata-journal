@@ -44,7 +44,7 @@ import {
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/obras", label: "Obras", icon: Building2 },
-  { to: "/rdo", label: "Diário (RDO)", icon: FileText },
+  { to: "/rdo", label: "RDO", icon: FileText },
   { to: "/galeria", label: "Galeria", icon: Images },
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
@@ -186,7 +186,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SheetTrigger asChild>
               <button
                 aria-label="Abrir menu"
-                className="md:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md active:bg-brand-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/70 focus-visible:ring-offset-2 focus-visible:ring-offset-brand"
+                className="lg:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 rounded-md active:bg-brand-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-foreground/70 focus-visible:ring-offset-2 focus-visible:ring-offset-brand"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -235,7 +235,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
 
-          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none md:shrink-0 min-h-[44px]">
+          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 lg:flex-none lg:shrink-0 min-h-[44px]">
             <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
               <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
@@ -244,7 +244,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
           {/* Top nav: somente desktop */}
-          <nav className="hidden md:flex items-center gap-1 ml-4">
+          <nav className="hidden lg:flex items-center gap-1 ml-4">
             {mainNav.map((item) => {
               const active = item.match
                 ? pathname.startsWith(item.match)
@@ -270,7 +270,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               role="status"
               aria-live="polite"
               className={cn(
-                "hidden md:inline-flex items-center gap-1.5 text-[11px] leading-none px-2 py-1 rounded-full border",
+                "hidden lg:inline-flex items-center gap-1.5 text-[11px] leading-none px-2 py-1 rounded-full border",
                 hasServerDraft
                   ? "bg-brand-foreground/10 border-brand-foreground/30 text-brand-foreground"
                   : "bg-brand-foreground/5 border-brand-foreground/20 text-brand-foreground/70",
@@ -280,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <CircleDashed className="h-3 w-3" aria-hidden="true" />
               {hasServerDraft ? "RDO em rascunho" : "RDO finalizado"}
             </span>
-            <span className="text-xs text-brand-foreground/70 hidden md:inline">{empresaName}</span>
+            <span className="text-xs text-brand-foreground/70 hidden lg:inline">{empresaName}</span>
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="outline-none">
@@ -315,7 +315,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Conteúdo: sidebar só em /cadastros no desktop */}
       <div className="flex-1 flex">
         {isCadastros && (
-          <aside className="w-60 border-r border-border bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
+          <aside className="w-60 border-r border-border bg-sidebar text-sidebar-foreground hidden lg:flex flex-col">
             <div className="px-4 py-4 border-b border-sidebar-border">
               <div className="text-xs uppercase tracking-wider text-muted-foreground">Cadastros</div>
               <div className="font-serif text-lg mt-0.5">Catálogos da empresa</div>
@@ -341,7 +341,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </aside>
         )}
 
-        <main className="flex-1 overflow-auto pb-20 md:pb-0 relative">
+        <main className="flex-1 overflow-auto pb-20 lg:pb-0 relative">
           <LogoWallpaper
             url={((me?.empresa as any)?.logo_url as string | null) ?? null}
             opacity={(me?.empresa as any)?.logo_wallpaper_opacity ?? 0}
@@ -427,7 +427,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </AlertDialog>
 
       {/* Bottom tab bar — mobile (4 itens + Mais). Alvos 44x44, sem :hover */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
         <ul className="grid grid-cols-5">
           {bottomNav.map((item) => {
             const active = item.match
