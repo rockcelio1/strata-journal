@@ -276,7 +276,32 @@ function RdoDetailPage() {
     });
   };
 
-  if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
+  if (isError) {
+    const msg = (error as any)?.message ?? "Não foi possível carregar o RDO.";
+    return (
+      <div className="p-6 max-w-lg mx-auto">
+        <Card className="p-4 border-destructive/40">
+          <h2 className="font-serif text-lg mb-1 text-destructive">Falha ao carregar RDO</h2>
+          <p className="text-sm text-muted-foreground mb-3">{msg}</p>
+          <div className="flex gap-2">
+            <Button onClick={() => refetch()} disabled={isFetching}>
+              {isFetching ? "Tentando…" : "Tentar novamente"}
+            </Button>
+            <Link to="/rdo"><Button variant="outline">Voltar à lista</Button></Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+  if (isLoading || !data) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-3">
+        <div className="h-6 w-40 bg-muted animate-pulse rounded" />
+        <div className="h-24 bg-muted animate-pulse rounded" />
+        <div className="h-64 bg-muted animate-pulse rounded" />
+      </div>
+    );
+  }
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
   const roles = (me?.roles ?? []) as string[];
