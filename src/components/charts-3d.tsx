@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, Text, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import { Pause, Play, MagnifyingGlassPlus, MagnifyingGlassMinus, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { Pause, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
