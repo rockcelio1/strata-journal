@@ -418,7 +418,7 @@ export async function refreshOnedriveDownloadUrl(itemId: string): Promise<string
   if (!itemId) return null;
   try {
     const res = await gatewayFetch(
-      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
+      `/me/drive/items/${encodeURIComponent(itemId)}`,
       undefined,
       1,
       "refreshDownloadUrl",

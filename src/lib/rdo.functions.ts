@@ -356,18 +356,18 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
-      .from("rdo_anexos").select("*, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
+      .from("rdo_anexos").select("id, rdo_id, empresa_id, autor_id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, ordem, task_item_id, storage_provider, onedrive_item_id, onedrive_web_url, onedrive_download_url, thumbnail_url, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
       .eq("rdo_id", data.rdo_id)
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw error;
-    const { refreshOnedriveDownloadUrl } = await import("./onedrive.functions");
+    const { createOneDriveProxyUrl } = await import("./onedrive-proxy-token.server");
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
       if (a.storage_provider === "onedrive") {
-        // A downloadUrl persistida expira em ~1h; buscar sempre uma nova
-        // para garantir que a imagem carrega no tablet/celular.
-        const fresh = a.onedrive_item_id ? await refreshOnedriveDownloadUrl(a.onedrive_item_id) : null;
-        return { ...a, url: fresh ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null };
+        // Evita URLs temporárias expiradas do OneDrive e não bloqueia a abertura
+        // do RDO com uma chamada à Microsoft para cada foto.
+        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome });
+        return { ...a, url: proxyUrl ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null };
       }
       const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
       return { ...a, url: signed.data?.signedUrl ?? null };

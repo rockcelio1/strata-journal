@@ -46,6 +46,7 @@ import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -255,6 +256,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOnedriveFileItemIdRoute =
+  ApiPublicOnedriveFileItemIdRouteImport.update({
+    id: '/api/public/onedrive-file/$itemId',
+    path: '/api/public/onedrive-file/$itemId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedCadastrosTemplatesTarefasIdRoute =
   AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
     id: '/$id',
@@ -300,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -338,6 +346,7 @@ export interface FileRoutesByTo {
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -379,6 +388,7 @@ export interface FileRoutesById {
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/obras/'
     | '/rdo/'
     | '/cadastros/templates-tarefas/$id'
+    | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/rdo'
     | '/cadastros/templates-tarefas/$id'
+    | '/api/public/onedrive-file/$itemId'
   id:
     | '__root__'
     | '/'
@@ -498,6 +510,7 @@ export interface FileRouteTypes {
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
     | '/_authenticated/cadastros/templates-tarefas/$id'
+    | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -511,6 +524,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -774,6 +788,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/onedrive-file/$itemId': {
+      id: '/api/public/onedrive-file/$itemId'
+      path: '/api/public/onedrive-file/$itemId'
+      fullPath: '/api/public/onedrive-file/$itemId'
+      preLoaderRoute: typeof ApiPublicOnedriveFileItemIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/cadastros/templates-tarefas/$id': {
       id: '/_authenticated/cadastros/templates-tarefas/$id'
       path: '/$id'
@@ -899,6 +920,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
