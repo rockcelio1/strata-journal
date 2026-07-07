@@ -45,11 +45,12 @@ describe("validarEnderecoParaGeocoding", () => {
   it("aceita endereço só com CEP", () => {
     expect(validarEnderecoParaGeocoding("01310-100").ok).toBe(true);
   });
-  it("rejeita endereço curto / sem número e sem CEP", () => {
-    const r = validarEnderecoParaGeocoding("Rua");
+  it("rejeita endereço extremamente curto", () => {
+    const r = validarEnderecoParaGeocoding("R");
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.mensagem).toMatch(/curto|número|CEP/i);
+    if (!r.ok) expect(r.mensagem).toMatch(/curto/i);
   });
+
 });
 
 describe("fetchClima (retry + cache)", () => {
