@@ -274,7 +274,8 @@ function RdoDetailPage() {
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
   const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
-  const canManageAccess = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master" || x === "gestor_acessos");
+  const isAdmin = (me?.roles ?? []).some((x: string) => x === "admin");
+  const canManageAccess = isAdmin;
   const isAuthor = r.autor?.id === me?.profile?.id;
   const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
   const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
@@ -697,6 +698,7 @@ function RdoDetailPage() {
       {canManageAccess && <RdoAcessoCard rdoId={rdoId} obraId={r.obras?.id ?? r.obra_id ?? null} />}
 
       {/* Auditoria por usuário */}
+      {isAdmin && (
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Auditoria por usuário</h3>
@@ -764,6 +766,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
+      )}
 
 
       {/* Auditoria de Exclusões */}
@@ -773,6 +776,7 @@ function RdoDetailPage() {
       <EventosRdoPanel logs={logs} />
 
       {/* Trilha de auditoria */}
+      {isAdmin && (
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
@@ -835,6 +839,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
+      )}
 
       {lightbox && (
         <Lightbox
