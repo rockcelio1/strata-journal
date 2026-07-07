@@ -297,6 +297,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <DropdownMenuItem onClick={() => navigate({ to: "/empresa" })}>
                   <UserIcon className="h-4 w-4 mr-2" /> Empresa
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/acessibilidade" })}>
+                  <Settings className="h-4 w-4 mr-2" /> Acessibilidade
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" /> Sair
                 </DropdownMenuItem>

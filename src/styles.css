@@ -792,3 +792,41 @@ table { min-width: max-content; }
 @media (prefers-reduced-motion: reduce) {
   .animate-rdo-photo-hint { animation: none; }
 }
+
+/* ============================================================
+ * Acessibilidade — classes aplicadas em <html> pelo AccessibilityProvider.
+ * ============================================================ */
+
+/* Escala tipográfica: escala tudo baseado em rem via html { font-size } */
+html.a11y-text-lg  { font-size: 115%; }
+html.a11y-text-xl  { font-size: 130%; }
+
+/* Reduzir movimento: neutraliza transições/animações amplas */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Alto contraste — reforça bordas, textos e realce sem quebrar cores de marca.
+ * Usamos filter global leve + overrides de tokens de baixo contraste. */
+html.a11y-contrast {
+  --muted-foreground: var(--foreground);
+  --border: color-mix(in oklab, var(--foreground) 65%, transparent);
+  --ring: var(--foreground);
+}
+html.a11y-contrast body { filter: contrast(1.12) saturate(1.05); }
+html.a11y-contrast :where(a, button, [role="button"]):focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px !important;
+}
+html.a11y-contrast :where(.text-muted-foreground) { color: var(--foreground) !important; opacity: 0.92; }
+
+/* Garantia de que gráficos/legendas/tabelas escalem sem cortar */
+html.a11y-text-lg :where(table, .chart-legend, .recharts-wrapper),
+html.a11y-text-xl :where(table, .chart-legend, .recharts-wrapper) {
+  max-width: 100%;
+}

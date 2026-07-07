@@ -19,6 +19,7 @@ import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedAcessibilidadeRouteImport } from './routes/_authenticated/acessibilidade'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
@@ -95,6 +96,12 @@ const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
     path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAcessibilidadeRoute =
+  AuthenticatedAcessibilidadeRouteImport.update({
+    id: '/acessibilidade',
+    path: '/acessibilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -263,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
@@ -301,6 +309,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
@@ -340,6 +349,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/acessibilidade'
     | '/configuracoes'
     | '/dashboard'
     | '/empresa'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/acessibilidade'
     | '/dashboard'
     | '/empresa'
     | '/galeria'
@@ -456,6 +468,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/acessibilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa'
@@ -570,6 +583,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/acessibilidade': {
+      id: '/_authenticated/acessibilidade'
+      path: '/acessibilidade'
+      fullPath: '/acessibilidade'
+      preLoaderRoute: typeof AuthenticatedAcessibilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/.well-known/oauth-protected-resource': {
@@ -821,6 +841,7 @@ const AuthenticatedCadastrosTemplatesTarefasRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAcessibilidadeRoute: typeof AuthenticatedAcessibilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
@@ -840,6 +861,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAcessibilidadeRoute: AuthenticatedAcessibilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
