@@ -189,13 +189,56 @@
     image-rendering: -webkit-optimize-contrast;
   }
   /* Evita hover "preso" em touch */
+  /* Evita hover "preso" em touch (utilitários hover:*) */
   @media (hover: none) {
     .hover\:bg-accent:hover { background-color: transparent; }
+    .hover\:scale-105:hover { transform: none; }
+    .hover\:opacity-95:hover { opacity: 1; }
   }
+
   /* Scroll suave em toda a app */
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 }
+
+/* ============ Fluid layout tokens ============ */
+:root {
+  --space-fluid-xs: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
+  --space-fluid-sm: clamp(0.5rem, 0.4rem + 0.5vw, 0.875rem);
+  --space-fluid-md: clamp(0.75rem, 0.6rem + 0.9vw, 1.25rem);
+  --space-fluid-lg: clamp(1rem, 0.8rem + 1.4vw, 2rem);
+  --gutter-fluid: clamp(0.75rem, 3vw, 2rem);
+}
+
+/* Container padrão da página: gutter fluido + limite ultrawide */
+@utility page-container {
+  width: 100%;
+  max-width: 100rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter-fluid);
+}
+
+/* Grid responsivo baseado no conteúdo (auto-fill + minmax) */
+@utility grid-fluid {
+  display: grid;
+  gap: var(--space-fluid-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+
+/* Impede overflow horizontal em wrappers */
+@utility no-x-scroll {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Tabela → cards em mobile: envelopa <table> em scroll horizontal controlado */
+@utility table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
 
 /* ============ Scrollbar ultra fina e quase imperceptível ============ */
 * {

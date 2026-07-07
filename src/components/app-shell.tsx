@@ -174,12 +174,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-dvh flex flex-col bg-background pb-[env(safe-area-inset-bottom)] no-x-scroll">
       <GlobalHoverHints />
 
       {/* Header azul */}
       <header className="bg-brand text-brand-foreground border-b border-brand sticky top-0 z-30">
-        <div className="px-4 md:px-6 h-14 flex items-center gap-3 md:gap-6">
+        <div className="px-[var(--gutter-fluid)] h-14 flex items-center gap-2 sm:gap-3 md:gap-6 min-w-0">
+
           {/* Hamburger — mobile */}
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetTrigger asChild>
@@ -234,12 +235,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
 
-          <Link to="/dashboard" className="flex items-center gap-3 shrink-0 min-h-[44px]">
-            <div className="h-12 w-12 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
-              <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-10 w-10" />
+          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none md:shrink-0 min-h-[44px]">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
+              <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
-            <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>
+            <span className="font-serif text-base sm:text-lg leading-none truncate min-w-0">{empresaName || "Diário de Obra"}</span>
           </Link>
+
 
           {/* Top nav: somente desktop */}
           <nav className="hidden md:flex items-center gap-1 ml-4">
@@ -263,7 +265,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span
               role="status"
               aria-live="polite"
@@ -347,13 +349,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {showDraftAlert && (
         <div
-          className="fixed z-40 bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
+          className="fixed z-40 right-3 md:right-6 flex flex-col items-end gap-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 max-w-[calc(100vw-1.5rem)]"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           role="region"
           aria-label="Rascunho de RDO em andamento"
           onKeyDown={(e) => {
             if (e.key === "Escape") { e.preventDefault(); setConfirmDismiss(true); }
           }}
         >
+
           {draftSaveStatus !== "idle" && (
             <span
               role="status"
@@ -377,16 +381,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="rounded-full motion-safe:animate-rdo-alert-border flex items-stretch">
             <Link
               to="/rdo/novo"
-              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 min-w-0 max-w-[calc(100vw-6rem)] hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label={
                 hasServerDraft && !draftActive
                   ? "Continuar RDO em rascunho salvo no servidor — abre a lista de RDOs"
                   : "Continuar edição do RDO em rascunho — abre o formulário"
               }
             >
-              <FileTextIcon className="h-4 w-4" aria-hidden="true" />
-              <span>RDO em rascunho — Continuar</span>
+              <FileTextIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">RDO em rascunho — Continuar</span>
             </Link>
+
             <button
               type="button"
               onClick={() => setConfirmDismiss(true)}
