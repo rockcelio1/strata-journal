@@ -581,7 +581,7 @@ function RdoListPage() {
               {filtered.map((r: any) => {
                 const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
                 return (
-                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
+                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} onPointerDown={() => prefetchRdo(r.id)} onTouchStart={() => prefetchRdo(r.id)} onFocus={() => prefetchRdo(r.id)} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
                     <Card className="p-3 active:bg-muted/50">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium tabular-nums">#<Highlight text={String(r.numero)} query={busca} /></span>
