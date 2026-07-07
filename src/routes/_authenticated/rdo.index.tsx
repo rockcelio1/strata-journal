@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { listRdos, createRdo, deleteRdo, adminDeleteRdo } from "@/lib/rdo.functions";
+import { listRdos, createRdo, deleteRdo, adminDeleteRdo, getRdo, listRdoAnexos } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { listObrasOptions } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
