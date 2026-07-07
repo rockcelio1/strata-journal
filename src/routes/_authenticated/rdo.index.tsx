@@ -68,6 +68,12 @@ function RdoListPage() {
   const meFn = useServerFn(getMe);
   const deleteFn = useServerFn(deleteRdo);
   const adminDeleteFn = useServerFn(adminDeleteRdo);
+  const getRdoFn = useServerFn(getRdo);
+  const listAnexosFn = useServerFn(listRdoAnexos);
+  const prefetchRdo = (id: string) => {
+    qc.prefetchQuery({ queryKey: ["rdo", id], queryFn: () => getRdoFn({ data: { id } }), staleTime: 60_000 });
+    qc.prefetchQuery({ queryKey: ["rdo-anexos", id], queryFn: () => listAnexosFn({ data: { rdo_id: id } }), staleTime: 60_000 });
+  };
   const { data: rdos = [], isLoading } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
   const { data: obras = [], isLoading: obrasLoading } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
