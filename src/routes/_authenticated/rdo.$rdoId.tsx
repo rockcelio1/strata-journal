@@ -38,6 +38,7 @@ import {
 import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
 import { SignaturesCard } from "@/components/rdo/SignaturesCard";
 import { AdminConfirmTwiceButton } from "@/components/rdo/AdminConfirmTwiceButton";
+import { SmartImage } from "@/components/rdo/SmartImage";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
@@ -63,7 +64,11 @@ function RdoDetailPage() {
   const auditViewFn = useServerFn(logRdoAuditView);
   const auditFn = useServerFn(getRdoAuditSummary);
 
-  const { data } = useQuery({ queryKey: ["rdo", rdoId], queryFn: () => fn({ data: { id: rdoId } }) });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ["rdo", rdoId],
+    queryFn: () => fn({ data: { id: rdoId } }),
+    retry: 2,
+  });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const [logFilters, setLogFilters] = useState<{ autor_id: string; acao: string; from: string; to: string; limit: number }>({ autor_id: "", acao: "", from: "", to: "", limit: 25 });
   const { data: logsData } = useQuery({
@@ -272,7 +277,32 @@ function RdoDetailPage() {
     });
   };
 
-  if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
+  if (isError) {
+    const msg = (error as any)?.message ?? "Não foi possível carregar o RDO.";
+    return (
+      <div className="p-6 max-w-lg mx-auto">
+        <Card className="p-4 border-destructive/40">
+          <h2 className="font-serif text-lg mb-1 text-destructive">Falha ao carregar RDO</h2>
+          <p className="text-sm text-muted-foreground mb-3">{msg}</p>
+          <div className="flex gap-2">
+            <Button onClick={() => refetch()} disabled={isFetching}>
+              {isFetching ? "Tentando…" : "Tentar novamente"}
+            </Button>
+            <Link to="/rdo"><Button variant="outline">Voltar à lista</Button></Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+  if (isLoading || !data) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-3">
+        <div className="h-6 w-40 bg-muted animate-pulse rounded" />
+        <div className="h-24 bg-muted animate-pulse rounded" />
+        <div className="h-64 bg-muted animate-pulse rounded" />
+      </div>
+    );
+  }
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
   const roles = (me?.roles ?? []) as string[];
@@ -630,14 +660,13 @@ function RdoDetailPage() {
                         aria-label={`Ampliar imagem ${a.nome}`}
                         className={`block aspect-square overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white" : "bg-muted"}`}
                       >
-                        <img
+                        <SmartImage
                           src={a.url}
                           alt={a.nome}
                           loading={imageLoading}
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                          className={`w-full h-full ${isAssinatura ? "object-contain p-2" : "object-cover"}`}
+                          className={`${isAssinatura ? "object-contain p-2" : "object-cover"}`}
                         />
+
                       </button>
 
 

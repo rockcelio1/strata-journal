@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { listRdos, createRdo, deleteRdo, adminDeleteRdo } from "@/lib/rdo.functions";
+import { listRdos, createRdo, deleteRdo, adminDeleteRdo, getRdo, listRdoAnexos } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
 import { listObrasOptions } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
@@ -68,6 +68,12 @@ function RdoListPage() {
   const meFn = useServerFn(getMe);
   const deleteFn = useServerFn(deleteRdo);
   const adminDeleteFn = useServerFn(adminDeleteRdo);
+  const getRdoFn = useServerFn(getRdo);
+  const listAnexosFn = useServerFn(listRdoAnexos);
+  const prefetchRdo = (id: string) => {
+    qc.prefetchQuery({ queryKey: ["rdo", id], queryFn: () => getRdoFn({ data: { id } }), staleTime: 60_000 });
+    qc.prefetchQuery({ queryKey: ["rdo-anexos", id], queryFn: () => listAnexosFn({ data: { rdo_id: id } }), staleTime: 60_000 });
+  };
   const { data: rdos = [], isLoading } = useQuery({ queryKey: ["rdos"], queryFn: () => fn() });
   const { data: obras = [], isLoading: obrasLoading } = useQuery({ queryKey: ["obras-min"], queryFn: () => obrasFn() });
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
@@ -575,7 +581,7 @@ function RdoListPage() {
               {filtered.map((r: any) => {
                 const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
                 return (
-                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
+                  <Link key={r.id} to="/rdo/$rdoId" params={{ rdoId: r.id }} onPointerDown={() => prefetchRdo(r.id)} onTouchStart={() => prefetchRdo(r.id)} onFocus={() => prefetchRdo(r.id)} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-md">
                     <Card className="p-3 active:bg-muted/50">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium tabular-nums">#<Highlight text={String(r.numero)} query={busca} /></span>
@@ -608,6 +614,8 @@ function RdoListPage() {
                       <tr
                         key={r.id}
                         onClick={() => navigate({ to: "/rdo/$rdoId", params: { rdoId: r.id } })}
+                        onMouseEnter={() => prefetchRdo(r.id)}
+                        onFocus={() => prefetchRdo(r.id)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
