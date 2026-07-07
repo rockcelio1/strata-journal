@@ -2,11 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
 
-function safeFilename(value: string | null) {
+function cleanFilename(value: string | null) {
   return (value || "anexo")
     .replace(/[\r\n"]/g, "")
     .replace(/[\\/]+/g, "_")
     .slice(0, 180) || "anexo";
+}
+
+function asciiFilename(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]+/g, "_")
+    .replace(/["\\;]/g, "_") || "anexo";
 }
 
 export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
@@ -18,7 +26,7 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         const expiresAt = Number(url.searchParams.get("exp") ?? "0");
         const mimeType = url.searchParams.get("mime") || "application/octet-stream";
         const sig = url.searchParams.get("sig") || "";
-        const name = safeFilename(url.searchParams.get("name"));
+        const name = cleanFilename(url.searchParams.get("name"));
 
         const { verifyOneDriveProxyUrl } = await import("@/lib/onedrive-proxy-token.server");
         if (!itemId || !Number.isFinite(expiresAt) || !verifyOneDriveProxyUrl({ itemId, expiresAt, mimeType, sig })) {
@@ -48,7 +56,7 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         const headers = new Headers();
         headers.set("Content-Type", upstream.headers.get("content-type") || mimeType);
         headers.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400");
-        headers.set("Content-Disposition", `inline; filename="${name}"`);
+        headers.set("Content-Disposition", `inline; filename="${asciiFilename(name)}"; filename*=UTF-8''${encodeURIComponent(name)}`);
         headers.set("X-Content-Type-Options", "nosniff");
 
         return new Response(upstream.body, { status: 200, headers });
