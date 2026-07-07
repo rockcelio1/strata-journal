@@ -842,7 +842,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
-      )}
+      </AdminOnly>
 
       {lightbox && (
         <Lightbox
