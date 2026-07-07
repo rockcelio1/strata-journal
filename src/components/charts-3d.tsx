@@ -196,6 +196,7 @@ function ChartBridge({
     <OrbitControls
       ref={ref}
       enablePan={false}
+      enableZoom={false}
       minDistance={minDistance}
       maxDistance={maxDistance}
       autoRotate={autoRotate}
@@ -203,6 +204,7 @@ function ChartBridge({
       enableDamping
       dampingFactor={0.08}
     />
+
   );
 }
 
