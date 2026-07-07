@@ -115,14 +115,41 @@ function Bar({
   );
 }
 
-/* ---------------- HUD de ajuda (girar / zoom) ---------------- */
+/* ---------------- HUD de ajuda ---------------- */
 function Hud() {
   return (
     <div className="absolute top-2 right-2 z-10 rounded-md border bg-background/80 backdrop-blur px-2 py-1 text-[10px] text-muted-foreground pointer-events-none">
-      Arraste para girar · Scroll para zoom
+      Segure 5s para dar zoom
     </div>
   );
 }
+
+/** Hook: dispara `onLongPress` após 5s de pressão contínua (mouse ou toque). */
+function useLongPress(onLongPress: () => void, ms = 5000) {
+  const timer = useRef<number | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const clear = () => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+    start.current = null;
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      clear();
+      start.current = { x: e.clientX, y: e.clientY };
+      timer.current = window.setTimeout(() => { onLongPress(); clear(); }, ms);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (!start.current) return;
+      const dx = e.clientX - start.current.x;
+      const dy = e.clientY - start.current.y;
+      if (Math.hypot(dx, dy) > 10) clear();
+    },
+    onPointerUp: clear,
+    onPointerLeave: clear,
+    onPointerCancel: clear,
+  };
+}
+
 
 /** API imperativa exposta pelo bridge dentro do Canvas. */
 type ChartAPI = { zoom: (factor: number) => void; reset: () => void };
