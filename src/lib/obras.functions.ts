@@ -42,6 +42,17 @@ export const listObras = createServerFn({ method: "GET" })
     }));
   });
 
+export const listObrasOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("obras")
+      .select("id, nome")
+      .order("nome", { ascending: true });
+    if (error) throw error;
+    return data ?? [];
+  });
+
 
 
 export const getObra = createServerFn({ method: "GET" })

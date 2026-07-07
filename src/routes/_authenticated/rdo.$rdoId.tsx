@@ -77,11 +77,12 @@ function RdoDetailPage() {
       from: logFilters.from ? new Date(logFilters.from).toISOString() : null,
       to: logFilters.to ? new Date(logFilters.to + "T23:59:59").toISOString() : null,
     } }),
+    enabled: !!data,
   });
   const logs = logsData?.rows ?? [];
   const logsTotal = logsData?.total ?? 0;
-  const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }) });
-  const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }) });
+  const { data: anexos = [] } = useQuery({ queryKey: ["rdo-anexos", rdoId], queryFn: () => anexosFn({ data: { rdo_id: rdoId } }), enabled: !!data });
+  const { data: audit } = useQuery({ queryKey: ["rdo-audit", rdoId], queryFn: () => auditFn({ data: { rdo_id: rdoId } }), enabled: !!data });
   useEffect(() => {
     viewFn({ data: { rdo_id: rdoId } }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -619,6 +620,7 @@ function RdoDetailPage() {
                 const provLabel = prov === "onedrive" ? "OneDrive" : "Supabase";
                 const provColor = prov === "onedrive" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
                 const imgIdx = isImg && a.url ? imgList.findIndex((x) => x.id === a.id) : -1;
+                const imageLoading = imgIdx >= 0 && imgIdx < 4 ? "eager" : "lazy";
                 return (
                   <li key={a.id} className="border border-border rounded-md overflow-hidden group flex flex-col">
                     {isImg && a.url ? (
@@ -631,8 +633,9 @@ function RdoDetailPage() {
                         <img
                           src={a.url}
                           alt={a.nome}
-                          loading="lazy"
+                          loading={imageLoading}
                           decoding="async"
+                          referrerPolicy="no-referrer"
                           className={`w-full h-full ${isAssinatura ? "object-contain p-2" : "object-cover"}`}
                         />
                       </button>

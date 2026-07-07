@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { listRdos, createRdo, deleteRdo, adminDeleteRdo } from "@/lib/rdo.functions";
 import { getMe } from "@/lib/core.functions";
-import { listObras } from "@/lib/obras.functions";
+import { listObrasOptions } from "@/lib/obras.functions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ function exportCsv(rows: any[]) {
 
 function RdoListPage() {
   const fn = useServerFn(listRdos);
-  const obrasFn = useServerFn(listObras);
+  const obrasFn = useServerFn(listObrasOptions);
   const createFn = useServerFn(createRdo);
   const qc = useQueryClient();
   const meFn = useServerFn(getMe);
