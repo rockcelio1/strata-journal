@@ -38,6 +38,7 @@ import {
 import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
 import { SignaturesCard } from "@/components/rdo/SignaturesCard";
 import { AdminConfirmTwiceButton } from "@/components/rdo/AdminConfirmTwiceButton";
+import { SmartImage } from "@/components/rdo/SmartImage";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
