@@ -839,6 +839,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
+      )}
 
       {lightbox && (
         <Lightbox
