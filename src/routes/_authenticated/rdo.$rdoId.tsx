@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
 import { exportRdoExcel } from "@/lib/rdo-excel";
 import { Card } from "@/components/ui/card";
+import { AdminOnly } from "@/components/AdminOnly";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -273,11 +274,13 @@ function RdoDetailPage() {
   if (!data) return <div className="p-8 text-muted-foreground">Carregando…</div>;
   const r = data.rdo as any;
   const m = rdoStatusMeta[r.status as keyof typeof rdoStatusMeta];
-  const canApprove = (me?.roles ?? []).some((x: string) => x === "admin" || x === "engenheiro");
-  const isAdmin = (me?.roles ?? []).some((x: string) => x === "admin");
+  const roles = (me?.roles ?? []) as string[];
+  const isAdmin = roles.includes("admin");
+  const isMaster = roles.includes("master");
+  const isAdminOrMaster = isAdmin || isMaster;
+  const canApprove = isAdmin || roles.includes("engenheiro");
   const canManageAccess = isAdmin;
   const isAuthor = r.autor?.id === me?.profile?.id;
-  const isAdminOrMaster = (me?.roles ?? []).some((x: string) => x === "admin" || x === "master");
   const canDeleteRascunho = r.status === "rascunho" && (isAuthor || isAdminOrMaster);
 
   return (
@@ -698,8 +701,8 @@ function RdoDetailPage() {
       {canManageAccess && <RdoAcessoCard rdoId={rdoId} obraId={r.obras?.id ?? r.obra_id ?? null} />}
 
       {/* Auditoria por usuário */}
-      {isAdmin && (
-      <Card className="p-4 mb-4">
+      <AdminOnly showDenied deniedTitle="Auditoria por usuário (restrito a administradores)">
+      <Card className="p-4 mb-4" data-testid="rdo-auditoria-usuario">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Auditoria por usuário</h3>
           <div className="flex items-center gap-2 flex-wrap">
@@ -766,7 +769,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
-      )}
+      </AdminOnly>
 
 
       {/* Auditoria de Exclusões */}
@@ -776,8 +779,8 @@ function RdoDetailPage() {
       <EventosRdoPanel logs={logs} />
 
       {/* Trilha de auditoria */}
-      {isAdmin && (
-      <Card className="p-4 mb-4">
+      <AdminOnly showDenied deniedTitle="Histórico (restrito a administradores)">
+      <Card className="p-4 mb-4" data-testid="rdo-historico">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
           <h3 className="font-serif text-lg flex items-center gap-2"><History className="h-4 w-4" /> Histórico ({logsTotal})</h3>
           <div className="flex gap-2">
@@ -839,7 +842,7 @@ function RdoDetailPage() {
           </>
         )}
       </Card>
-      )}
+      </AdminOnly>
 
       {lightbox && (
         <Lightbox
