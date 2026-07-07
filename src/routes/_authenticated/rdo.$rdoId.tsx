@@ -607,15 +607,28 @@ function RdoDetailPage() {
             <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {list.map((a) => {
                 const isImg = a.mime_type?.startsWith("image/");
+                const isAssinatura = /assinatur/i.test(a.nome ?? "") || /assinatur/i.test(a.categoria ?? "");
                 const prov = a.storage_provider ?? "supabase";
                 const provLabel = prov === "onedrive" ? "OneDrive" : "Supabase";
                 const provColor = prov === "onedrive" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
                 return (
                   <li key={a.id} className="border border-border rounded-md overflow-hidden group flex flex-col">
                     {isImg && a.url ? (
-                      <a href={a.url} target="_blank" rel="noreferrer" className="block aspect-square bg-muted overflow-hidden">
-                        <img src={a.url} alt={a.nome} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`block aspect-square overflow-hidden ${isAssinatura ? "bg-white" : "bg-muted"}`}
+                      >
+                        <img
+                          src={a.url}
+                          alt={a.nome}
+                          loading="lazy"
+                          decoding="async"
+                          className={`w-full h-full ${isAssinatura ? "object-contain p-2" : "object-cover"}`}
+                        />
                       </a>
+
                     ) : (
                       <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
                         <Paperclip className="h-8 w-8 text-muted-foreground" />
