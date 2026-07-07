@@ -94,6 +94,8 @@ function RdoDetailPage() {
   const [filterProv, setFilterProv] = useState<"all" | "onedrive" | "supabase">("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "name" | "size_desc">("date_desc");
+  const [lightbox, setLightbox] = useState<{ items: any[]; index: number } | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const uploadOdFn = useServerFn(uploadOneDriveAnexo);
   const [climaState, setClimaState] = useState<{ local?: string; dias?: DiaRegistro[] }>({});
