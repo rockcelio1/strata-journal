@@ -235,12 +235,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
 
-          <Link to="/dashboard" className="flex items-center gap-3 shrink-0 min-h-[44px]">
-            <div className="h-12 w-12 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
-              <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-10 w-10" />
+          <Link to="/dashboard" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none md:shrink-0 min-h-[44px]">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-lg bg-brand-foreground p-1 ring-2 ring-primary/40 shadow-sm grid place-items-center">
+              <LogoMark url={((me?.empresa as any)?.logo_url as string | null) ?? null} className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
-            <span className="font-serif text-lg leading-none">{empresaName || "Diário de Obra"}</span>
+            <span className="font-serif text-base sm:text-lg leading-none truncate min-w-0">{empresaName || "Diário de Obra"}</span>
           </Link>
+
 
           {/* Top nav: somente desktop */}
           <nav className="hidden md:flex items-center gap-1 ml-4">
