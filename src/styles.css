@@ -262,28 +262,45 @@
 
 
 
-/* ============ Scrollbar ultra fina e quase imperceptível ============ */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent) transparent;
-}
-*::-webkit-scrollbar { width: 2px; height: 2px; background: transparent; }
-*::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent);
-  border-radius: 9999px;
-}
-*::-webkit-scrollbar-thumb:hover {
-  width: 4px;
-  background-color: color-mix(in oklch, var(--color-muted-foreground) 55%, transparent);
+/* ============ Scrollbar milimétrica, sem afetar layout ============
+ * 1) `scrollbar-gutter: stable` reserva sempre o mesmo espaço, evitando
+ *    layout shift ao surgir/sumir a barra (Chromium/Firefox modernos).
+ * 2) Firefox: `scrollbar-width` + `scrollbar-color` (spec CSS Scrollbars).
+ * 3) Chrome/Edge/Safari/Opera: pseudo-elementos ::-webkit-scrollbar.
+ * 4) Fallback: sem suporte a nada disso, herda apenas `overflow` nativo —
+ *    rolagem normal, layout preservado.
+ */
+html { scrollbar-gutter: stable; }
+
+/* Firefox e outros com CSS Scrollbars Module */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent) transparent;
+  }
 }
 
-*::-webkit-scrollbar-corner { background: transparent; }
-/* Em mobile, esconde completamente mantendo scroll funcional */
+/* Chrome, Edge, Safari, Opera (WebKit/Blink) */
+@supports selector(::-webkit-scrollbar) {
+  *::-webkit-scrollbar { width: 2px; height: 2px; background: transparent; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklch, var(--color-muted-foreground) 55%, transparent);
+  }
+  *::-webkit-scrollbar-corner { background: transparent; }
+}
+
+/* Mobile: barra escondida, rolagem funcional */
 @media (pointer: coarse) {
+  html { scrollbar-gutter: auto; }
   * { scrollbar-width: none; }
   *::-webkit-scrollbar { width: 0; height: 0; display: none; }
 }
+
 
 
 /* ============ Hover ring + flash (utilitário .hover-ring) ============ */
