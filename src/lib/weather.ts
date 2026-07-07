@@ -220,7 +220,7 @@ export async function fetchClimaPorEndereco(endereco: string): Promise<ClimaSnap
   if (!v.ok) throw new Error(v.mensagem);
   const g = await resolveGeoBrasil(endereco);
   if (!g) {
-    throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+    throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço da obra (cidade e estado) em Cadastros → Obras.");
   }
   const snap = await fetchClima(g.latitude, g.longitude);
   return { ...snap, local: g.nome };
@@ -506,7 +506,7 @@ export async function fetchPrevisao5DiasPorEndereco(endereco: string): Promise<{
   const v = validarEnderecoParaGeocoding(endereco);
   if (!v.ok) throw new Error(v.mensagem);
   const g = await resolveGeoBrasil(endereco);
-  if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+  if (!g) throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço da obra (cidade e estado) em Cadastros → Obras.");
   const dias = await fetchPrevisao5Dias(g.latitude, g.longitude, { dias: 7 });
   return { local: g.nome, dias };
 }
@@ -591,12 +591,8 @@ export async function fetchHistoricoEPrevisaoUteis(
 ): Promise<{ local: string; dias: DiaRegistro[] }> {
   const v = validarEnderecoParaGeocoding(endereco);
   if (!v.ok) throw new Error(v.mensagem);
-  let g = await geocodeEndereco(endereco);
-  if (!g) {
-    const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
-    if (cep) g = await geocodeEndereco(cep);
-  }
-  if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+  const g = await resolveGeoBrasil(endereco);
+  if (!g) throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço da obra (cidade e estado) em Cadastros → Obras.");
 
   const datas = diasUteisAoRedor(dataISO, antes, depois);
   if (datas.length === 0) return { local: g.nome, dias: [] };
