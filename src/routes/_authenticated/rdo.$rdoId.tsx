@@ -659,14 +659,13 @@ function RdoDetailPage() {
                         aria-label={`Ampliar imagem ${a.nome}`}
                         className={`block aspect-square overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white" : "bg-muted"}`}
                       >
-                        <img
+                        <SmartImage
                           src={a.url}
                           alt={a.nome}
                           loading={imageLoading}
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                          className={`w-full h-full ${isAssinatura ? "object-contain p-2" : "object-cover"}`}
+                          className={`${isAssinatura ? "object-contain p-2" : "object-cover"}`}
                         />
+
                       </button>
 
 
