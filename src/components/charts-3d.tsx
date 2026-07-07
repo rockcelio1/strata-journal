@@ -206,14 +206,12 @@ function ChartBridge({
   );
 }
 
-/** Barra de controles: pause/play + zoom + reset. */
+/** Barra de controles: pause/play + reset. */
 function ChartToolbar({
-  paused, onToggle, onZoomIn, onZoomOut, onReset,
+  paused, onToggle, onReset,
 }: {
   paused: boolean;
   onToggle: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
   onReset: () => void;
 }) {
   const btn = "inline-flex items-center justify-center h-7 w-7 rounded-md border bg-background/80 backdrop-blur text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -228,18 +226,13 @@ function ChartToolbar({
       >
         {paused ? <Play size={12} weight="fill" /> : <Pause size={12} weight="fill" />}
       </button>
-      <button type="button" onClick={onZoomIn} aria-label="Aproximar (zoom +)" className={btn}>
-        <MagnifyingGlassPlus size={12} weight="bold" />
-      </button>
-      <button type="button" onClick={onZoomOut} aria-label="Afastar (zoom -)" className={btn}>
-        <MagnifyingGlassMinus size={12} weight="bold" />
-      </button>
-      <button type="button" onClick={onReset} aria-label="Restaurar câmera" className={btn}>
+      <button type="button" onClick={onReset} aria-label="Restaurar tamanho padrão" className={btn}>
         <ArrowCounterClockwise size={12} weight="bold" />
       </button>
     </div>
   );
 }
+
 
 function usePausedState(storageKey: string) {
   const [paused, setPaused] = useState<boolean>(() => {
