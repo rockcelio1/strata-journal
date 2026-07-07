@@ -506,7 +506,7 @@ export async function fetchPrevisao5DiasPorEndereco(endereco: string): Promise<{
   const v = validarEnderecoParaGeocoding(endereco);
   if (!v.ok) throw new Error(v.mensagem);
   const g = await resolveGeoBrasil(endereco);
-  if (!g) throw new Error("Endereço não localizado. Verifique o CEP e a numeração, ou informe a cidade e o estado.");
+  if (!g) throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço da obra (cidade e estado) em Cadastros → Obras.");
   const dias = await fetchPrevisao5Dias(g.latitude, g.longitude, { dias: 7 });
   return { local: g.nome, dias };
 }
