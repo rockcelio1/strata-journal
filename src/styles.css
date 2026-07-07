@@ -369,6 +369,21 @@ table {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
+/* Guarda de overflow para tabelas em viewports compactos.
+ * Envolver <table> num wrapper .overflow-x-auto normalmente é suficiente,
+ * mas quando a tabela é filha direta de um card estreito o cálculo pode
+ * "recortar" colunas. Regras abaixo:
+ *  - qualquer <table> nunca encolhe abaixo do intrínseco (min-content),
+ *    forçando o container-pai a exibir a scrollbar horizontal fina.
+ *  - Radix ScrollArea + Dialog content nunca cortam conteúdo interno. */
+table { min-width: max-content; }
+[data-radix-scroll-area-viewport] > * { min-width: min-content; }
+[role="dialog"] [class*="overflow"] { overscroll-behavior: contain; }
+@media (max-width: 640px) {
+  .overflow-x-auto > table,
+  [role="dialog"] table { min-width: 100%; width: max-content; }
+}
+
 /* Mobile (touch): rolagem por toque, barra escondida (não corta conteúdo) */
 @media (pointer: coarse) {
   html { scrollbar-gutter: auto; }
