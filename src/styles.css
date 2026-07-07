@@ -282,7 +282,7 @@ html { scrollbar-gutter: stable; }
 
 /* Chrome, Edge, Safari, Opera (WebKit/Blink) */
 @supports selector(::-webkit-scrollbar) {
-  *::-webkit-scrollbar { width: 2px; height: 2px; background: transparent; }
+  *::-webkit-scrollbar { width: 1px; height: 1px; background: transparent; }
   *::-webkit-scrollbar-track { background: transparent; }
   *::-webkit-scrollbar-thumb {
     background-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent);
