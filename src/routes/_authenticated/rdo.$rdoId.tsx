@@ -605,6 +605,7 @@ function RdoDetailPage() {
             if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
             return `${(n / (1024 * 1024)).toFixed(1)} MB`;
           };
+          const imgList = list.filter((a) => a.mime_type?.startsWith("image/") && a.url);
           return (
             <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {list.map((a) => {
@@ -613,14 +614,15 @@ function RdoDetailPage() {
                 const prov = a.storage_provider ?? "supabase";
                 const provLabel = prov === "onedrive" ? "OneDrive" : "Supabase";
                 const provColor = prov === "onedrive" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
+                const imgIdx = isImg && a.url ? imgList.findIndex((x) => x.id === a.id) : -1;
                 return (
                   <li key={a.id} className="border border-border rounded-md overflow-hidden group flex flex-col">
                     {isImg && a.url ? (
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`block aspect-square overflow-hidden ${isAssinatura ? "bg-white" : "bg-muted"}`}
+                      <button
+                        type="button"
+                        onClick={() => setLightbox({ items: imgList, index: imgIdx })}
+                        aria-label={`Ampliar imagem ${a.nome}`}
+                        className={`block aspect-square overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white" : "bg-muted"}`}
                       >
                         <img
                           src={a.url}
@@ -629,7 +631,8 @@ function RdoDetailPage() {
                           decoding="async"
                           className={`w-full h-full ${isAssinatura ? "object-contain p-2" : "object-cover"}`}
                         />
-                      </a>
+                      </button>
+
 
                     ) : (
                       <a href={a.url ?? "#"} target="_blank" rel="noreferrer" className="aspect-square bg-muted flex items-center justify-center">
