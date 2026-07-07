@@ -361,9 +361,13 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
       .order("ordem", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw error;
+    const { refreshOnedriveDownloadUrl } = await import("./onedrive.functions");
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
       if (a.storage_provider === "onedrive") {
-        return { ...a, url: a.onedrive_download_url ?? a.onedrive_web_url ?? null };
+        // A downloadUrl persistida expira em ~1h; buscar sempre uma nova
+        // para garantir que a imagem carrega no tablet/celular.
+        const fresh = a.onedrive_item_id ? await refreshOnedriveDownloadUrl(a.onedrive_item_id) : null;
+        return { ...a, url: fresh ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null };
       }
       const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
       return { ...a, url: signed.data?.signedUrl ?? null };
