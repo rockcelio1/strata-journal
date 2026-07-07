@@ -410,3 +410,23 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     if (error) throw error;
     return created;
   });
+
+
+/** Retorna uma downloadUrl fresca (~1h de validade) para um item do OneDrive.
+ * Usar sempre que for exibir a imagem: a URL persistida na tabela expira. */
+export async function refreshOnedriveDownloadUrl(itemId: string): Promise<string | null> {
+  if (!itemId) return null;
+  try {
+    const res = await gatewayFetch(
+      `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
+      undefined,
+      1,
+      "refreshDownloadUrl",
+    );
+    if (!res.ok) return null;
+    const j: any = await res.json().catch(() => null);
+    return j?.["@microsoft.graph.downloadUrl"] ?? j?.webUrl ?? null;
+  } catch {
+    return null;
+  }
+}
