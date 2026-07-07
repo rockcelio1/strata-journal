@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
 import { exportRdoExcel } from "@/lib/rdo-excel";
 import { Card } from "@/components/ui/card";
+import { AdminOnly } from "@/components/AdminOnly";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
