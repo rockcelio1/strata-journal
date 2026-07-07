@@ -280,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <CircleDashed className="h-3 w-3" aria-hidden="true" />
               {hasServerDraft ? "RDO em rascunho" : "RDO finalizado"}
             </span>
-            <span className="text-xs text-brand-foreground/70 hidden lg:inline">{empresaName}</span>
+            
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="outline-none">
