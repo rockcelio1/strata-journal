@@ -381,16 +381,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="rounded-full motion-safe:animate-rdo-alert-border flex items-stretch">
             <Link
               to="/rdo/novo"
-              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="relative rounded-l-full bg-brand text-brand-foreground shadow-lg pl-4 pr-3 py-3 text-sm font-semibold flex items-center gap-2 min-h-11 min-w-0 max-w-[calc(100vw-6rem)] hover:opacity-95 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label={
                 hasServerDraft && !draftActive
                   ? "Continuar RDO em rascunho salvo no servidor — abre a lista de RDOs"
                   : "Continuar edição do RDO em rascunho — abre o formulário"
               }
             >
-              <FileTextIcon className="h-4 w-4" aria-hidden="true" />
-              <span>RDO em rascunho — Continuar</span>
+              <FileTextIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">RDO em rascunho — Continuar</span>
             </Link>
+
             <button
               type="button"
               onClick={() => setConfirmDismiss(true)}
