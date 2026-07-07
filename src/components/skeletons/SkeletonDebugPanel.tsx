@@ -11,11 +11,12 @@ import { resolveScreen } from "./AutoSkeleton";
 export function SkeletonDebugPanel() {
   const [open, setOpen] = useState(false);
   const [, force] = useState(0);
-  const [pathname, setPathname] = useState(
-    typeof window !== "undefined" ? window.location.pathname : "/",
-  );
+  const [mounted, setMounted] = useState(false);
+  const [pathname, setPathname] = useState("/");
 
   useEffect(() => {
+    setMounted(true);
+    setPathname(window.location.pathname);
     const u = subscribeSkeletonDebug(() => force((n) => n + 1));
     const onNav = () => setPathname(window.location.pathname);
     window.addEventListener("popstate", onNav);
@@ -30,10 +31,11 @@ export function SkeletonDebugPanel() {
     };
   }, []);
 
-  if (typeof window === "undefined") return null;
+  if (!mounted) return null;
   if (!import.meta.env.DEV && !window.location.search.includes("skeletonDebug=1")) {
     return null;
   }
+
 
   const cache = getSkeletonCacheSnapshot();
   const current = resolveScreen(pathname);
