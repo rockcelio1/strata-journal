@@ -369,16 +369,18 @@ export function Pie3D({
   const autoRotate = !reducedMotion && !paused;
   const apiRef = useRef<ChartAPI | null>(null);
   const initialPos: [number, number, number] = [0, 4.5, 5.5];
+  const longPress = useLongPress(() => {
+    if (window.confirm("Deseja dar zoom no gráfico?")) apiRef.current?.zoom(0.6);
+  });
   return (
-    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
+    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border" {...longPress}>
       <Hud />
       <ChartToolbar
         paused={paused || reducedMotion}
         onToggle={togglePaused}
-        onZoomIn={() => apiRef.current?.zoom(0.85)}
-        onZoomOut={() => apiRef.current?.zoom(1.18)}
         onReset={() => apiRef.current?.reset()}
       />
+
       <Canvas shadows camera={{ position: initialPos, fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
