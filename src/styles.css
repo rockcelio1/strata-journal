@@ -289,48 +289,28 @@
   }
 }
 
-html { scrollbar-gutter: stable; }
+html { scrollbar-gutter: auto; }
 
-/* Firefox */
-@supports (scrollbar-width: thin) {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+/* Firefox — esconde a barra mas mantém a rolagem funcional */
+@supports (scrollbar-width: none) {
+  html, body, * {
+    scrollbar-width: none;
   }
 }
 
-/* WebKit/Blink — Chrome, Edge, Safari, Opera.
- * Safari só desenha o scrollbar customizado quando definimos width/height E
- * um background/thumb explícito; senão volta para o "overlay" nativo do OS.
- * Vale para rolagem VERTICAL (width) e HORIZONTAL (height).
- */
+/* WebKit/Blink — Chrome, Edge, Safari, Opera: barra invisível, rolagem preservada */
 *::-webkit-scrollbar {
-  width: var(--scrollbar-size);
-  height: var(--scrollbar-size);
+  width: 0;
+  height: 0;
   background: transparent;
 }
 *::-webkit-scrollbar-track,
-*::-webkit-scrollbar-corner {
-  background: var(--scrollbar-track);
-}
+*::-webkit-scrollbar-corner,
 *::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--_scrollbar-border) solid transparent;
-  border-radius: var(--scrollbar-radius);
-  min-height: 24px;
-  min-width: 24px;
-  transition: background-color 120ms ease, border-width 120ms ease;
+  background: transparent;
+  border: none;
 }
-*::-webkit-scrollbar-thumb:hover,
-*:hover > ::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb-hover-color);
-  border-width: var(--_scrollbar-border-hover);
-}
-*::-webkit-scrollbar-thumb:active {
-  background-color: var(--scrollbar-thumb-active-color);
-  border-width: calc(var(--_scrollbar-border-hover) - 1px);
-}
+
 
 /* Classe utilitária para reforçar consistência em modais/tabelas/dropdowns
  * (Radix Dialog, ScrollArea, etc.). Aplica os mesmos tokens no elemento e
