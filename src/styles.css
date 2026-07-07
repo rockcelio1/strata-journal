@@ -262,39 +262,62 @@
 
 
 
-/* ============ Scrollbar milimétrica, sem afetar layout ============
- * 1) `scrollbar-gutter: stable` reserva sempre o mesmo espaço, evitando
- *    layout shift ao surgir/sumir a barra (Chromium/Firefox modernos).
- * 2) Firefox: `scrollbar-width` + `scrollbar-color` (spec CSS Scrollbars).
- * 3) Chrome/Edge/Safari/Opera: pseudo-elementos ::-webkit-scrollbar.
- * 4) Fallback: sem suporte a nada disso, herda apenas `overflow` nativo —
- *    rolagem normal, layout preservado.
+/* ============ Scrollbar milimétrica, consistente em todo o sistema ============
+ * 1) `scrollbar-gutter: stable` evita layout shift ao surgir/sumir a barra.
+ * 2) Firefox: `scrollbar-width: thin` + `scrollbar-color`.
+ * 3) Chrome/Edge/Opera/Safari (WebKit/Blink): pseudo-elementos com truque de
+ *    `border: transparent` + `background-clip: padding-box` para manter o
+ *    thumb visualmente FINÍSSIMO (1px) mas com área clicável maior no hover.
+ * 4) Aplica em vertical E horizontal, em qualquer container (modais, tabelas,
+ *    overflow interno) — regra universal `*`.
  */
 html { scrollbar-gutter: stable; }
 
-/* Firefox e outros com CSS Scrollbars Module */
+/* Firefox */
 @supports (scrollbar-width: thin) {
   * {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent) transparent;
+    scrollbar-color: color-mix(in oklch, var(--color-muted-foreground) 30%, transparent) transparent;
   }
 }
 
-/* Chrome, Edge, Safari, Opera (WebKit/Blink) */
-@supports selector(::-webkit-scrollbar) {
-  *::-webkit-scrollbar { width: 1px; height: 1px; background: transparent; }
-  *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb {
-    background-color: color-mix(in oklch, var(--color-muted-foreground) 25%, transparent);
-    border-radius: 9999px;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in oklch, var(--color-muted-foreground) 55%, transparent);
-  }
-  *::-webkit-scrollbar-corner { background: transparent; }
+/* WebKit/Blink — Chrome, Edge, Safari, Opera.
+ * Safari só desenha o scrollbar customizado quando definimos width/height E
+ * um background/thumb explícito; senão volta para o "overlay" nativo do OS.
+ */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  /* Truque: thumb visual de 1px via border transparente + background-clip.
+   * O elemento ocupa 8px (área clicável), mas só 1px aparece pintado. */
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 30%, transparent);
+  background-clip: padding-box;
+  border: 3.5px solid transparent;
+  border-radius: 9999px;
+  min-height: 24px;
+  min-width: 24px;
+  transition: background-color 120ms ease, border-width 120ms ease;
+}
+/* No hover, encolhe a borda transparente → thumb visualmente engrossa
+ * (mais fácil de agarrar) sem alterar a largura reservada (sem layout shift). */
+*::-webkit-scrollbar-thumb:hover,
+*:hover > ::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 65%, transparent);
+  border-width: 1.5px;
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 80%, transparent);
+  border-width: 1px;
 }
 
-/* Mobile: barra escondida, rolagem funcional */
+/* Mobile / telas pequenas: rolagem por toque, barra escondida */
 @media (pointer: coarse) {
   html { scrollbar-gutter: auto; }
   * { scrollbar-width: none; }
