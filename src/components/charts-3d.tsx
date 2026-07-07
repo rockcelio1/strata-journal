@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, Text, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
-import { Pause, Play, MagnifyingGlassPlus, MagnifyingGlassMinus, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { Pause, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
@@ -115,14 +115,41 @@ function Bar({
   );
 }
 
-/* ---------------- HUD de ajuda (girar / zoom) ---------------- */
+/* ---------------- HUD de ajuda ---------------- */
 function Hud() {
   return (
     <div className="absolute top-2 right-2 z-10 rounded-md border bg-background/80 backdrop-blur px-2 py-1 text-[10px] text-muted-foreground pointer-events-none">
-      Arraste para girar · Scroll para zoom
+      Segure 5s para dar zoom
     </div>
   );
 }
+
+/** Hook: dispara `onLongPress` após 5s de pressão contínua (mouse ou toque). */
+function useLongPress(onLongPress: () => void, ms = 5000) {
+  const timer = useRef<number | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const clear = () => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+    start.current = null;
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      clear();
+      start.current = { x: e.clientX, y: e.clientY };
+      timer.current = window.setTimeout(() => { onLongPress(); clear(); }, ms);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (!start.current) return;
+      const dx = e.clientX - start.current.x;
+      const dy = e.clientY - start.current.y;
+      if (Math.hypot(dx, dy) > 10) clear();
+    },
+    onPointerUp: clear,
+    onPointerLeave: clear,
+    onPointerCancel: clear,
+  };
+}
+
 
 /** API imperativa exposta pelo bridge dentro do Canvas. */
 type ChartAPI = { zoom: (factor: number) => void; reset: () => void };
@@ -169,6 +196,7 @@ function ChartBridge({
     <OrbitControls
       ref={ref}
       enablePan={false}
+      enableZoom={false}
       minDistance={minDistance}
       maxDistance={maxDistance}
       autoRotate={autoRotate}
@@ -176,17 +204,16 @@ function ChartBridge({
       enableDamping
       dampingFactor={0.08}
     />
+
   );
 }
 
-/** Barra de controles: pause/play + zoom + reset. */
+/** Barra de controles: pause/play + reset. */
 function ChartToolbar({
-  paused, onToggle, onZoomIn, onZoomOut, onReset,
+  paused, onToggle, onReset,
 }: {
   paused: boolean;
   onToggle: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
   onReset: () => void;
 }) {
   const btn = "inline-flex items-center justify-center h-7 w-7 rounded-md border bg-background/80 backdrop-blur text-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -201,18 +228,13 @@ function ChartToolbar({
       >
         {paused ? <Play size={12} weight="fill" /> : <Pause size={12} weight="fill" />}
       </button>
-      <button type="button" onClick={onZoomIn} aria-label="Aproximar (zoom +)" className={btn}>
-        <MagnifyingGlassPlus size={12} weight="bold" />
-      </button>
-      <button type="button" onClick={onZoomOut} aria-label="Afastar (zoom -)" className={btn}>
-        <MagnifyingGlassMinus size={12} weight="bold" />
-      </button>
-      <button type="button" onClick={onReset} aria-label="Restaurar câmera" className={btn}>
+      <button type="button" onClick={onReset} aria-label="Restaurar tamanho padrão" className={btn}>
         <ArrowCounterClockwise size={12} weight="bold" />
       </button>
     </div>
   );
 }
+
 
 function usePausedState(storageKey: string) {
   const [paused, setPaused] = useState<boolean>(() => {
@@ -238,16 +260,18 @@ export function Bars3D({
   const autoRotate = !reducedMotion && !paused;
   const apiRef = useRef<ChartAPI | null>(null);
   const initialPos: [number, number, number] = [0, 4, 8];
+  const longPress = useLongPress(() => {
+    if (window.confirm("Deseja dar zoom no gráfico?")) apiRef.current?.zoom(0.6);
+  });
   return (
-    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
+    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border" {...longPress}>
       <Hud />
       <ChartToolbar
         paused={paused || reducedMotion}
         onToggle={togglePaused}
-        onZoomIn={() => apiRef.current?.zoom(0.85)}
-        onZoomOut={() => apiRef.current?.zoom(1.18)}
         onReset={() => apiRef.current?.reset()}
       />
+
       <Canvas shadows camera={{ position: initialPos, fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
@@ -345,16 +369,18 @@ export function Pie3D({
   const autoRotate = !reducedMotion && !paused;
   const apiRef = useRef<ChartAPI | null>(null);
   const initialPos: [number, number, number] = [0, 4.5, 5.5];
+  const longPress = useLongPress(() => {
+    if (window.confirm("Deseja dar zoom no gráfico?")) apiRef.current?.zoom(0.6);
+  });
   return (
-    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border">
+    <div className="relative h-[340px] w-full rounded-lg overflow-hidden ring-1 ring-border" {...longPress}>
       <Hud />
       <ChartToolbar
         paused={paused || reducedMotion}
         onToggle={togglePaused}
-        onZoomIn={() => apiRef.current?.zoom(0.85)}
-        onZoomOut={() => apiRef.current?.zoom(1.18)}
         onReset={() => apiRef.current?.reset()}
       />
+
       <Canvas shadows camera={{ position: initialPos, fov: 45 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <Stage>
