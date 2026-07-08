@@ -8,7 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import {
   SKELETON_EFFECTS,
   screenRegistry,
@@ -67,9 +67,9 @@ function SkeletonSettingsPage() {
     onSuccess: () => {
       clearSkeletonCache();
       qc.invalidateQueries({ queryKey: ["skeleton_loading_settings"] });
-      toast.success("Efeito salvo.");
+      notify.success("Efeito salvo.");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar."),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao salvar."),
   });
 
   const reset = useMutation({
@@ -83,9 +83,9 @@ function SkeletonSettingsPage() {
     onSuccess: () => {
       clearSkeletonCache();
       qc.invalidateQueries({ queryKey: ["skeleton_loading_settings"] });
-      toast.success("Restaurado para o padrão.");
+      notify.success("Restaurado para o padrão.");
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao restaurar."),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao restaurar."),
   });
 
   return (

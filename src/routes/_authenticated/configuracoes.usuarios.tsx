@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import {
   listMembros,
   listConvites,
@@ -126,38 +126,38 @@ function UsuariosPage() {
 
   const mUpdatePapel = useMutation({
     mutationFn: (v: { user_id: string; role: string }) => atualizarPapelFn({ data: v }),
-    onSuccess: () => { toast.success("Papel atualizado"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { notify.success("Papel atualizado"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
   const mDelete = useMutation({
     mutationFn: (user_id: string) => adminDeleteFn({ data: { user_id } }),
-    onSuccess: () => { toast.success("Usuário excluído"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { notify.success("Usuário excluído"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
   const mToggle = useMutation({
     mutationFn: (v: { user_id: string; disabled: boolean }) => adminToggleFn({ data: v }),
-    onSuccess: (_, v) => { toast.success(v.disabled ? "Usuário desabilitado" : "Usuário habilitado"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: (_, v) => { notify.success(v.disabled ? "Usuário desabilitado" : "Usuário habilitado"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
   const mReset = useMutation({
     mutationFn: (email: string) => adminResetFn({ data: { email } }),
-    onSuccess: () => toast.success("E-mail de redefinição enviado"),
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => notify.success("E-mail de redefinição enviado"),
+    onError: (e: any) => notify.error(e.message),
   });
   const mReenviar = useMutation({
     mutationFn: (id: string) => reenviarFn({ data: { id } }),
-    onSuccess: () => { toast.success("Convite reenviado"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { notify.success("Convite reenviado"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
   const mAprovar = useMutation({
     mutationFn: (v: { user_id: string; aprovado: boolean }) => aprovarFn({ data: v }),
-    onSuccess: (_, v) => { toast.success(v.aprovado ? "Usuário aprovado" : "Aprovação removida"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: (_, v) => { notify.success(v.aprovado ? "Usuário aprovado" : "Aprovação removida"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
   const mRevogarConv = useMutation({
     mutationFn: (id: string) => revogarConviteFn({ data: { id } }),
-    onSuccess: () => { toast.success("Convite revogado"); invalidate(); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { notify.success("Convite revogado"); invalidate(); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   return (
@@ -258,28 +258,28 @@ function UsuariosPage() {
             count={selected.size}
             onSetRole={async (role) => {
               try { const r = await bulkPapelFn({ data: { user_ids: Array.from(selected), role } });
-                toast.success(`Papel aplicado a ${r.count} usuário(s)`); clearSel(); invalidate();
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`Papel aplicado a ${r.count} usuário(s)`); clearSel(); invalidate();
+              } catch (e: any) { notify.error(e.message); }
             }}
             onSetPassword={async (password) => {
               try { const r = await bulkPwdFn({ data: { user_ids: Array.from(selected), password } });
-                toast.success(`Senha aplicada a ${r.count} usuário(s)${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`);
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`Senha aplicada a ${r.count} usuário(s)${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`);
+              } catch (e: any) { notify.error(e.message); }
             }}
             onResetEmail={async () => {
               try { const r = await bulkResetFn({ data: { user_ids: Array.from(selected) } });
-                toast.success(`E-mail de redefinição: ${r.count} enviado(s)`);
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`E-mail de redefinição: ${r.count} enviado(s)`);
+              } catch (e: any) { notify.error(e.message); }
             }}
             onEditCargo={async (cargo) => {
               try { const r = await bulkPerfilFn({ data: { user_ids: Array.from(selected), cargo } });
-                toast.success(`Cargo atualizado em ${r.count} usuário(s)`); invalidate();
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`Cargo atualizado em ${r.count} usuário(s)`); invalidate();
+              } catch (e: any) { notify.error(e.message); }
             }}
             onDelete={async () => {
               try { const r = await bulkDeleteFn({ data: { user_ids: Array.from(selected) } });
-                toast.success(`Excluídos: ${r.count}${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`); clearSel(); invalidate();
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`Excluídos: ${r.count}${r.falhas.length ? ` (falhas: ${r.falhas.length})` : ""}`); clearSel(); invalidate();
+              } catch (e: any) { notify.error(e.message); }
             }}
           />
         )}
@@ -464,8 +464,8 @@ function UsuariosPage() {
                 a.href = url; a.download = `auditoria_${new Date().toISOString().slice(0,10)}.csv`;
                 document.body.appendChild(a); a.click(); a.remove();
                 URL.revokeObjectURL(url);
-                toast.success(`Exportado: ${res.count} registros`);
-              } catch (e: any) { toast.error(e.message); }
+                notify.success(`Exportado: ${res.count} registros`);
+              } catch (e: any) { notify.error(e.message); }
             }}
           >
             <Download className="h-4 w-4 mr-1" /> Exportar CSV
@@ -693,7 +693,7 @@ function BulkBar({
           <DialogFooter>
             <DialogTrigger asChild><Button variant="outline">Cancelar</Button></DialogTrigger>
             <DialogTrigger asChild>
-              <Button onClick={() => { if (pwd.length < 8) { toast.error("Senha muito curta"); return; } onSetPassword(pwd); setPwd(""); }}>Aplicar</Button>
+              <Button onClick={() => { if (pwd.length < 8) { notify.error("Senha muito curta"); return; } onSetPassword(pwd); setPwd(""); }}>Aplicar</Button>
             </DialogTrigger>
           </DialogFooter>
         </DialogContent>
@@ -795,8 +795,8 @@ function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; passwo
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            try { await onCreate(form); toast.success("Usuário criado"); setOpen(false); setForm(initial); }
-            catch (e: any) { toast.error(e.message); }
+            try { await onCreate(form); notify.success("Usuário criado"); setOpen(false); setForm(initial); }
+            catch (e: any) { notify.error(e.message); }
           }}>Criar</Button>
         </DialogFooter>
       </DialogContent>
@@ -829,8 +829,8 @@ function NovoConviteDialog({ onCreate }: { onCreate: (v: { email: string; role: 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            try { await onCreate(form); toast.success("Convite enviado"); setOpen(false); setForm({ email: "", role: "visualizador" }); }
-            catch (e: any) { toast.error(e.message); }
+            try { await onCreate(form); notify.success("Convite enviado"); setOpen(false); setForm({ email: "", role: "visualizador" }); }
+            catch (e: any) { notify.error(e.message); }
           }}>Enviar</Button>
         </DialogFooter>
       </DialogContent>
@@ -857,8 +857,8 @@ function EditMembroDialog({ m, onSave }: { m: any; onSave: (v: { nome: string; c
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            try { await onSave({ nome: form.nome, cargo: form.cargo || null }); toast.success("Atualizado"); setOpen(false); }
-            catch (e: any) { toast.error(e.message); }
+            try { await onSave({ nome: form.nome, cargo: form.cargo || null }); notify.success("Atualizado"); setOpen(false); }
+            catch (e: any) { notify.error(e.message); }
           }}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
@@ -900,9 +900,9 @@ function SetPasswordDialog({ onSave }: { onSave: (password: string, must_change_
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            if (password.length < 8) { toast.error("Senha muito curta"); return; }
-            try { await onSave(password, mustChange); toast.success("Senha atualizada"); setOpen(false); setPassword(""); setMustChange(true); }
-            catch (e: any) { toast.error(e.message); }
+            if (password.length < 8) { notify.error("Senha muito curta"); return; }
+            try { await onSave(password, mustChange); notify.success("Senha atualizada"); setOpen(false); setPassword(""); setMustChange(true); }
+            catch (e: any) { notify.error(e.message); }
           }}>Salvar</Button>
         </DialogFooter>
       </DialogContent>

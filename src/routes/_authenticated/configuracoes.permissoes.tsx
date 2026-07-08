@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/permissoes")({
   beforeLoad: async () => {
@@ -64,29 +64,29 @@ function PermissoesPage() {
     mutationFn: (v: { role: AppRole; resource: AppResource; action: AppAction; allowed: boolean }) =>
       upRoleFn({ data: v }),
     onSuccess: () => {
-      toast.success("Permissão atualizada", fastToast);
+      notify.success("Permissão atualizada", fastToast);
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
   });
 
   const mutOv = useMutation({
     mutationFn: (v: { user_id: string; resource: AppResource; action: AppAction; allowed: boolean | null }) =>
       upOvFn({ data: v }),
     onSuccess: () => {
-      toast.success("Permissão atualizada", fastToast);
+      notify.success("Permissão atualizada", fastToast);
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
   });
 
   const mutReset = useMutation({
     mutationFn: (user_id: string) => resetFn({ data: { user_id } }),
     onSuccess: () => {
-      toast.success("Permissões restauradas", fastToast);
+      notify.success("Permissões restauradas", fastToast);
       invalidate();
     },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao resetar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao resetar", fastToast),
   });
 
   const [papelSelecionado, setPapelSelecionado] = useState<AppRole>("engenheiro");
@@ -200,9 +200,9 @@ function PermissoesPage() {
                       upRoleFn({ data: { role: papelSelecionado, resource, action, allowed } }),
                     ),
                   );
-                  toast.success("Permissões do recurso atualizadas", fastToast);
+                  notify.success("Permissões do recurso atualizadas", fastToast);
                 } catch (e: any) {
-                  toast.error(e?.message ?? "Falha ao atualizar", fastToast);
+                  notify.error(e?.message ?? "Falha ao atualizar", fastToast);
                 } finally {
                   invalidate();
                 }
