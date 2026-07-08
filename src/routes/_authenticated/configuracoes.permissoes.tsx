@@ -174,6 +174,8 @@ function PermissoesPage() {
   };
 
   const descartar = () => {
+    if (!dirty) return;
+    if (!window.confirm(`Descartar ${dirtyCount} alteração${dirtyCount > 1 ? "ões" : ""} pendente${dirtyCount > 1 ? "s" : ""}? Esta ação não pode ser desfeita.`)) return;
     setPendingRole(new Map());
     setPendingOv(new Map());
   };
