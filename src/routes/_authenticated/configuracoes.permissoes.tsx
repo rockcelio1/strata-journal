@@ -57,36 +57,38 @@ function PermissoesPage() {
     qc.invalidateQueries({ queryKey: ["minhas-permissoes"] });
   };
 
-  // Toast rápido, centralizado, para feedback instantâneo do usuário.
-  const fastToast = { position: "top-center" as const, duration: 1200 };
+  // Mensagem padrão de sucesso para toda ação de permissão (papel/override/reset/bulk).
+  const MSG_OK = "Permissão atualizada";
+
+  const [bulkKey, setBulkKey] = useState<string | null>(null);
 
   const mutRole = useMutation({
     mutationFn: (v: { role: AppRole; resource: AppResource; action: AppAction; allowed: boolean }) =>
       upRoleFn({ data: v }),
     onSuccess: () => {
-      notify.success("Permissão atualizada", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar"),
   });
 
   const mutOv = useMutation({
     mutationFn: (v: { user_id: string; resource: AppResource; action: AppAction; allowed: boolean | null }) =>
       upOvFn({ data: v }),
     onSuccess: () => {
-      notify.success("Permissão atualizada", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar"),
   });
 
   const mutReset = useMutation({
     mutationFn: (user_id: string) => resetFn({ data: { user_id } }),
     onSuccess: () => {
-      notify.success("Permissões restauradas", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao resetar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao resetar"),
   });
 
   const [papelSelecionado, setPapelSelecionado] = useState<AppRole>("engenheiro");
