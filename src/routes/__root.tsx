@@ -129,12 +129,20 @@ function RootComponent() {
 
   useEffect(() => {
     import("@/lib/pwa-register").then((m) => m.registerPwa()).catch(() => {});
+    const stopAudit = (() => {
+      try {
+        // Lazy import para não pesar no bundle inicial.
+        let stop: (() => void) | undefined;
+        import("@/lib/refresh-audit").then((m) => { stop = m.installRefreshAudit(router); }).catch(() => {});
+        return () => stop?.();
+      } catch { return () => {}; }
+    })();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
-    return () => sub.subscription.unsubscribe();
+    return () => { sub.subscription.unsubscribe(); stopAudit(); };
   }, [router, queryClient]);
 
   useEffect(() => {
