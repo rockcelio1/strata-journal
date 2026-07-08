@@ -172,3 +172,42 @@ export const saveObraClimaCache = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+// --- Cache de coordenadas (lat/lng) por obra ---
+export const getObraGeo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { obra_id: string }) => z.object({ obra_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await context.supabase
+      .from("obras")
+      .select("geo_lat, geo_lng, geo_endereco, geo_at, endereco")
+      .eq("id", data.obra_id)
+      .maybeSingle();
+    if (error) throw error;
+    return row as any;
+  });
+
+export const saveObraGeo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      obra_id: z.string().uuid(),
+      lat: z.number(),
+      lng: z.number(),
+      endereco: z.string().nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("obras")
+      .update({
+        ge_lat: undefined,
+        geo_lat: data.lat,
+        geo_lng: data.lng,
+        geo_endereco: data.endereco ?? null,
+        geo_at: new Date().toISOString(),
+      } as any)
+      .eq("id", data.obra_id);
+    if (error) throw error;
+    return { ok: true };
+  });
