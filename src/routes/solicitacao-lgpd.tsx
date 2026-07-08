@@ -65,6 +65,7 @@ function SolicitacaoLgpdPage() {
       const { data, error } = await supabase
         .from("lgpd_requests")
         .insert({
+          protocolo: "", // gerado pelo trigger no banco
           requester_nome: parsed.data.requester_nome,
           requester_email: parsed.data.requester_email.toLowerCase(),
           request_type: parsed.data.request_type,
