@@ -491,7 +491,7 @@ export const listGaleria = createServerFn({ method: "GET" })
 
     const tipoDe = (mime?: string | null, path?: string | null, nome?: string | null): "imagem" | "video" | "pdf" | "assinatura" | null => {
       const hint = `${path ?? ""} ${nome ?? ""}`.toLowerCase();
-      if (hint.includes("assinatura-") || hint.includes("/assinatura")) return "assinatura";
+      if (/(^|[\/_\- ])assinatura/.test(hint)) return "assinatura";
       if (!mime) return null;
       if (mime.startsWith("image/")) return "imagem";
       if (mime.startsWith("video/")) return "video";
@@ -507,14 +507,22 @@ export const listGaleria = createServerFn({ method: "GET" })
     const { createOneDriveProxyUrl } = await import("./onedrive-proxy-token.server");
     const withUrls = await Promise.all(filtered.map(async (a: any) => {
       let url: string | null = null;
+      let thumbUrl: string | null = null;
       if (a.storage_provider === "onedrive") {
         const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome });
         url = proxyUrl ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null;
+        const isImg = (a.mime_type || "").startsWith("image/");
+        if (isImg) {
+          thumbUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome, thumb: "large" }) ?? url;
+        } else {
+          thumbUrl = url;
+        }
       } else if (a.storage_path) {
         const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
         url = signed.data?.signedUrl ?? null;
+        thumbUrl = url;
       }
-      return { ...a, tipo: tipoDe(a.mime_type, a.storage_path, a.nome), url };
+      return { ...a, tipo: tipoDe(a.mime_type, a.storage_path, a.nome), url, thumbUrl };
     }));
     return withUrls;
   });
