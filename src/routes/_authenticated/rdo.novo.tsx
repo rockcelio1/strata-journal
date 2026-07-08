@@ -425,11 +425,17 @@ function NovoRdoPage() {
 
 
   async function onAddFotos(files: FileList) {
+    const { validateUploadFile } = await import("@/lib/security/upload-validation");
     const MAX_BYTES = 5 * 1024 * 1024;
     setCompressing(true);
     try {
       const out: File[] = [];
       for (const f of Array.from(files)) {
+        const check = await validateUploadFile(f);
+        if (!check.ok) {
+          toast.error(check.message, { description: f.name });
+          continue;
+        }
         if (f.type.startsWith("image/") && f.size > MAX_BYTES) {
           try {
             const compressed = await compressImage(f, { maxDim: 2560, quality: 0.9, maxBytes: MAX_BYTES });
