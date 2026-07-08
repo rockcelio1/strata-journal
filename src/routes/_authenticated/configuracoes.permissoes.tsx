@@ -320,12 +320,14 @@ function MatrizPapel({
   defaultsMap,
   onToggle,
   onBulk,
+  bulkKey,
   isLoading,
 }: {
   role: AppRole;
   defaultsMap: Map<string, boolean>;
   onToggle: (r: AppResource, a: AppAction, allowed: boolean) => void;
   onBulk: (r: AppResource, allowed: boolean) => void;
+  bulkKey: string | null;
   isLoading: boolean;
 }) {
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -352,6 +354,7 @@ function MatrizPapel({
             const total = ACTIONS.length;
             const allChecked = marcados === total;
             const someChecked = marcados > 0 && marcados < total;
+            const busy = bulkKey === `${role}.${res}`;
             return (
               <tr key={res} className="border-t">
                 <td className="p-2 font-medium">
@@ -364,7 +367,9 @@ function MatrizPapel({
                   <Checkbox
                     checked={allChecked ? true : someChecked ? "indeterminate" : false}
                     onCheckedChange={(v) => onBulk(res, Boolean(v))}
+                    disabled={busy}
                     aria-label={`Selecionar todas as ações de ${RESOURCE_LABELS[res]}`}
+                    aria-busy={busy}
                   />
                 </td>
                 {ACTIONS.map((act) => {
