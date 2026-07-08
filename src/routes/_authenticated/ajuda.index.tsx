@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Book, Search, Sparkles, Rocket, Building2, FileText, Database,
   CheckCircle2, Images, Download, Shield, Settings, AlertTriangle,
-  LifeBuoy, PlayCircle, Bell,
+  LifeBuoy, PlayCircle, Bell, HelpCircle, BookOpen,
 } from "lucide-react";
 import {
   listHelpCategories, listHelpArticles, listChangelog, searchHelp,
