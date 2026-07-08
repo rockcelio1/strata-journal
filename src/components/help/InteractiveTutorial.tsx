@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { getTutorialBySlug, saveTutorialProgress, getMyTutorialProgress } from "@/lib/help.functions";
 import { useQuery } from "@tanstack/react-query";
 
