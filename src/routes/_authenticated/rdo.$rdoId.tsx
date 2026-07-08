@@ -1367,7 +1367,7 @@ function ClimaRelatorio({
         <div className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
           <div>{state.erro}</div>
           {state.tentativa && state.tentativa >= 3 && (
-            <button onClick={() => executar(1, true)} className="underline mt-1">Tentar manualmente</button>
+            <button onClick={() => executar(1, true, true)} className="underline mt-1">Tentar manualmente</button>
           )}
         </div>
       )}
