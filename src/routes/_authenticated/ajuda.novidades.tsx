@@ -29,7 +29,7 @@ const chgTypeLabel: Record<string, string> = {
 };
 
 function NovidadesPage() {
-  const isAdmin = useIsAdmin();
+  const { isAdminOrMaster: isAdmin } = useIsAdmin();
   const list = useServerFn(listChangelog);
   const create = useServerFn(createChangelogEntry);
   const qc = useQueryClient();
