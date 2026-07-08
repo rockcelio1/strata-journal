@@ -491,7 +491,7 @@ export const listGaleria = createServerFn({ method: "GET" })
 
     const tipoDe = (mime?: string | null, path?: string | null, nome?: string | null): "imagem" | "video" | "pdf" | "assinatura" | null => {
       const hint = `${path ?? ""} ${nome ?? ""}`.toLowerCase();
-      if (hint.includes("assinatura-") || hint.includes("/assinatura")) return "assinatura";
+      if (/(^|[\/_\- ])assinatura/.test(hint)) return "assinatura";
       if (!mime) return null;
       if (mime.startsWith("image/")) return "imagem";
       if (mime.startsWith("video/")) return "video";
