@@ -300,10 +300,10 @@ function GaleriaPage() {
                               onClick={() => selectMode ? toggleSelected(it.id) : setPreview(it)}
                               className="block relative aspect-square w-full bg-muted overflow-hidden"
                             >
-                              {it.tipo === "imagem" && it.url ? (
-                                <MediaThumb src={it.url} alt={it.nome} kind="imagem" />
-                              ) : it.tipo === "video" && it.url ? (
-                                <MediaThumb src={it.url} alt={it.nome} kind="video" />
+                              {(it.tipo === "imagem" || it.tipo === "assinatura") && (it.thumbUrl || it.url) ? (
+                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="imagem" fit={it.tipo === "assinatura" ? "contain" : "cover"} />
+                              ) : it.tipo === "video" && (it.thumbUrl || it.url) ? (
+                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="video" fit="cover" />
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
