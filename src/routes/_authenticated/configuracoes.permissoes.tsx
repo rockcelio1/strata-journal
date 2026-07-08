@@ -211,9 +211,10 @@ function PermissoesPage() {
               size="sm"
               onClick={aplicar}
               disabled={!dirty || saving}
-              className={dirty ? "animate-pulse" : ""}
+              className={dirty && !saving ? "animate-pulse" : ""}
+              aria-busy={saving}
             >
-              <Save className="h-4 w-4 mr-1" />
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               {saving ? "Aplicando…" : "Aplicar"}
             </Button>
           </div>
