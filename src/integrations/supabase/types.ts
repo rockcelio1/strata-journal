@@ -1028,6 +1028,10 @@ export type Database = {
           endereco: string | null
           foto_capa_blur: string | null
           foto_capa_path: string | null
+          geo_at: string | null
+          geo_endereco: string | null
+          geo_lat: number | null
+          geo_lng: number | null
           grupo_obra: string | null
           id: string
           nome: string
@@ -1051,6 +1055,10 @@ export type Database = {
           endereco?: string | null
           foto_capa_blur?: string | null
           foto_capa_path?: string | null
+          geo_at?: string | null
+          geo_endereco?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
           grupo_obra?: string | null
           id?: string
           nome: string
@@ -1074,6 +1082,10 @@ export type Database = {
           endereco?: string | null
           foto_capa_blur?: string | null
           foto_capa_path?: string | null
+          geo_at?: string | null
+          geo_endereco?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
           grupo_obra?: string | null
           id?: string
           nome?: string
