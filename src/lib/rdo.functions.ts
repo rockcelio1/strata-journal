@@ -504,10 +504,12 @@ export const listGaleria = createServerFn({ method: "GET" })
       return !data.tipo || t === data.tipo;
     });
 
+    const { createOneDriveProxyUrl } = await import("./onedrive-proxy-token.server");
     const withUrls = await Promise.all(filtered.map(async (a: any) => {
       let url: string | null = null;
       if (a.storage_provider === "onedrive") {
-        url = a.onedrive_download_url ?? a.onedrive_web_url ?? null;
+        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome });
+        url = proxyUrl ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null;
       } else {
         const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
         url = signed.data?.signedUrl ?? null;
