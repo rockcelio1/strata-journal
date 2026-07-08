@@ -286,9 +286,14 @@ function GaleriaPage() {
                       <span className="text-xs text-muted-foreground tabular-nums">{lista.length} item(ns)</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                      {lista.map((it: any) => {
+                      {lista.map((it: any, idx: number) => {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
+                        // Próximos 6 thumbs para prefetch quando este entrar na viewport.
+                        const prefetchNext = lista
+                          .slice(idx + 1, idx + 7)
+                          .map((n: any) => n.thumbUrl || n.url)
+                          .filter(Boolean) as string[];
                         return (
                           <Card key={it.id} className={`facom-glow overflow-hidden group cursor-pointer relative ${selectMode && selected.has(it.id) ? "ring-2 ring-destructive" : ""}`}>
                             {selectMode && (
@@ -301,9 +306,25 @@ function GaleriaPage() {
                               className="block relative aspect-square w-full bg-muted overflow-hidden"
                             >
                               {(it.tipo === "imagem" || it.tipo === "assinatura") && (it.thumbUrl || it.url) ? (
-                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="imagem" fit={it.tipo === "assinatura" ? "contain" : "cover"} />
+                                <MediaThumb
+                                  src={it.thumbUrl || it.url}
+                                  alt={it.nome}
+                                  kind="imagem"
+                                  fit={it.tipo === "assinatura" ? "contain" : "cover"}
+                                  itemId={it.onedrive_item_id ?? null}
+                                  anexoId={it.id}
+                                  prefetchNext={prefetchNext}
+                                />
                               ) : it.tipo === "video" && (it.thumbUrl || it.url) ? (
-                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="video" fit="cover" />
+                                <MediaThumb
+                                  src={it.thumbUrl || it.url}
+                                  alt={it.nome}
+                                  kind="video"
+                                  fit="cover"
+                                  itemId={it.onedrive_item_id ?? null}
+                                  anexoId={it.id}
+                                  prefetchNext={prefetchNext}
+                                />
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
