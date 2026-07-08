@@ -6,6 +6,7 @@ import { House, Plus, Star, Trash, CaretLeft, CaretRight, X, Warning, Spinner } 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { validateUploadFile } from "@/lib/security/upload-validation";
 import {
   listObraFotos,
   registerObraFoto,
@@ -113,6 +114,8 @@ export function ObraFotos({
       const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
       if (!list.length) throw new Error("Selecione apenas imagens");
       for (const file of list) {
+        const check = await validateUploadFile(file);
+        if (!check.ok) throw new Error(check.message);
         const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const id = (crypto as any).randomUUID?.() ?? Math.random().toString(36).slice(2);
         const path = `${empresaId}/${obraId}/${id}.${ext}`;

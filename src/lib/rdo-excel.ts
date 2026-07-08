@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { climaLabel, rdoStatusMeta } from "@/components/status";
+import { sanitizeExportRow } from "@/lib/security/sanitize-export";
 
 type AnyRec = Record<string, any>;
 
@@ -9,7 +10,8 @@ const fmtDayBR = (yyyyMmDd?: string | null) =>
   yyyyMmDd ? new Date(`${yyyyMmDd}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "";
 
 function addSheet(wb: XLSX.WorkBook, name: string, rows: AnyRec[]) {
-  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{}]);
+  const safeRows = rows.length ? rows.map((r) => sanitizeExportRow(r)) : [{}];
+  const ws = XLSX.utils.json_to_sheet(safeRows);
   // Sheet names max 31 chars, no []:*?/\ characters
   const safe = name.replace(/[[\]:*?/\\]/g, " ").slice(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, safe);

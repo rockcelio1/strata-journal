@@ -28,6 +28,7 @@ import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
+import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
 import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
@@ -159,6 +160,11 @@ const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRelatoriosDimRoute =
   AuthenticatedRelatoriosDimRouteImport.update({
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -424,6 +431,7 @@ export interface FileRoutesByTo {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
@@ -476,6 +484,7 @@ export interface FileRoutesById {
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/_authenticated/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -528,6 +537,7 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/api/public/health'
     | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
@@ -577,6 +587,7 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/api/public/health'
     | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
@@ -628,6 +639,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
     | '/_authenticated/relatorios/$dim'
+    | '/api/public/health'
     | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
@@ -650,6 +662,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
 }
 
@@ -787,6 +800,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/relatorios/$dim': {
       id: '/_authenticated/relatorios/$dim'
@@ -1137,6 +1157,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
 }
 export const routeTree = rootRouteImport
