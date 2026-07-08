@@ -1630,6 +1630,7 @@ export type Database = {
           email: string
           empresa_id: string
           id: string
+          must_change_password: boolean
           nome: string
           updated_at: string
         }
@@ -1642,6 +1643,7 @@ export type Database = {
           email: string
           empresa_id: string
           id: string
+          must_change_password?: boolean
           nome: string
           updated_at?: string
         }
@@ -1654,6 +1656,7 @@ export type Database = {
           email?: string
           empresa_id?: string
           id?: string
+          must_change_password?: boolean
           nome?: string
           updated_at?: string
         }
