@@ -27,6 +27,13 @@ export const Route = createFileRoute("/_authenticated/ajuda/")({
   validateSearch: searchSchema,
   head: () => ({ meta: [{ title: "Ajuda / Manual do Sistema" }] }),
   component: AjudaHome,
+  errorComponent: ({ error, reset }) => (
+    <div className="p-6 max-w-lg mx-auto text-center">
+      <h1 className="font-serif text-xl mb-2">Não foi possível carregar a Ajuda</h1>
+      <p className="text-sm text-muted-foreground mb-4">{(error as any)?.message ?? "Erro inesperado."}</p>
+      <button onClick={reset} className="text-sm underline">Tentar novamente</button>
+    </div>
+  ),
 });
 
 const iconMap: Record<string, any> = {
