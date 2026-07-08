@@ -486,3 +486,37 @@ function Stat({ label, value, icon: Icon, active, onClick }: { label: string; va
   );
 }
 
+function MediaThumb({ src, alt, kind }: { src: string; alt: string; kind: "imagem" | "video" }) {
+  const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
+  return (
+    <div className="relative w-full h-full">
+      {state === "loading" && (
+        <div className="absolute inset-0 animate-pulse bg-muted" />
+      )}
+      {state === "error" ? (
+        <div className="absolute inset-0 grid place-items-center text-muted-foreground bg-muted">
+          <div className="flex flex-col items-center gap-1 text-[10px] uppercase tracking-wider">
+            {kind === "imagem" ? <ImageIcon size={32} /> : <FilmStrip size={32} />}
+            <span>Prévia indisponível</span>
+          </div>
+        </div>
+      ) : kind === "imagem" ? (
+        <img
+          src={src} alt={alt} loading="lazy"
+          onLoad={() => setState("loaded")}
+          onError={() => setState("error")}
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+        />
+      ) : (
+        <video
+          src={src} muted preload="metadata"
+          onLoadedData={() => setState("loaded")}
+          onError={() => setState("error")}
+          className={`w-full h-full object-cover ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+    </div>
+  );
+}
+
+
