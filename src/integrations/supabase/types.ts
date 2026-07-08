@@ -1030,6 +1030,47 @@ export type Database = {
           },
         ]
       }
+      media_load_events: {
+        Row: {
+          cache_status: string
+          created_at: string
+          duration_ms: number | null
+          empresa_id: string | null
+          http_status: number | null
+          id: string
+          onedrive_item_id: string | null
+          thumb_size: string | null
+        }
+        Insert: {
+          cache_status: string
+          created_at?: string
+          duration_ms?: number | null
+          empresa_id?: string | null
+          http_status?: number | null
+          id?: string
+          onedrive_item_id?: string | null
+          thumb_size?: string | null
+        }
+        Update: {
+          cache_status?: string
+          created_at?: string
+          duration_ms?: number | null
+          empresa_id?: string | null
+          http_status?: number | null
+          id?: string
+          onedrive_item_id?: string | null
+          thumb_size?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_load_events_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           created_at: string
@@ -1531,6 +1572,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "obras_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onedrive_cache_settings: {
+        Row: {
+          created_at: string
+          empresa_id: string | null
+          id: string
+          max_age_seconds: number
+          swr_seconds: number
+          thumb_size: string
+          ttl_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          max_age_seconds?: number
+          swr_seconds?: number
+          thumb_size: string
+          ttl_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          max_age_seconds?: number
+          swr_seconds?: number
+          thumb_size?: string
+          ttl_seconds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onedrive_cache_settings_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
