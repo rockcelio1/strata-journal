@@ -118,41 +118,50 @@ function AjudaHome() {
         </Card>
 
         {/* Resultados de busca */}
-        {q && q.trim().length > 1 && (
-          <Card className="p-4 mb-6">
-            <div className="text-sm font-medium mb-3">
-              Resultados para “{q}” {search.data ? `(${search.data.length})` : ""}
-            </div>
-            {search.isLoading && <div className="text-xs text-muted-foreground">Buscando…</div>}
-            {search.data?.length === 0 && (
-              <div className="text-xs text-muted-foreground">
-                Nenhum artigo encontrado. Tente outra palavra-chave.
+        {q && q.trim().length > 1 && (() => {
+          const rows: any[] = (search.data as any)?.rows ?? [];
+          return (
+            <Card className="p-4 mb-6">
+              <div className="text-sm font-medium mb-3">
+                Resultados para “{q}” {search.data ? `(${rows.length})` : ""}
               </div>
-            )}
-            <div className="space-y-2">
-              {(search.data ?? []).map((a: any) => (
-                <Link key={a.id} to="/ajuda/artigo/$slug" params={{ slug: a.slug }}
-                  className="block rounded-md border border-border p-2 hover:bg-muted/40">
-                  <div className="text-sm font-medium">{a.title}</div>
-                  {a.summary && <div className="text-xs text-muted-foreground line-clamp-2">{a.summary}</div>}
-                </Link>
-              ))}
-            </div>
-          </Card>
-        )}
+              {search.isLoading && <div className="text-xs text-muted-foreground">Buscando…</div>}
+              {!search.isLoading && rows.length === 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Nenhum artigo encontrado. Tente outra palavra-chave.
+                </div>
+              )}
+              <div className="space-y-2">
+                {rows.map((a: any) => (
+                  <Link key={a.id} to="/ajuda/artigo/$slug" params={{ slug: a.slug }}
+                    className="block rounded-md border border-border p-2 hover:bg-muted/40">
+                    <div className="text-sm font-medium">{a.title}</div>
+                    {a.summary && <div className="text-xs text-muted-foreground line-clamp-2">{a.summary}</div>}
+                    {a.module_key && (
+                      <div className="mt-1"><Badge variant="outline">{a.module_key}</Badge></div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* Ações rápidas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <Button variant="outline" className="justify-start" asChild>
-            <Link to="/ajuda" search={{ tutorial: "novo-rdo" } as any}>
-              <PlayCircle className="h-4 w-4 mr-2" /> Começar tutorial (Novo RDO)
+            <Link to="/rdo/novo" search={{ tutorial: "novo-rdo" } as any}>
+              <PlayCircle className="h-4 w-4 mr-2" /> Tutorial: Novo RDO
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link to="/ajuda/novidades"><Bell className="h-4 w-4 mr-2" /> Ver novidades</Link>
+            <Link to="/ajuda/faq"><HelpCircle className="h-4 w-4 mr-2" /> FAQ</Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <a href="mailto:suporte@facom.com.br"><LifeBuoy className="h-4 w-4 mr-2" /> Preciso de ajuda</a>
+            <Link to="/ajuda/glossario"><BookOpen className="h-4 w-4 mr-2" /> Glossário</Link>
+          </Button>
+          <Button variant="outline" className="justify-start" asChild>
+            <Link to="/ajuda/novidades"><Bell className="h-4 w-4 mr-2" /> Novidades</Link>
           </Button>
         </div>
 
