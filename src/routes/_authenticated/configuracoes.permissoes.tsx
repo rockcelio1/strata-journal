@@ -30,7 +30,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { notify } from "@/lib/toast";
 
+export const auditSearchSchema = z.object({
+  q: fallback(z.string(), "").default(""),
+  recurso: fallback(z.string(), "all").default("all"),
+  acao: fallback(z.string(), "all").default("all"),
+  tipo: fallback(z.string(), "all").default("all"),
+  escopo: fallback(z.string(), "all").default("all"),
+  papel: fallback(z.string(), "all").default("all"),
+  sort: fallback(z.string(), "desc").default("desc"),
+  page: fallback(z.number().int(), 1).default(1),
+});
+
 export const Route = createFileRoute("/_authenticated/configuracoes/permissoes")({
+  validateSearch: zodValidator(auditSearchSchema),
   beforeLoad: async () => {
     const me = await getMe();
     const roles = me.roles ?? [];
