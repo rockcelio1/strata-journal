@@ -132,11 +132,9 @@ function PermissoesPage() {
   );
 
   // Bloquear navegação com alterações pendentes
-  const [blockDialog, setBlockDialog] = useState<null | (() => void)>(null);
   useBlocker({
-    shouldBlockFn: ({ next }) => {
+    shouldBlockFn: () => {
       if (!dirty) return false;
-      // eslint-disable-next-line no-alert
       return !window.confirm("Você tem alterações não aplicadas. Sair sem aplicar?");
     },
     enableBeforeUnload: dirty,
