@@ -194,7 +194,7 @@ function PermissoesPage() {
     setPendingOv(new Map());
   };
 
-  const { data: audit } = useQuery({
+  const auditQuery = useQuery({
     queryKey: ["audit-permissoes"],
     queryFn: () => auditFn(),
   });
