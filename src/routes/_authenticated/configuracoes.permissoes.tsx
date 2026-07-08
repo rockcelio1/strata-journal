@@ -313,11 +313,13 @@ function MatrizPapel({
   role,
   defaultsMap,
   onToggle,
+  onBulk,
   isLoading,
 }: {
   role: AppRole;
   defaultsMap: Map<string, boolean>;
   onToggle: (r: AppResource, a: AppAction, allowed: boolean) => void;
+  onBulk: (r: AppResource, allowed: boolean) => void;
   isLoading: boolean;
 }) {
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
