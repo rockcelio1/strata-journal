@@ -301,9 +301,9 @@ function GaleriaPage() {
                               className="block relative aspect-square w-full bg-muted overflow-hidden"
                             >
                               {it.tipo === "imagem" && it.url ? (
-                                <img src={it.url} alt={it.nome} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                <MediaThumb src={it.url} alt={it.nome} kind="imagem" />
                               ) : it.tipo === "video" && it.url ? (
-                                <video src={it.url} className="w-full h-full object-cover" muted preload="metadata" />
+                                <MediaThumb src={it.url} alt={it.nome} kind="video" />
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
