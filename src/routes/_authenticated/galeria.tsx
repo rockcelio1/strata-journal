@@ -486,33 +486,72 @@ function Stat({ label, value, icon: Icon, active, onClick }: { label: string; va
   );
 }
 
-function MediaThumb({ src, alt, kind }: { src: string; alt: string; kind: "imagem" | "video" }) {
+function MediaThumb({
+  src,
+  alt,
+  kind,
+  fit = "cover",
+}: {
+  src: string;
+  alt: string;
+  kind: "imagem" | "video";
+  fit?: "cover" | "contain";
+}) {
   const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
+  const bustedSrc = attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
+  const fitCls = fit === "contain" ? "object-contain p-2" : "object-cover group-hover:scale-105";
+
+  function retry(e: React.MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    setState("loading");
+    setAttempt((n) => n + 1);
+  }
+
   return (
-    <div className="relative w-full h-full">
-      {state === "loading" && (
-        <div className="absolute inset-0 animate-pulse bg-muted" />
-      )}
+    <div className="relative w-full h-full flex items-center justify-center bg-muted">
+      {state === "loading" && <div className="absolute inset-0 animate-pulse bg-muted" />}
       {state === "error" ? (
-        <div className="absolute inset-0 grid place-items-center text-muted-foreground bg-muted">
-          <div className="flex flex-col items-center gap-1 text-[10px] uppercase tracking-wider">
-            {kind === "imagem" ? <ImageIcon size={32} /> : <FilmStrip size={32} />}
+        <div className="absolute inset-0 grid place-items-center text-muted-foreground bg-muted p-2">
+          <div className="flex flex-col items-center gap-2 text-[10px] uppercase tracking-wider text-center">
+            {kind === "imagem" ? <ImageIcon size={28} /> : <FilmStrip size={28} />}
             <span>Prévia indisponível</span>
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-1 px-2 py-1 rounded border border-border bg-background text-foreground text-[10px] hover:bg-accent"
+            >
+              Tentar novamente
+            </button>
           </div>
         </div>
       ) : kind === "imagem" ? (
         <img
-          src={src} alt={alt} loading="lazy"
+          key={attempt}
+          src={bustedSrc}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
           onLoad={() => setState("loaded")}
-          onError={() => setState("error")}
-          className={`w-full h-full object-cover group-hover:scale-105 transition-transform ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+          onError={() => {
+            console.warn("[galeria] falha ao carregar imagem", src);
+            setState("error");
+          }}
+          className={`w-full h-full ${fitCls} transition-transform ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
         />
       ) : (
         <video
-          src={src} muted preload="metadata"
+          key={attempt}
+          src={bustedSrc}
+          muted
+          preload="metadata"
           onLoadedData={() => setState("loaded")}
-          onError={() => setState("error")}
-          className={`w-full h-full object-cover ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+          onError={() => {
+            console.warn("[galeria] falha ao carregar vídeo", src);
+            setState("error");
+          }}
+          className={`w-full h-full ${fitCls} ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
         />
       )}
     </div>
