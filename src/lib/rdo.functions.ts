@@ -764,3 +764,54 @@ export const listRdoAnexosHist = createServerFn({ method: "GET" })
     return (rows ?? []).map((r: any) => ({ ...r, autor: r.autor_id ? autores.get(r.autor_id) ?? null : null }));
   });
 
+// Registra em auditoria uma falha de carregamento de mídia (thumb 404, timeout, erro de rede)
+// junto com onedrive_item_id e empresa do usuário autenticado.
+export const logMediaLoadFailure = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    onedrive_item_id?: string | null;
+    anexo_id?: string | null;
+    reason: "thumb_404" | "timeout" | "network" | "decode" | "unknown";
+    status?: number | null;
+    thumb_size?: "small" | "medium" | "large" | null;
+    url?: string | null;
+  }) =>
+    z.object({
+      onedrive_item_id: z.string().max(200).nullable().optional(),
+      anexo_id: z.string().uuid().nullable().optional(),
+      reason: z.enum(["thumb_404", "timeout", "network", "decode", "unknown"]),
+      status: z.number().int().nullable().optional(),
+      thumb_size: z.enum(["small", "medium", "large"]).nullable().optional(),
+      url: z.string().max(2048).nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: prof } = await context.supabase
+      .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    const empresaId = (prof as any)?.empresa_id ?? null;
+
+    console.error(
+      `[galeria] falha ao carregar mídia reason=${data.reason} status=${data.status ?? "-"} thumb=${data.thumb_size ?? "-"} item=${data.onedrive_item_id ?? "-"} empresa=${empresaId ?? "-"} user=${context.userId}`,
+    );
+
+    if (empresaId) {
+      const { error: auditErr } = await context.supabase.from("audit_logs_usuarios").insert({
+        empresa_id: empresaId,
+        autor_id: context.userId,
+        acao: "galeria_midia_falha",
+        detalhes: {
+          reason: data.reason,
+          status: data.status ?? null,
+          thumb_size: data.thumb_size ?? null,
+          onedrive_item_id: data.onedrive_item_id ?? null,
+          anexo_id: data.anexo_id ?? null,
+          url: data.url ?? null,
+        },
+      });
+      if (auditErr) console.warn(`[galeria] audit insert falhou: ${auditErr.message}`);
+    }
+    return { ok: true };
+  });
+
+
+

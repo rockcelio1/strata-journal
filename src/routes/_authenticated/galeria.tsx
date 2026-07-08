@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { listGaleria, removerAnexo } from "@/lib/rdo.functions";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listGaleria, logMediaLoadFailure, removerAnexo } from "@/lib/rdo.functions";
 import { listObras } from "@/lib/obras.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -286,9 +286,14 @@ function GaleriaPage() {
                       <span className="text-xs text-muted-foreground tabular-nums">{lista.length} item(ns)</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                      {lista.map((it: any) => {
+                      {lista.map((it: any, idx: number) => {
                         const Icon = tipoIcon[it.tipo as Tipo];
                         const recente = now - new Date(it.created_at).getTime() < RECEBIDO_AGORA_MS;
+                        // Próximos 6 thumbs para prefetch quando este entrar na viewport.
+                        const prefetchNext = lista
+                          .slice(idx + 1, idx + 7)
+                          .map((n: any) => n.thumbUrl || n.url)
+                          .filter(Boolean) as string[];
                         return (
                           <Card key={it.id} className={`facom-glow overflow-hidden group cursor-pointer relative ${selectMode && selected.has(it.id) ? "ring-2 ring-destructive" : ""}`}>
                             {selectMode && (
@@ -301,9 +306,25 @@ function GaleriaPage() {
                               className="block relative aspect-square w-full bg-muted overflow-hidden"
                             >
                               {(it.tipo === "imagem" || it.tipo === "assinatura") && (it.thumbUrl || it.url) ? (
-                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="imagem" fit={it.tipo === "assinatura" ? "contain" : "cover"} />
+                                <MediaThumb
+                                  src={it.thumbUrl || it.url}
+                                  alt={it.nome}
+                                  kind="imagem"
+                                  fit={it.tipo === "assinatura" ? "contain" : "cover"}
+                                  itemId={it.onedrive_item_id ?? null}
+                                  anexoId={it.id}
+                                  prefetchNext={prefetchNext}
+                                />
                               ) : it.tipo === "video" && (it.thumbUrl || it.url) ? (
-                                <MediaThumb src={it.thumbUrl || it.url} alt={it.nome} kind="video" fit="cover" />
+                                <MediaThumb
+                                  src={it.thumbUrl || it.url}
+                                  alt={it.nome}
+                                  kind="video"
+                                  fit="cover"
+                                  itemId={it.onedrive_item_id ?? null}
+                                  anexoId={it.id}
+                                  prefetchNext={prefetchNext}
+                                />
                               ) : (
                                 <div className="w-full h-full grid place-items-center text-muted-foreground"><Icon size={40} /></div>
                               )}
@@ -497,16 +518,104 @@ function MediaThumb({
   alt,
   kind,
   fit = "cover",
+  itemId,
+  anexoId,
+  prefetchNext = [],
 }: {
   src: string;
   alt: string;
   kind: "imagem" | "video";
   fit?: "cover" | "contain";
+  itemId?: string | null;
+  anexoId?: string | null;
+  prefetchNext?: string[];
 }) {
   const [state, setState] = useState<"loading" | "loaded" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
   const bustedSrc = attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
   const fitCls = fit === "contain" ? "object-contain p-2" : "object-cover group-hover:scale-105";
+  const logFailure = useServerFn(logMediaLoadFailure);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const prefetchedRef = useRef(false);
+  const loadStartRef = useRef<number>(Date.now());
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Prefetch upcoming thumbnails once this card enters the viewport.
+  useEffect(() => {
+    if (prefetchedRef.current || prefetchNext.length === 0) return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && !prefetchedRef.current) {
+          prefetchedRef.current = true;
+          for (const url of prefetchNext) {
+            const img = new Image();
+            img.decoding = "async";
+            img.src = url;
+          }
+          io.disconnect();
+          break;
+        }
+      }
+    }, { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [prefetchNext]);
+
+  // Timeout guard — se demorar demais para carregar, marca como timeout e loga.
+  useEffect(() => {
+    if (state !== "loading") return;
+    loadStartRef.current = Date.now();
+    timeoutRef.current = setTimeout(() => {
+      if (state === "loading") {
+        console.warn("[galeria] timeout ao carregar mídia", src);
+        setState("error");
+        void logFailure({
+          data: {
+            onedrive_item_id: itemId ?? null,
+            anexo_id: anexoId ?? null,
+            reason: "timeout",
+            thumb_size: thumbSizeFromUrl(src),
+            url: src,
+          },
+        }).catch(() => {});
+      }
+    }, 20_000);
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [state, src, itemId, anexoId, logFailure]);
+
+  function reportError(reason: "thumb_404" | "network" | "decode" | "unknown", status?: number) {
+    void logFailure({
+      data: {
+        onedrive_item_id: itemId ?? null,
+        anexo_id: anexoId ?? null,
+        reason,
+        status: status ?? null,
+        thumb_size: thumbSizeFromUrl(src),
+        url: src,
+      },
+    }).catch(() => {});
+  }
+
+  async function handleError() {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setState("error");
+    // Descobre o motivo (404 / rede / decode) fazendo um HEAD-like fetch leve.
+    let reason: "thumb_404" | "network" | "decode" | "unknown" = "unknown";
+    let status: number | undefined;
+    try {
+      const r = await fetch(bustedSrc, { method: "GET", cache: "no-store" });
+      status = r.status;
+      if (r.status === 404) reason = "thumb_404";
+      else if (!r.ok) reason = "network";
+      else reason = "decode"; // servidor OK, mas <img> não renderizou
+    } catch {
+      reason = "network";
+    }
+    console.warn(`[galeria] falha ao carregar mídia reason=${reason} status=${status ?? "-"} item=${itemId ?? "-"} url=${src}`);
+    reportError(reason, status);
+  }
 
   function retry(e: React.MouseEvent) {
     e.stopPropagation();
@@ -516,7 +625,7 @@ function MediaThumb({
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-muted">
+    <div ref={containerRef} className="relative w-full h-full flex items-center justify-center bg-muted">
       {state === "loading" && <div className="absolute inset-0 animate-pulse bg-muted" />}
       {state === "error" ? (
         <div className="absolute inset-0 grid place-items-center text-muted-foreground bg-muted p-2">
@@ -539,11 +648,8 @@ function MediaThumb({
           alt={alt}
           loading="lazy"
           decoding="async"
-          onLoad={() => setState("loaded")}
-          onError={() => {
-            console.warn("[galeria] falha ao carregar imagem", src);
-            setState("error");
-          }}
+          onLoad={() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setState("loaded"); }}
+          onError={handleError}
           className={`w-full h-full ${fitCls} transition-transform ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
         />
       ) : (
@@ -552,16 +658,24 @@ function MediaThumb({
           src={bustedSrc}
           muted
           preload="metadata"
-          onLoadedData={() => setState("loaded")}
-          onError={() => {
-            console.warn("[galeria] falha ao carregar vídeo", src);
-            setState("error");
-          }}
+          onLoadedData={() => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setState("loaded"); }}
+          onError={handleError}
           className={`w-full h-full ${fitCls} ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
         />
       )}
     </div>
   );
 }
+
+function thumbSizeFromUrl(url: string): "small" | "medium" | "large" | null {
+  try {
+    const u = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://x");
+    const t = u.searchParams.get("thumb");
+    return t === "small" || t === "medium" || t === "large" ? t : null;
+  } catch {
+    return null;
+  }
+}
+
 
 
