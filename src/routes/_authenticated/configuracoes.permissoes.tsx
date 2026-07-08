@@ -335,31 +335,6 @@ function PermissoesPage() {
           </TabsContent>
         </Tabs>
       </div>
-
-      <AlertDialog open={!!blockDialog} onOpenChange={(o) => !o && setBlockDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Sair sem aplicar?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você tem alterações pendentes. Se sair agora, elas serão perdidas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const proceed = blockDialog;
-                setPendingRole(new Map());
-                setPendingOv(new Map());
-                setBlockDialog(null);
-                proceed?.();
-              }}
-            >
-              Sair mesmo assim
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </TooltipProvider>
   );
 }
