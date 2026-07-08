@@ -384,6 +384,7 @@ function MatrizUsuario({
           <thead className="bg-muted/50">
             <tr>
               <th className="p-2 text-left">Recurso</th>
+              <th className="p-2 text-center">Todos</th>
               {ACTIONS.map((a) => (
                 <th key={a} className="p-2 text-center">
                   {ACTION_LABELS[a]}
@@ -395,6 +396,24 @@ function MatrizUsuario({
             {RESOURCES.map((res) => (
               <tr key={res} className="border-t">
                 <td className="p-2 font-medium">{RESOURCE_LABELS[res]}</td>
+                <td className="p-2 text-center">
+                  <Select
+                    value=""
+                    onValueChange={(v) => {
+                      const novo = v === "herdar" ? null : v === "permitir";
+                      for (const act of ACTIONS) onChange(res, act, novo);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[120px] mx-auto text-xs">
+                      <SelectValue placeholder="Aplicar…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="herdar">Herdar todos</SelectItem>
+                      <SelectItem value="permitir">Permitir todos</SelectItem>
+                      <SelectItem value="negar">Negar todos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </td>
                 {ACTIONS.map((act) => {
                   const overrideKey = `${user.id}.${res}.${act}`;
                   const ov = overridesMap.has(overrideKey) ? overridesMap.get(overrideKey)! : null;
