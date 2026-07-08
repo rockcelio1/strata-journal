@@ -463,7 +463,7 @@ async function geocodeCepBrasilAPI(cep: string): Promise<{ latitude: number; lon
   }
 }
 
-async function resolveGeoBrasil(endereco: string) {
+export async function resolveGeoBrasil(endereco: string) {
   const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
   wlog("geocoding:start", { endereco_len: endereco.length, tem_cep: !!cep });
 
@@ -627,6 +627,46 @@ export async function fetchHistoricoEPrevisaoUteis(
   out.sort((a, b) => a.data.localeCompare(b.data));
   cacheSet(key, out, 60 * 60 * 1000); // 1 h
   return { local: g.nome, dias: out };
+}
+
+export async function fetchHistoricoEPrevisaoUteisPorCoords(
+  lat: number,
+  lng: number,
+  nome: string,
+  dataISO: string,
+  antes = 2,
+  depois = 2,
+): Promise<{ local: string; dias: DiaRegistro[] }> {
+  const datas = diasUteisAoRedor(dataISO, antes, depois);
+  if (datas.length === 0) return { local: nome, dias: [] };
+  const hojeStr = ymd(new Date());
+  const passados = datas.filter((d) => d < hojeStr);
+  const futuros = datas.filter((d) => d >= hojeStr);
+  const key = `hist:${lat.toFixed(3)},${lng.toFixed(3)}:${datas[0]}:${datas[datas.length - 1]}`;
+  const cached = cacheGet<DiaRegistro[]>(key);
+  if (cached) return { local: nome, dias: cached };
+  const out: DiaRegistro[] = [];
+  if (passados.length) {
+    try {
+      const j = await fetchArchive(lat, lng, passados[0], passados[passados.length - 1]);
+      for (let i = 0; i < j.daily.time.length; i++) {
+        if (passados.includes(j.daily.time[i])) out.push(toRegistro(j, i, "historico"));
+      }
+    } catch { /* ignora */ }
+  }
+  if (futuros.length) {
+    try {
+      const j = await fetchForecastRange(lat, lng, futuros[0], futuros[futuros.length - 1]);
+      for (let i = 0; i < j.daily.time.length; i++) {
+        if (futuros.includes(j.daily.time[i])) {
+          out.push(toRegistro(j, i, j.daily.time[i] === hojeStr ? "atual" : "previsao"));
+        }
+      }
+    } catch { /* ignora */ }
+  }
+  out.sort((a, b) => a.data.localeCompare(b.data));
+  cacheSet(key, out, 60 * 60 * 1000);
+  return { local: nome, dias: out };
 }
 
 // Exposto para tests

@@ -28,7 +28,8 @@ import {
 } from "lucide-react";
 import { rdoStatusMeta, severidadeMeta, climaLabel } from "@/components/status";
 import { cn } from "@/lib/utils";
-import { fetchHistoricoEPrevisaoUteis, type DiaRegistro } from "@/lib/weather";
+import { fetchHistoricoEPrevisaoUteisPorCoords, resolveGeoBrasil, type DiaRegistro } from "@/lib/weather";
+import { getObraGeo, saveObraGeo } from "@/lib/obras.functions";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -489,6 +490,7 @@ function RdoDetailPage() {
 
       <ClimaRelatorio
         rdoId={rdoId}
+        obraId={r.obras?.id ?? r.obra_id ?? null}
         endereco={r.obras?.endereco}
         data={r.data}
         onData={(local, dias) => setClimaState({ local, dias })}
@@ -1215,14 +1217,17 @@ async function exportSummaryPdf(rows: any[], numero: string | number, f: { autor
 
 
 function ClimaRelatorio({
-  rdoId, endereco, data, onData,
+  rdoId, obraId, endereco, data, onData,
 }: {
   rdoId: string;
+  obraId?: string | null;
   endereco?: string | null;
   data: string;
   onData?: (local: string | undefined, dias: DiaRegistro[] | undefined) => void;
 }) {
   const logClima = useServerFn(logRdoClimaUpdate);
+  const getGeo = useServerFn(getObraGeo);
+  const saveGeo = useServerFn(saveObraGeo);
   const [state, setState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     erro?: string;
@@ -1239,41 +1244,66 @@ function ClimaRelatorio({
     if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
   }
 
-  async function executar(tentativa = 1, manual = false) {
+  async function executar(tentativa = 1, manual = false, forceRefreshGeo = false) {
     clearTimers();
-    if (!endereco) { setState({ status: "error", erro: "Obra sem endereço cadastrado." }); return; }
+    if (!endereco && !obraId) { setState({ status: "error", erro: "Obra sem endereço cadastrado." }); return; }
     setState({ status: "loading", tentativa });
     try {
-      const r = await fetchHistoricoEPrevisaoUteis(endereco, data, 2, 2);
+      // 1) Tenta usar coordenadas em cache na obra
+      let lat: number | null = null;
+      let lng: number | null = null;
+      let nome: string | null = null;
+      if (obraId && !forceRefreshGeo) {
+        try {
+          const geo: any = await getGeo({ data: { obra_id: obraId } });
+          if (geo?.geo_lat != null && geo?.geo_lng != null) {
+            lat = Number(geo.geo_lat); lng = Number(geo.geo_lng);
+            nome = geo.geo_endereco ?? endereco ?? "Obra";
+          }
+        } catch { /* segue para geocoding */ }
+      }
+      // 2) Sem cache → geocodifica e salva no obra para próximas visitas
+      if (lat == null || lng == null) {
+        if (!endereco) throw new Error("Obra sem endereço cadastrado.");
+        const g = await resolveGeoBrasil(endereco);
+        if (!g) throw new Error("Não foi possível localizar a obra pelo endereço cadastrado. Atualize o endereço em Cadastros → Obras.");
+        lat = g.latitude; lng = g.longitude; nome = g.nome;
+        if (obraId) {
+          saveGeo({ data: { obra_id: obraId, lat, lng, endereco: g.nome } }).catch(() => {});
+        }
+      }
+      const r = await fetchHistoricoEPrevisaoUteisPorCoords(lat, lng, nome ?? "Obra", data, 2, 2);
       setState({ status: "success", local: r.local, dias: r.dias });
       onData?.(r.local, r.dias);
       if (manual) {
-        logClima({ data: { rdo_id: rdoId, endereco, local: r.local, ok: true } }).catch(() => {});
+        toast.success("Clima atualizado", { description: r.local });
+        logClima({ data: { rdo_id: rdoId, endereco: endereco ?? nome ?? "", local: r.local, ok: true } }).catch(() => {});
       }
     } catch (e: any) {
       const msg = e?.message ?? "Falha ao consultar previsão";
       const MAX = 3;
-      if (tentativa < MAX) {
-        const delay = Math.min(8000, 1000 * Math.pow(2, tentativa - 1)); // 1s, 2s, 4s
+      if (tentativa < MAX && !manual) {
+        const delay = Math.min(8000, 1000 * Math.pow(2, tentativa - 1));
         setState({ status: "error", erro: `${msg} — tentando novamente…`, tentativa, proximaEm: Math.ceil(delay / 1000) });
         countdownRef.current = setInterval(() => {
           setState((s) => s.proximaEm && s.proximaEm > 1 ? { ...s, proximaEm: s.proximaEm - 1 } : s);
         }, 1000);
-        retryTimerRef.current = setTimeout(() => executar(tentativa + 1, manual), delay);
+        retryTimerRef.current = setTimeout(() => executar(tentativa + 1, false, forceRefreshGeo), delay);
       } else {
         setState({ status: "error", erro: msg, tentativa });
         if (manual) {
-          logClima({ data: { rdo_id: rdoId, endereco, ok: false, erro: msg } }).catch(() => {});
+          toast.error("Falha ao atualizar clima", { description: msg });
+          logClima({ data: { rdo_id: rdoId, endereco: endereco ?? "", ok: false, erro: msg } }).catch(() => {});
         }
       }
     }
   }
 
   useEffect(() => {
-    executar(1, false);
+    executar(1, false, false);
     return () => clearTimers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endereco, data]);
+  }, [endereco, data, obraId]);
 
   function exportarCsv() {
     const dias = [...(state.dias ?? [])].sort((a, b) => a.data.localeCompare(b.data));
@@ -1325,8 +1355,8 @@ function ClimaRelatorio({
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={exportarCsv} disabled={!state.dias?.length}>CSV</Button>
-          <Button size="sm" variant="outline" onClick={() => executar(1, true)} disabled={state.status === "loading"}>
-            {state.status === "loading" ? "Atualizando…" : "Atualizar"}
+          <Button size="sm" variant="outline" onClick={() => executar(1, true, true)} disabled={state.status === "loading"}>
+            {state.status === "loading" ? "Atualizando…" : "Atualizar clima"}
           </Button>
         </div>
       </div>
@@ -1337,7 +1367,7 @@ function ClimaRelatorio({
         <div className="text-xs text-destructive border border-destructive/30 bg-destructive/5 rounded-md p-2">
           <div>{state.erro}</div>
           {state.tentativa && state.tentativa >= 3 && (
-            <button onClick={() => executar(1, true)} className="underline mt-1">Tentar manualmente</button>
+            <button onClick={() => executar(1, true, true)} className="underline mt-1">Tentar manualmente</button>
           )}
         </div>
       )}
