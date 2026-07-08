@@ -313,7 +313,7 @@ function UsuariosPage() {
                 m={m}
                 onChangePapel={(role) => mUpdatePapel.mutate({ user_id: m.id, role })}
                 onEdit={async (v) => { await adminUpdateFn({ data: { user_id: m.id, ...v } }); invalidate(); }}
-                onSetPwd={async (password) => { await adminSetPwdFn({ data: { user_id: m.id, password } }); }}
+                onSetPwd={async (password, must_change_password) => { await adminSetPwdFn({ data: { user_id: m.id, password, must_change_password } }); }}
                 onReset={() => mReset.mutate(m.email)}
                 onToggle={(disabled) => mToggle.mutate({ user_id: m.id, disabled })}
                 onDelete={() => mDelete.mutate(m.id)}
@@ -376,7 +376,7 @@ function UsuariosPage() {
                       m={m}
                       onChangePapel={(role) => mUpdatePapel.mutate({ user_id: m.id, role })}
                       onEdit={async (v) => { await adminUpdateFn({ data: { user_id: m.id, ...v } }); invalidate(); }}
-                      onSetPwd={async (password) => { await adminSetPwdFn({ data: { user_id: m.id, password } }); }}
+                      onSetPwd={async (password, must_change_password) => { await adminSetPwdFn({ data: { user_id: m.id, password, must_change_password } }); }}
                       onReset={() => mReset.mutate(m.email)}
                       onToggle={(disabled) => mToggle.mutate({ user_id: m.id, disabled })}
                       onDelete={() => mDelete.mutate(m.id)}
@@ -562,7 +562,7 @@ function MembroActions({
   m: any;
   onChangePapel: (role: string) => void;
   onEdit: (v: { nome: string; cargo?: string | null }) => Promise<void>;
-  onSetPwd: (password: string) => Promise<void>;
+  onSetPwd: (password: string, must_change_password: boolean) => Promise<void>;
   onReset: () => void;
   onToggle: (disabled: boolean) => void;
   onDelete: () => void;
@@ -753,9 +753,10 @@ function BulkBar({
   );
 }
 
-function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; password: string; nome: string; role: string }) => Promise<void> }) {
+function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; password: string; nome: string; role: string; must_change_password: boolean }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", password: "", role: "visualizador" });
+  const initial = { nome: "", email: "", password: "", role: "visualizador", must_change_password: true };
+  const [form, setForm] = useState(initial);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -776,11 +777,25 @@ function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; passwo
               </SelectContent>
             </Select>
           </div>
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={form.must_change_password}
+              onCheckedChange={(v) => setForm({ ...form, must_change_password: !!v })}
+              aria-label="Forçar troca no próximo logon"
+              className="mt-0.5"
+            />
+            <span>
+              Forçar o usuário a trocar a senha no próximo logon
+              <span className="block text-xs text-muted-foreground">
+                Ao entrar pela primeira vez, ele será direcionado para definir uma nova senha.
+              </span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            try { await onCreate(form); toast.success("Usuário criado"); setOpen(false); setForm({ nome: "", email: "", password: "", role: "visualizador" }); }
+            try { await onCreate(form); toast.success("Usuário criado"); setOpen(false); setForm(initial); }
             catch (e: any) { toast.error(e.message); }
           }}>Criar</Button>
         </DialogFooter>
@@ -851,11 +866,12 @@ function EditMembroDialog({ m, onSave }: { m: any; onSave: (v: { nome: string; c
   );
 }
 
-function SetPasswordDialog({ onSave }: { onSave: (password: string) => Promise<void> }) {
+function SetPasswordDialog({ onSave }: { onSave: (password: string, must_change_password: boolean) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+  const [mustChange, setMustChange] = useState(true);
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPassword(""); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setPassword(""); setMustChange(true); } }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="ghost" aria-label="Definir nova senha" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
           <KeyRound className="h-4 w-4" />
@@ -866,12 +882,26 @@ function SetPasswordDialog({ onSave }: { onSave: (password: string) => Promise<v
         <div className="space-y-3">
           <Label>Senha (mín. 8 caracteres)</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="flex items-start gap-2 text-sm cursor-pointer pt-1">
+            <Checkbox
+              checked={mustChange}
+              onCheckedChange={(v) => setMustChange(!!v)}
+              aria-label="Forçar troca no próximo logon"
+              className="mt-0.5"
+            />
+            <span>
+              Forçar o usuário a trocar a senha no próximo logon
+              <span className="block text-xs text-muted-foreground">
+                Ao entrar, ele será direcionado para uma tela para definir uma nova senha antes de usar o sistema.
+              </span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
             if (password.length < 8) { toast.error("Senha muito curta"); return; }
-            try { await onSave(password); toast.success("Senha atualizada"); setOpen(false); setPassword(""); }
+            try { await onSave(password, mustChange); toast.success("Senha atualizada"); setOpen(false); setPassword(""); setMustChange(true); }
             catch (e: any) { toast.error(e.message); }
           }}>Salvar</Button>
         </DialogFooter>

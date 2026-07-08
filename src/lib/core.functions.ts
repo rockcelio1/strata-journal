@@ -363,8 +363,12 @@ async function logAudit(supabase: any, p: {
 
 export const adminSetUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { user_id: string; password: string }) =>
-    z.object({ user_id: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
+  .inputValidator((d: { user_id: string; password: string; must_change_password?: boolean }) =>
+    z.object({
+      user_id: z.string().uuid(),
+      password: z.string().min(8).max(72),
+      must_change_password: z.boolean().optional(),
+    }).parse(d),
   )
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
@@ -372,7 +376,16 @@ export const adminSetUserPassword = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
     if (error) throw error;
-    await logAudit(context.supabase, { empresa_id, acao: "senha_definida", alvo_user_id: data.user_id });
+    const mustChange = !!data.must_change_password;
+    await (context.supabase.from("profiles") as any)
+      .update({ must_change_password: mustChange })
+      .eq("id", data.user_id);
+    await logAudit(context.supabase, {
+      empresa_id,
+      acao: "senha_definida",
+      alvo_user_id: data.user_id,
+      detalhes: { must_change_password: mustChange },
+    });
     return { ok: true };
   });
 
@@ -426,12 +439,13 @@ export const adminToggleUserDisabled = createServerFn({ method: "POST" })
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; password: string; nome: string; role: string }) =>
+  .inputValidator((d: { email: string; password: string; nome: string; role: string; must_change_password?: boolean }) =>
     z.object({
       email: z.string().email(),
       password: z.string().min(8).max(72),
       nome: z.string().min(1).max(120),
       role: roleEnum,
+      must_change_password: z.boolean().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -449,9 +463,15 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       if (/already (registered|exists)/i.test(error.message)) throw new Error("Já existe um usuário com esse e-mail");
       throw error;
     }
+    const mustChange = !!data.must_change_password;
+    if (mustChange && created.user?.id) {
+      await (context.supabase.from("profiles") as any)
+        .update({ must_change_password: true })
+        .eq("id", created.user.id);
+    }
     await logAudit(context.supabase, {
       empresa_id, acao: "usuario_criado", alvo_user_id: created.user?.id, alvo_email: emailLower,
-      detalhes: { role: data.role, nome: data.nome },
+      detalhes: { role: data.role, nome: data.nome, must_change_password: mustChange },
     });
     return { ok: true, user_id: created.user?.id };
   });
@@ -840,5 +860,18 @@ export const seedDemoFacom = createServerFn({ method: "POST" })
       supabase.from("equipamentos").insert(equip as any),
       supabase.from("tipos_ocorrencia").insert(tipos as any),
     ]);
+    return { ok: true };
+  });
+
+// ============== TROCAR SENHA FORÇADA ==============
+// Chamada pelo usuário logado após redefinir a própria senha (auth.updateUser)
+// para limpar a flag must_change_password no próprio perfil.
+export const marcarSenhaTrocada = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await (context.supabase.from("profiles") as any)
+      .update({ must_change_password: false })
+      .eq("id", context.userId);
+    if (error) throw error;
     return { ok: true };
   });

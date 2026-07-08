@@ -133,6 +133,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [me]);
 
+  // Se o admin exigiu troca de senha no próximo logon, força o desvio para /trocar-senha.
+  useEffect(() => {
+    const mustChange = (me?.profile as any)?.must_change_password === true;
+    if (mustChange && pathname !== "/trocar-senha") {
+      navigate({ to: "/trocar-senha", replace: true });
+    }
+  }, [me?.profile, pathname, navigate]);
+
   // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
   // não tem mais rascunho para este usuário, remove a flag imediatamente.
   useEffect(() => {
