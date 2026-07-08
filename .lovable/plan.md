@@ -1,57 +1,72 @@
-## Objetivo
-Tornar toda a aplicação 100% responsiva (relógio → ultrawide), com tipografia fluida, alvos de toque ≥44px, sem scroll horizontal, e componentes complexos (tabelas, modais, header) resilientes.
+## Escopo
 
-## Escopo (em ordem de execução)
+Cinco frentes em um único lote, com foco em desbloquear o usuário antes de expandir conteúdo:
 
-### 1. Fundação global (`src/styles.css`)
-- Já existe `font-size: clamp(...)` no body — expandir para h1/h2/h3 (já parcial) e adicionar utilitários fluidos:
-  - `--space-fluid-*` via `clamp()` para paddings/gaps consistentes.
-  - Utilitário `.no-x-scroll` reforçando `overflow-x: hidden` em wrappers de rota.
-- Garantir `min-h-dvh` (não `min-h-screen`) para telas cheias.
-- Container padrão: `w-full max-w-[100rem] mx-auto px-[clamp(0.75rem,3vw,2rem)]`.
-- Regra `@media (hover: none)` já existe — estender para desativar `:hover` transforms indevidos.
+### 1. Corrigir tela "Ajuda" (Algo deu errado)
 
-### 2. AppShell (`src/components/app-shell.tsx`)
-- Header em grid `grid-cols-[auto_minmax(0,1fr)_auto]` com `min-w-0` no bloco central e `truncate` no título; badge "RDO em rascunho/finalizado" e indicadores movem-se para uma segunda linha `sm:` inline.
-- Botão flutuante do rascunho: `max-w-[calc(100vw-1.5rem)]`, `bottom: env(safe-area-inset-bottom)`, alvos ≥44px (já garantido), texto com `truncate`.
-- Bottom-tabbar mobile (se existir) com `padding-bottom: env(safe-area-inset-bottom)`.
-- Sidebar: `Sheet` em `<md`, fixa em `md+`.
+- Reproduzir com Playwright para capturar o erro real do `errorComponent`.
+- Suspeitas mais prováveis:
+  - `listChangelog` faz `select("*, help_articles(slug, title)")` mas `system_changelog` pode não ter FK explícita para `help_articles` → PostgREST 400. Trocar para dois `select` ou embed nomeado.
+  - `Route.useSearch()` com `search: {} as any` na navegação pode quebrar o zod schema. Padronizar `navigate({ search: (prev) => ({ ...prev, q: undefined, tutorial: undefined }) })`.
+- Adicionar `errorComponent` e `notFoundComponent` locais em todas as rotas `/ajuda/*` para mostrar mensagem acionável em vez do fallback global.
 
-### 3. Páginas de listagem (Obras, RDOs, Cadastros, Galeria, Relatórios)
-- Substituir tabelas por padrão dual:
-  - `<md`: cards empilhados (`grid gap-3`).
-  - `md+`: `<table>` dentro de `<div class="overflow-x-auto">` com `min-w-full`.
-- Toolbars: `flex flex-wrap gap-2` com `min-w-0` nos filtros; busca ocupa `flex-1 min-w-[12rem]`.
+### 2. Galeria da Obra sem imagens
 
-### 4. RDO Novo / Detalhe
-- Layout duas colunas em `lg+` (`grid-cols-[minmax(0,2fr)_minmax(0,1fr)]`), pilha única `<lg`.
-- Fotos: grid `grid-cols-[repeat(auto-fill,minmax(9rem,1fr))]`, cada foto em wrapper `aspect-square` + `object-cover`.
-- Botões de ação (Salvar/Concluir/Assinar) em barra sticky no rodapé em mobile (`sticky bottom-0 bg-background/95 backdrop-blur`) para não caçar scroll.
-- Assinaturas/Câmera: modal full-screen em mobile (`h-dvh w-screen sm:h-auto sm:w-auto sm:max-w-lg`).
+- Verificar por que `listGaleria` retorna `url = null` no OneDrive (o `onedrive_download_url` requer bearer e não abre em `<img>` direto).
+- Reaproveitar o proxy existente `/api/public/onedrive-file/$itemId` (usado no RDO): trocar o cálculo de `url` para `onedrive_item_id ? `/api/public/onedrive-file/${itemId}?token=...` : signedUrl`.
+- Reusar `SmartImage` já criado (placeholder + retry) para as miniaturas da galeria.
 
-### 5. Dashboard + gráficos 3D
-- Cards em `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3`; gráficos com `aspect-[16/10]` e `w-full`.
-- `QuotaChart3D` embrulhado em container com `min-h-[16rem] max-h-[70dvh]`.
+### 3. Páginas dedicadas de FAQ e Glossário
 
-### 6. Modais / Dialogs
-- Ajuste base em `src/components/ui/dialog.tsx` e `alert-dialog.tsx`:
-  - `DialogContent`: `max-h-[90dvh] overflow-y-auto w-[calc(100vw-1.5rem)] sm:max-w-lg`.
-  - Overlay já bloqueia scroll do fundo (Radix).
+- Criar rotas:
+  - `src/routes/_authenticated/ajuda.faq.tsx` — lista artigos com `module_key = 'faq'` agrupados por categoria, com busca local.
+  - `src/routes/_authenticated/ajuda.glossario.tsx` — lista artigos com `module_key = 'glossario'` ordenados por título, com índice A-Z.
+- Adicionar cards de entrada na home `/ajuda` para FAQ e Glossário.
+- Migration de dados: seed inicial de ~15 perguntas frequentes e ~20 termos do glossário (todos como `help_articles` com `module_key` correspondente e categoria própria "FAQ" / "Glossário"). Sem alteração de schema.
+- Garantir que `searchHelp` já cobre esses artigos (já cobre — mesmo `help_articles`), apenas exibir o `module_key` como badge nos resultados.
 
-### 7. Ergonomia touch
-- Auditar `size="icon"` (36px) e trocar para `h-11 w-11` quando for alvo primário.
-- Adicionar `aria-label` onde faltar em botões de ícone.
+### 4. Tutorial "Novo RDO" abrindo na tela certa
+
+- Alterar `InteractiveTutorial` para aceitar `route_path` do tutorial e, se o usuário não estiver na rota, navegar para lá antes do passo 1.
+- Adicionar coluna opcional `route_path text` em `help_tutorials` (migration).
+- Atualizar seed do tutorial "novo-rdo" com `route_path = '/rdo/novo'`.
+- No botão "Começar tutorial" (home /ajuda), navegar para `route_path` e adicionar `?tutorial=<slug>` para abrir automaticamente.
+- Marcar elementos-chave da tela `/rdo/novo` com `data-help="rdo-novo-<passo>"` correspondentes ao `selector` de cada `help_tutorial_steps`.
+
+### 5. `help_search_logs` — qualidade e RLS
+
+- Migration:
+  - Adicionar coluna `results_count int NOT NULL DEFAULT 0` (já existe? verificar) e `clicked_article_id`.
+  - Ajustar policy INSERT para exigir `empresa_id = private.get_user_empresa(auth.uid()) AND user_id = auth.uid()` (hoje só valida user_id).
+  - Criar índice `(empresa_id, created_at desc)` para relatórios.
+- `searchHelp`: sempre preencher `empresa_id` a partir do profile do usuário; nunca `null`.
+- Nova server fn `logSearchClick({ search_log_id, article_id })` para registrar cliques (chamada ao abrir artigo a partir dos resultados).
+- Ranking simples no backend: priorizar match em `title` > `tags` > `summary` > `content` via 3 queries e merge sem duplicar.
+
+### Ordem de execução
+
+1. Migration (help_tutorials.route_path, help_search_logs policy + índice, seed FAQ/Glossário/tutorial).
+2. Backend `help.functions.ts` (correção do embed do changelog, ranking, `logSearchClick`).
+3. Rotas `ajuda.faq.tsx`, `ajuda.glossario.tsx`, `errorComponent` em todas as `ajuda.*`.
+4. `InteractiveTutorial` + botão "Começar tutorial" + `data-help` no formulário RDO.
+5. `listGaleria` usando proxy OneDrive + `SmartImage`.
+6. Verificação Playwright: `/ajuda` carrega, `/ajuda/faq`, `/ajuda/glossario`, tutorial abre `/rdo/novo` no passo 1, galeria mostra thumbs.
 
 ## Detalhes técnicos
-- Nada de lógica de negócio alterada — só apresentação/CSS/estrutura JSX.
-- Sem novas dependências.
-- `tsgo` roda automático; validarei build depois das edições.
-- Verificação visual: Playwright em 3 viewports (360×640, 768×1024, 1440×900) capturando dashboard, RDO novo, RDO detalhe, listagem de obras.
 
-## Fora de escopo
-- Redesign visual (paleta/tipografia permanecem).
-- Mudanças no schema Supabase ou server functions.
-- Testes automatizados novos (Vitest/Playwright a11y) — pode virar follow-up.
+**Arquivos criados:**
+- `supabase/migrations/<ts>_help_faq_glossario_tutorial.sql`
+- `src/routes/_authenticated/ajuda.faq.tsx`
+- `src/routes/_authenticated/ajuda.glossario.tsx`
 
-## Entrega
-Commits agrupados por seção acima; ao final, screenshots em 3 breakpoints anexos ao resumo.
+**Arquivos editados:**
+- `src/lib/help.functions.ts` — fix changelog embed, ranking, `logSearchClick`, empresa_id garantido.
+- `src/components/help/InteractiveTutorial.tsx` — navegação para `route_path` antes do passo 1.
+- `src/routes/_authenticated/ajuda.index.tsx` — cards FAQ/Glossário, botão "Começar tutorial" navega para rota + `?tutorial=`.
+- `src/routes/_authenticated/rdo.novo.tsx` — atributos `data-help="rdo-novo-*"`.
+- `src/routes/_authenticated/galeria.tsx` — usar `SmartImage`.
+- `src/lib/rdo.functions.ts` (`listGaleria`) — proxy OneDrive.
+
+**Sem quebrar:**
+- Não altero `_authenticated/route.tsx`, `types.ts`, `client.ts`, `auth-middleware.ts`.
+- Sem novas dependências npm.

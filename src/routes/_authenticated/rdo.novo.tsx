@@ -41,8 +41,9 @@ const MIN_WORDS_LEGENDA = 5;
 import { countWords as countWordsBase } from "@/lib/text";
 const countWords = (s: string) => countWordsBase(s ?? "");
 import { createDraftChannel } from "@/lib/draft-channel";
+import { InteractiveTutorial } from "@/components/help/InteractiveTutorial";
 
-const searchSchema = z.object({ obra: z.string().optional() });
+const searchSchema = z.object({ obra: z.string().optional(), tutorial: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/rdo/novo")({
   validateSearch: searchSchema,
@@ -730,6 +731,12 @@ function NovoRdoPage() {
 
   return (
     <>
+      {search.tutorial && (
+        <InteractiveTutorial
+          slug={search.tutorial}
+          onClose={() => navigate({ to: "/rdo/novo", search: (prev: any) => ({ ...prev, tutorial: undefined }) as any })}
+        />
+      )}
       {showResumePrompt && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
           <div className="max-w-md w-full rounded-xl border-2 border-brand bg-card shadow-2xl p-6 text-center space-y-4">
@@ -866,7 +873,7 @@ function NovoRdoPage() {
 
         {stepIdx === 0 && (
           <Card className="p-5 space-y-4">
-            <div>
+            <div data-help="rdo-select-obra">
               <Label>Obra</Label>
               <Select value={form.obra_id} onValueChange={(v) => setForm({ ...form, obra_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -875,7 +882,7 @@ function NovoRdoPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div data-help="rdo-data">
               <Label>Data</Label>
               <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
             </div>
@@ -887,7 +894,7 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 1 && (
-          <Card className="p-5 space-y-3">
+          <Card data-help="rdo-clima" className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <h3 className="font-serif text-lg">Clima do dia</h3>
@@ -1019,6 +1026,7 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 2 && (
+          <div data-help="rdo-atividades">
           <Section title="Atividades" onAdd={() => add("atividades", { descricao: "", pct_executado: 0 })}>
             {form.atividades.map((it: any, i: number) => (
               <Card key={i} className="p-3 space-y-2">
@@ -1030,9 +1038,11 @@ function NovoRdoPage() {
               </Card>
             ))}
           </Section>
+          </div>
         )}
 
         {stepIdx === 3 && (
+          <div data-help="rdo-mao-de-obra">
           <Section title="Mão de obra" onAdd={() => add("mao_de_obra", { mao_de_obra_id: "", horas: 1 })}>
             {form.mao_de_obra.map((it: any, i: number) => {
               const invalid = !isUuid(it.mao_de_obra_id);
@@ -1087,7 +1097,7 @@ function NovoRdoPage() {
               );
             })}
           </Section>
-
+          </div>
         )}
 
         {stepIdx === 4 && (
@@ -1179,7 +1189,7 @@ function NovoRdoPage() {
 
         {stepIdx === 6 && (
           <>
-            <Card className="p-5 space-y-3">
+            <Card data-help="rdo-anexos" className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
                 <div className="flex items-center gap-2">
@@ -1504,6 +1514,7 @@ function NovoRdoPage() {
               </ButtonEffectRenderer>
               <ButtonEffectRenderer buttonKey="rdo_enviar_aprovacao">
                 <Button
+                  data-help="rdo-enviar"
                   className="bg-brand text-brand-foreground"
                   disabled={!canSubmit || save.isPending}
                   onClick={() => { setSubmitError(null); save.mutate(true); }}

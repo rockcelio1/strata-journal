@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { getTutorialBySlug, saveTutorialProgress, getMyTutorialProgress } from "@/lib/help.functions";
 import { useQuery } from "@tanstack/react-query";
 
@@ -21,6 +22,7 @@ type Tutorial = {
   slug: string;
   title: string;
   description: string | null;
+  route_path: string | null;
   help_tutorial_steps: Step[];
 };
 
@@ -46,6 +48,7 @@ export function InteractiveTutorial({
     queryFn: () => getTut({ data: { slug } }) as any,
   });
 
+  const navigate = useNavigate();
   const [open, setOpen] = useState(autoStart);
   const [idx, setIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -53,6 +56,19 @@ export function InteractiveTutorial({
 
   const steps = (tut?.help_tutorial_steps ?? []).slice().sort((a, b) => a.step_order - b.step_order);
   const step = steps[idx];
+
+  // Se o tutorial tem rota alvo e o usuário está em outro lugar, navega antes de começar.
+  useEffect(() => {
+    if (!tut?.route_path || !open) return;
+    if (typeof window === "undefined") return;
+    if (window.location.pathname !== tut.route_path) {
+      try {
+        navigate({ to: tut.route_path as any, search: { tutorial: tut.slug } as any });
+      } catch {
+        window.location.assign(`${tut.route_path}?tutorial=${encodeURIComponent(tut.slug)}`);
+      }
+    }
+  }, [tut?.route_path, tut?.slug, open, navigate]);
 
   // Já concluído / dispensado? não reabrir automaticamente
   useEffect(() => {
