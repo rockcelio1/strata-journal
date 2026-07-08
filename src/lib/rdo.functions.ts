@@ -364,9 +364,7 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
     const { createOneDriveProxyUrl } = await import("./onedrive-proxy-token.server");
     const withUrls = await Promise.all((rows ?? []).map(async (a: any) => {
       if (a.storage_provider === "onedrive") {
-        // Evita URLs temporárias expiradas do OneDrive e não bloqueia a abertura
-        // do RDO com uma chamada à Microsoft para cada foto.
-        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome });
+        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome, empresaId: a.empresa_id });
         return { ...a, url: proxyUrl ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null };
       }
       const signed = await context.supabase.storage.from("rdo-anexos").createSignedUrl(a.storage_path, 60 * 60 * 24 * 7);
@@ -509,11 +507,11 @@ export const listGaleria = createServerFn({ method: "GET" })
       let url: string | null = null;
       let thumbUrl: string | null = null;
       if (a.storage_provider === "onedrive") {
-        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome });
+        const proxyUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome, empresaId: a.empresa_id });
         url = proxyUrl ?? a.onedrive_download_url ?? a.onedrive_web_url ?? null;
         const isImg = (a.mime_type || "").startsWith("image/");
         if (isImg) {
-          thumbUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome, thumb: "large" }) ?? url;
+          thumbUrl = createOneDriveProxyUrl({ itemId: a.onedrive_item_id, mimeType: a.mime_type, name: a.nome, thumb: "large", empresaId: a.empresa_id }) ?? url;
         } else {
           thumbUrl = url;
         }
