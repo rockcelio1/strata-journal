@@ -958,6 +958,7 @@ function formatAudit(a: any): {
   badgeClass: string;
   resumo: string;
   linhas: string[];
+  diffs: { campo: string; antes: string; depois: string }[];
 } {
   const acao: string = a.acao ?? "";
   const det: any = a.detalhes ?? {};
@@ -976,8 +977,8 @@ function formatAudit(a: any): {
   if (isRole) tipo = "Permissão por papel";
   else if (isOverride) tipo = "Exceção de usuário";
 
-  let verbo = op === "INSERT" ? "Criada" : op === "UPDATE" ? "Alterada" : op === "DELETE" ? "Removida" : "Alterada";
-  let badgeClass =
+  const verbo = op === "INSERT" ? "Criada" : op === "UPDATE" ? "Alterada" : op === "DELETE" ? "Removida" : "Alterada";
+  const badgeClass =
     op === "INSERT"
       ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
       : op === "DELETE"
@@ -995,15 +996,19 @@ function formatAudit(a: any): {
   if (isOverride && alvoNome) resumo += ` (usuário: ${alvoNome})`;
 
   const linhas: string[] = [];
-  if (op === "UPDATE" && allowedNew !== undefined && allowedOld !== undefined) {
+  const diffs: { campo: string; antes: string; depois: string }[] = [];
+  if (op === "UPDATE" && allowedNew !== undefined && allowedOld !== undefined && allowedNew !== allowedOld) {
+    diffs.push({ campo: "Acesso", antes: boolLabel(allowedOld), depois: boolLabel(allowedNew) });
     linhas.push(`De ${boolLabel(allowedOld)} para ${boolLabel(allowedNew)}`);
-  } else if (op !== "UPDATE" && allowedNew !== undefined) {
+  } else if (op === "INSERT" && allowedNew !== undefined) {
+    diffs.push({ campo: "Acesso", antes: "—", depois: boolLabel(allowedNew) });
     linhas.push(`Definido como ${boolLabel(allowedNew)}`);
-  } else if (op === "DELETE" && allowedOld !== undefined) {
-    linhas.push(`Era ${boolLabel(allowedOld)} — voltou a herdar do papel`);
+  } else if (op === "DELETE") {
+    diffs.push({ campo: "Acesso", antes: allowedOld !== undefined ? boolLabel(allowedOld) : "definido", depois: "Herdar do papel" });
+    linhas.push("Exceção removida — voltou a herdar do papel");
   }
 
-  return { acao: `${verbo} • ${tipo}`, badgeClass, resumo, linhas };
+  return { acao: `${verbo} • ${tipo}`, badgeClass, resumo, linhas, diffs };
 }
 
 function boolLabel(v: any): string {
