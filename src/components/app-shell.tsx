@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     const invalidate = () =>
       queryClient.invalidateQueries({ queryKey: ["rdo", "has-open-rascunho", uid] });
     const channel = supabase
-      .channel(`rdos-owner-${uid}`)
+      .channel(`rdos-owner-${uid}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "rdos", filter: `autor_id=eq.${uid}` },
