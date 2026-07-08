@@ -14,6 +14,7 @@ import {
   Images,
   Settings,
   Menu,
+  HelpCircle,
 } from "lucide-react";
 import { BackNav } from "@/components/back-nav";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -48,6 +49,7 @@ const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> =
   { to: "/galeria", label: "Galeria", icon: Images },
   { to: "/cadastros/mao-de-obra", label: "Cadastros", icon: Database, match: "/cadastros" },
   { to: "/empresa", label: "Empresa", icon: Building },
+  { to: "/ajuda", label: "Ajuda", icon: HelpCircle, match: "/ajuda" },
 ];
 
 const masterNavItem = { to: "/configuracoes", label: "Configurações", icon: Settings, match: "/configuracoes" };

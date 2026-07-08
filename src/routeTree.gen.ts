@@ -26,6 +26,7 @@ import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
+import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
 import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
@@ -44,10 +45,14 @@ import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes/_authenticated/cadastros.lista-tarefas'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
+import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
+import { Route as AuthenticatedAjudaAdminRouteImport } from './routes/_authenticated/ajuda.admin'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
+import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
+import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -139,6 +144,11 @@ const AuthenticatedCadastrosIndexRoute =
     path: '/cadastros/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
+  id: '/ajuda/',
+  path: '/ajuda/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRelatoriosDimRoute =
   AuthenticatedRelatoriosDimRouteImport.update({
     id: '/relatorios/$dim',
@@ -245,6 +255,17 @@ const AuthenticatedCadastrosEquipamentosRoute =
     path: '/cadastros/equipamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAjudaNovidadesRoute =
+  AuthenticatedAjudaNovidadesRouteImport.update({
+    id: '/ajuda/novidades',
+    path: '/ajuda/novidades',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjudaAdminRoute = AuthenticatedAjudaAdminRouteImport.update({
+  id: '/ajuda/admin',
+  path: '/ajuda/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -268,6 +289,18 @@ const AuthenticatedCadastrosTemplatesTarefasIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
   } as any)
+const AuthenticatedAjudaCategoriaSlugRoute =
+  AuthenticatedAjudaCategoriaSlugRouteImport.update({
+    id: '/ajuda/categoria/$slug',
+    path: '/ajuda/categoria/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAjudaArtigoSlugRoute =
+  AuthenticatedAjudaArtigoSlugRouteImport.update({
+    id: '/ajuda/artigo/$slug',
+    path: '/ajuda/artigo/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -284,6 +317,8 @@ export interface FileRoutesByFullPath {
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -302,10 +337,13 @@ export interface FileRoutesByFullPath {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -323,6 +361,8 @@ export interface FileRoutesByTo {
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -341,10 +381,13 @@ export interface FileRoutesByTo {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
+  '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -365,6 +408,8 @@ export interface FileRoutesById {
   '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/_authenticated/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -383,10 +428,13 @@ export interface FileRoutesById {
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/_authenticated/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -407,6 +455,8 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/ajuda/admin'
+    | '/ajuda/novidades'
     | '/cadastros/equipamentos'
     | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
@@ -425,10 +475,13 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
     | '/obras/'
     | '/rdo/'
+    | '/ajuda/artigo/$slug'
+    | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -446,6 +499,8 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/ajuda/admin'
+    | '/ajuda/novidades'
     | '/cadastros/equipamentos'
     | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
@@ -464,10 +519,13 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
     | '/obras'
     | '/rdo'
+    | '/ajuda/artigo/$slug'
+    | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   id:
@@ -487,6 +545,8 @@ export interface FileRouteTypes {
     | '/_authenticated/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/ajuda/admin'
+    | '/_authenticated/ajuda/novidades'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/lista-tarefas'
     | '/_authenticated/cadastros/mao-de-obra'
@@ -505,10 +565,13 @@ export interface FileRouteTypes {
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
     | '/_authenticated/relatorios/$dim'
+    | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
+    | '/_authenticated/ajuda/artigo/$slug'
+    | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
@@ -648,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ajuda/': {
+      id: '/_authenticated/ajuda/'
+      path: '/ajuda'
+      fullPath: '/ajuda/'
+      preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/relatorios/$dim': {
       id: '/_authenticated/relatorios/$dim'
       path: '/relatorios/$dim'
@@ -774,6 +844,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ajuda/novidades': {
+      id: '/_authenticated/ajuda/novidades'
+      path: '/ajuda/novidades'
+      fullPath: '/ajuda/novidades'
+      preLoaderRoute: typeof AuthenticatedAjudaNovidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/admin': {
+      id: '/_authenticated/ajuda/admin'
+      path: '/ajuda/admin'
+      fullPath: '/ajuda/admin'
+      preLoaderRoute: typeof AuthenticatedAjudaAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -801,6 +885,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/cadastros/templates-tarefas/$id'
       preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
       parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
+    }
+    '/_authenticated/ajuda/categoria/$slug': {
+      id: '/_authenticated/ajuda/categoria/$slug'
+      path: '/ajuda/categoria/$slug'
+      fullPath: '/ajuda/categoria/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaCategoriaSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/artigo/$slug': {
+      id: '/_authenticated/ajuda/artigo/$slug'
+      path: '/ajuda/artigo/$slug'
+      fullPath: '/ajuda/artigo/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaArtigoSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -867,6 +965,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
   AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
+  AuthenticatedAjudaAdminRoute: typeof AuthenticatedAjudaAdminRoute
+  AuthenticatedAjudaNovidadesRoute: typeof AuthenticatedAjudaNovidadesRoute
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
   AuthenticatedCadastrosListaTarefasRoute: typeof AuthenticatedCadastrosListaTarefasRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -876,9 +976,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
   AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
   AuthenticatedRelatoriosDimRoute: typeof AuthenticatedRelatoriosDimRoute
+  AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedCadastrosIndexRoute: typeof AuthenticatedCadastrosIndexRoute
   AuthenticatedObrasIndexRoute: typeof AuthenticatedObrasIndexRoute
   AuthenticatedRdoIndexRoute: typeof AuthenticatedRdoIndexRoute
+  AuthenticatedAjudaArtigoSlugRoute: typeof AuthenticatedAjudaArtigoSlugRoute
+  AuthenticatedAjudaCategoriaSlugRoute: typeof AuthenticatedAjudaCategoriaSlugRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -887,6 +990,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
   AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
+  AuthenticatedAjudaAdminRoute: AuthenticatedAjudaAdminRoute,
+  AuthenticatedAjudaNovidadesRoute: AuthenticatedAjudaNovidadesRoute,
   AuthenticatedCadastrosEquipamentosRoute:
     AuthenticatedCadastrosEquipamentosRoute,
   AuthenticatedCadastrosListaTarefasRoute:
@@ -900,9 +1005,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
   AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
   AuthenticatedRelatoriosDimRoute: AuthenticatedRelatoriosDimRoute,
+  AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedCadastrosIndexRoute: AuthenticatedCadastrosIndexRoute,
   AuthenticatedObrasIndexRoute: AuthenticatedObrasIndexRoute,
   AuthenticatedRdoIndexRoute: AuthenticatedRdoIndexRoute,
+  AuthenticatedAjudaArtigoSlugRoute: AuthenticatedAjudaArtigoSlugRoute,
+  AuthenticatedAjudaCategoriaSlugRoute: AuthenticatedAjudaCategoriaSlugRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
