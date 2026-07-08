@@ -537,18 +537,41 @@ function MatrizUsuario({
 
 const PAGE_SIZE = 100;
 
-function AuditoriaLista({ rows }: { rows: any[] }) {
-  const [page, setPage] = useState(1);
-  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
-  const [q, setQ] = useState("");
-  const [fRecurso, setFRecurso] = useState<string>("all");
-  const [fAcao, setFAcao] = useState<string>("all");
-  const [fTipo, setFTipo] = useState<string>("all"); // INSERT/UPDATE/DELETE
-  const [fEscopo, setFEscopo] = useState<string>("all"); // role/override
-  const [fPapel, setFPapel] = useState<string>("all");
+function AuditoriaLista({
+  rows,
+  isLoading,
+  isError,
+  error,
+  onRetry,
+}: {
+  rows: any[];
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  onRetry: () => void;
+}) {
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  // Validação: escopo=role → papel livre, mas texto de "usuário" perde sentido; escopo=override → papel não se aplica.
+  const escopoRoleWithUserSearch = search.escopo === "role" && !!search.q.trim();
+  const escopoOverrideWithPapel = search.escopo === "override" && search.papel !== "all";
+  const validationMsg = escopoOverrideWithPapel
+    ? "Filtro por papel não se aplica ao escopo 'Somente por usuário'. O filtro de papel será ignorado."
+    : escopoRoleWithUserSearch
+      ? "A busca de usuário/autor não filtra registros por papel — os resultados podem ficar amplos."
+      : null;
+
+  const setSearch = (patch: Partial<typeof search>) => {
+    navigate({
+      to: Route.fullPath,
+      search: (prev) => ({ ...prev, ...patch, page: patch.page ?? 1 }),
+      replace: true,
+    });
+  };
 
   const filtered = useMemo(() => {
-    const t = q.toLowerCase().trim();
+    const t = search.q.toLowerCase().trim();
     const arr = rows.filter((a: any) => {
       const det = a.detalhes ?? {};
       const rec = det.new ?? det.old ?? {};
@@ -557,12 +580,13 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
       const isOverride = acao.includes("user_permission_overrides");
       const op: string = det.op ?? (acao.endsWith("_insert") ? "INSERT" : acao.endsWith("_update") ? "UPDATE" : acao.endsWith("_delete") ? "DELETE" : "");
 
-      if (fRecurso !== "all" && rec.resource !== fRecurso) return false;
-      if (fAcao !== "all" && rec.action !== fAcao) return false;
-      if (fTipo !== "all" && op !== fTipo) return false;
-      if (fEscopo === "role" && !isRole) return false;
-      if (fEscopo === "override" && !isOverride) return false;
-      if (fPapel !== "all" && rec.role !== fPapel) return false;
+      if (search.recurso !== "all" && rec.resource !== search.recurso) return false;
+      if (search.acao !== "all" && rec.action !== search.acao) return false;
+      if (search.tipo !== "all" && op !== search.tipo) return false;
+      if (search.escopo === "role" && !isRole) return false;
+      if (search.escopo === "override" && !isOverride) return false;
+      // Papel só filtra registros por papel (escopo=role/all)
+      if (search.papel !== "all" && search.escopo !== "override" && rec.role !== search.papel) return false;
 
       if (t) {
         const hay = [
@@ -576,46 +600,92 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
     arr.sort((a: any, b: any) => {
       const da = new Date(a.created_at).getTime();
       const db = new Date(b.created_at).getTime();
-      return sortDir === "desc" ? db - da : da - db;
+      return search.sort === "desc" ? db - da : da - db;
     });
     return arr;
-  }, [rows, q, fRecurso, fAcao, fTipo, fEscopo, fPapel, sortDir]);
-
-  useEffect(() => { setPage(1); }, [q, fRecurso, fAcao, fTipo, fEscopo, fPapel, sortDir]);
+  }, [rows, search.q, search.recurso, search.acao, search.tipo, search.escopo, search.papel, search.sort]);
 
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const p = Math.min(page, pages);
+  const p = Math.min(Math.max(1, search.page), pages);
   const start = (p - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
 
   const limparFiltros = () => {
-    setQ(""); setFRecurso("all"); setFAcao("all"); setFTipo("all"); setFEscopo("all"); setFPapel("all");
+    navigate({
+      to: Route.fullPath,
+      search: { q: "", recurso: "all", acao: "all", tipo: "all", escopo: "all", papel: "all", sort: "desc", page: 1 },
+      replace: true,
+    });
   };
-  const hasFilters = q || fRecurso !== "all" || fAcao !== "all" || fTipo !== "all" || fEscopo !== "all" || fPapel !== "all";
+  const hasFilters =
+    !!search.q || search.recurso !== "all" || search.acao !== "all" ||
+    search.tipo !== "all" || search.escopo !== "all" || search.papel !== "all";
+
+  const exportarCSV = () => {
+    const header = ["quando", "autor", "acao", "tipo", "escopo", "recurso", "action", "papel", "alvo", "de", "para"];
+    const linhas = filtered.map((a: any) => {
+      const f = formatAudit(a);
+      const det = a.detalhes ?? {};
+      const rec = det.new ?? det.old ?? {};
+      const acao: string = a.acao ?? "";
+      const op: string = det.op ?? "";
+      const escopo = acao.includes("role_permissions") ? "papel" : acao.includes("user_permission_overrides") ? "usuario" : "";
+      return [
+        new Date(a.created_at).toISOString(),
+        a.autor?.nome ?? "",
+        f.acao,
+        op,
+        escopo,
+        rec.resource ?? "",
+        rec.action ?? "",
+        rec.role ?? "",
+        a.alvo?.nome ?? "",
+        det.old?.allowed === undefined ? "" : String(det.old?.allowed),
+        det.new?.allowed === undefined ? "" : String(det.new?.allowed),
+      ];
+    });
+    const csv = [header, ...linhas]
+      .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `auditoria-permissoes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-8 w-[240px] h-9" placeholder="Buscar usuário/autor…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input
+            className="pl-8 w-[240px] h-9"
+            placeholder="Buscar usuário/autor…"
+            value={search.q}
+            onChange={(e) => setSearch({ q: e.target.value })}
+          />
         </div>
-        <Select value={fRecurso} onValueChange={setFRecurso}>
+        <Select value={search.recurso} onValueChange={(v) => setSearch({ recurso: v })}>
           <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Recurso" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os recursos</SelectItem>
             {RESOURCES.map((r) => <SelectItem key={r} value={r}>{RESOURCE_LABELS[r]}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={fAcao} onValueChange={setFAcao}>
+        <Select value={search.acao} onValueChange={(v) => setSearch({ acao: v })}>
           <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Ação" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as ações</SelectItem>
             {ACTIONS.map((a) => <SelectItem key={a} value={a}>{ACTION_LABELS[a]}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={fTipo} onValueChange={setFTipo}>
+        <Select value={search.tipo} onValueChange={(v) => setSearch({ tipo: v })}>
           <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Toda mudança</SelectItem>
@@ -624,7 +694,7 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
             <SelectItem value="DELETE">Removida</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={fEscopo} onValueChange={setFEscopo}>
+        <Select value={search.escopo} onValueChange={(v) => setSearch({ escopo: v })}>
           <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Escopo" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Papel e usuário</SelectItem>
@@ -632,7 +702,11 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
             <SelectItem value="override">Somente por usuário</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={fPapel} onValueChange={setFPapel}>
+        <Select
+          value={search.papel}
+          onValueChange={(v) => setSearch({ papel: v })}
+          disabled={search.escopo === "override"}
+        >
           <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Papel" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os papéis</SelectItem>
@@ -644,7 +718,23 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
             <X className="h-4 w-4 mr-1" /> Limpar
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportarCSV}
+          disabled={total === 0 || isLoading}
+          className="ml-auto"
+        >
+          <Download className="h-4 w-4 mr-1" /> Exportar CSV
+        </Button>
       </div>
+
+      {validationMsg && (
+        <div className="flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200 bg-amber-100/60 dark:bg-amber-900/30 border border-amber-300/60 dark:border-amber-800/60 rounded-md p-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>{validationMsg}</span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
@@ -653,71 +743,88 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
             : `Mostrando ${start + 1}–${Math.min(start + PAGE_SIZE, total)} de ${total}`}
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={() => setPage((v) => Math.max(1, v - 1))} disabled={p <= 1}>
+          <Button variant="outline" size="sm" onClick={() => setSearch({ page: Math.max(1, p - 1) })} disabled={p <= 1}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="px-2">Página {p} / {pages}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage((v) => Math.min(pages, v + 1))} disabled={p >= pages}>
+          <Button variant="outline" size="sm" onClick={() => setSearch({ page: Math.min(pages, p + 1) })} disabled={p >= pages}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      <div className="border rounded-md overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr className="text-left">
-              <th className="p-2 w-[180px]">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 hover:underline"
-                  onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-                  title="Alternar ordenação"
-                >
-                  Quando <ArrowUpDown className="h-3 w-3" />
-                  <span className="text-[10px] text-muted-foreground">({sortDir === "desc" ? "mais recente" : "mais antiga"})</span>
-                </button>
-              </th>
-              <th className="p-2 w-[220px]">Ação</th>
-              <th className="p-2">Detalhes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {slice.map((a) => {
-              const f = formatAudit(a);
-              return (
-                <tr key={a.id} className="border-t align-top">
-                  <td className="p-2 whitespace-nowrap">
-                    {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                    <div className="text-[11px] text-muted-foreground">
-                      por {a.autor?.nome ?? "—"}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <span className={"inline-block px-2 py-0.5 rounded text-xs " + f.badgeClass}>{f.acao}</span>
-                  </td>
-                  <td className="p-2">
-                    <div className="text-sm">{f.resumo}</div>
-                    {f.linhas.length > 0 && (
-                      <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                        {f.linhas.map((l, i) => (
-                          <li key={i}>{l}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {slice.length === 0 && (
-              <tr>
-                <td colSpan={3} className="p-6 text-center text-muted-foreground">
-                  {hasFilters ? "Nenhum registro para os filtros aplicados." : "Sem registros ainda."}
-                </td>
+
+      {isError ? (
+        <div className="border border-destructive/40 bg-destructive/10 rounded-md p-6 text-center space-y-2">
+          <AlertCircle className="h-6 w-6 mx-auto text-destructive" />
+          <p className="text-sm font-medium">Falha ao carregar a auditoria</p>
+          <p className="text-xs text-muted-foreground">{error?.message ?? "Erro desconhecido."}</p>
+          <Button size="sm" variant="outline" onClick={onRetry}>Tentar novamente</Button>
+        </div>
+      ) : isLoading ? (
+        <div className="border rounded-md p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando auditoria…
+        </div>
+      ) : slice.length === 0 ? (
+        <div className="border border-dashed rounded-md p-10 text-center space-y-2">
+          <Inbox className="h-8 w-8 mx-auto text-muted-foreground" />
+          <p className="text-sm font-medium">
+            {hasFilters ? "Nenhum registro para os filtros aplicados." : "Sem registros de auditoria ainda."}
+          </p>
+          {hasFilters && (
+            <Button size="sm" variant="outline" onClick={limparFiltros}>Limpar filtros</Button>
+          )}
+        </div>
+      ) : (
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr className="text-left">
+                <th className="p-2 w-[180px]">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 hover:underline"
+                    onClick={() => setSearch({ sort: search.sort === "desc" ? "asc" : "desc" })}
+                    title="Alternar ordenação"
+                  >
+                    Quando <ArrowUpDown className="h-3 w-3" />
+                    <span className="text-[10px] text-muted-foreground">({search.sort === "desc" ? "mais recente" : "mais antiga"})</span>
+                  </button>
+                </th>
+                <th className="p-2 w-[220px]">Ação</th>
+                <th className="p-2">Detalhes</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {slice.map((a) => {
+                const f = formatAudit(a);
+                return (
+                  <tr key={a.id} className="border-t align-top">
+                    <td className="p-2 whitespace-nowrap">
+                      {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                      <div className="text-[11px] text-muted-foreground">
+                        por {a.autor?.nome ?? "—"}
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <span className={"inline-block px-2 py-0.5 rounded text-xs " + f.badgeClass}>{f.acao}</span>
+                    </td>
+                    <td className="p-2">
+                      <div className="text-sm">{f.resumo}</div>
+                      {f.linhas.length > 0 && (
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          {f.linhas.map((l, i) => (
+                            <li key={i}>{l}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
