@@ -898,7 +898,7 @@ function AuditoriaDetalheDialog({ registro, onClose }: { registro: any | null; o
 
         <dl className="text-sm divide-y">
           <Row label="Quando">{quandoTxt}</Row>
-          <Row label="Quem alterou">
+          <Row label="Quem fez">
             {a.autor?.nome ?? "—"}
             {a.autor?.email && <div className="text-xs text-muted-foreground">{a.autor.email}</div>}
           </Row>
@@ -921,22 +921,27 @@ function AuditoriaDetalheDialog({ registro, onClose }: { registro: any | null; o
               <div className="text-xs text-muted-foreground">{descAction(action)}</div>
             </Row>
           )}
-          {(antes !== undefined || depois !== undefined) && (
-            <Row label="Mudança">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-muted text-xs">Antes: {boolLabel(antes)}</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs">Depois: {boolLabel(depois)}</span>
-              </div>
+          {f.diffs.length > 0 && (
+            <Row label="O que mudou">
+              <ul className="space-y-1.5">
+                {f.diffs.map((d, i) => (
+                  <li key={i} className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground min-w-[60px]">{d.campo}:</span>
+                    <span className="px-2 py-0.5 rounded bg-muted text-xs line-through decoration-rose-500/60">{d.antes}</span>
+                    <span aria-hidden>→</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 text-xs font-medium">{d.depois}</span>
+                  </li>
+                ))}
+              </ul>
               {op === "DELETE" && (
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs text-muted-foreground mt-2">
                   A exceção foi removida — o usuário voltou a herdar a permissão do papel.
                 </div>
               )}
             </Row>
           )}
           <Row label="Identificador">
-            <code className="text-[11px] break-all">{a.id}</code>
+            <code className="text-[11px] break-all text-muted-foreground">{a.id}</code>
           </Row>
         </dl>
       </DialogContent>
