@@ -300,6 +300,7 @@ function MatrizPapel({
         <thead className="bg-muted/50">
           <tr>
             <th className="p-2 text-left">Recurso</th>
+            <th className="p-2 text-center">Todos</th>
             {ACTIONS.map((a) => (
               <th key={a} className="p-2 text-center">
                 <Tooltip>
@@ -311,28 +312,47 @@ function MatrizPapel({
           </tr>
         </thead>
         <tbody>
-          {RESOURCES.map((res) => (
-            <tr key={res} className="border-t">
-              <td className="p-2 font-medium">
-                <Tooltip>
-                  <TooltipTrigger className="cursor-help underline decoration-dotted">{RESOURCE_LABELS[res]}</TooltipTrigger>
-                  <TooltipContent>{descResource(res)}</TooltipContent>
-                </Tooltip>
-              </td>
-              {ACTIONS.map((act) => {
-                const allowed = defaultsMap.get(`${role}.${res}.${act}`) ?? false;
-                return (
-                  <td key={act} className="p-2 text-center">
-                    <Checkbox
-                      checked={allowed}
-                      onCheckedChange={(v) => onToggle(res, act, Boolean(v))}
-                      aria-label={`${RESOURCE_LABELS[res]} - ${ACTION_LABELS[act]}`}
-                    />
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+          {RESOURCES.map((res) => {
+            const marcados = ACTIONS.filter((act) => defaultsMap.get(`${role}.${res}.${act}`) ?? false).length;
+            const total = ACTIONS.length;
+            const allChecked = marcados === total;
+            const someChecked = marcados > 0 && marcados < total;
+            return (
+              <tr key={res} className="border-t">
+                <td className="p-2 font-medium">
+                  <Tooltip>
+                    <TooltipTrigger className="cursor-help underline decoration-dotted">{RESOURCE_LABELS[res]}</TooltipTrigger>
+                    <TooltipContent>{descResource(res)}</TooltipContent>
+                  </Tooltip>
+                </td>
+                <td className="p-2 text-center">
+                  <Checkbox
+                    checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                    onCheckedChange={(v) => {
+                      const novo = Boolean(v);
+                      for (const act of ACTIONS) {
+                        const atual = defaultsMap.get(`${role}.${res}.${act}`) ?? false;
+                        if (atual !== novo) onToggle(res, act, novo);
+                      }
+                    }}
+                    aria-label={`Selecionar todas as ações de ${RESOURCE_LABELS[res]}`}
+                  />
+                </td>
+                {ACTIONS.map((act) => {
+                  const allowed = defaultsMap.get(`${role}.${res}.${act}`) ?? false;
+                  return (
+                    <td key={act} className="p-2 text-center">
+                      <Checkbox
+                        checked={allowed}
+                        onCheckedChange={(v) => onToggle(res, act, Boolean(v))}
+                        aria-label={`${RESOURCE_LABELS[res]} - ${ACTION_LABELS[act]}`}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
