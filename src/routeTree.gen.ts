@@ -45,6 +45,7 @@ import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
 import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes/_authenticated/cadastros.lista-tarefas'
 import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
+import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
@@ -253,6 +254,12 @@ const AuthenticatedCadastrosEquipamentosRoute =
     path: '/cadastros/equipamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAjudaNovidadesRoute =
+  AuthenticatedAjudaNovidadesRouteImport.update({
+    id: '/ajuda/novidades',
+    path: '/ajuda/novidades',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -346,6 +354,7 @@ export interface FileRoutesByTo {
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -391,6 +400,7 @@ export interface FileRoutesById {
   '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
   '/_authenticated/cadastros/equipamentos': typeof AuthenticatedCadastrosEquipamentosRoute
   '/_authenticated/cadastros/lista-tarefas': typeof AuthenticatedCadastrosListaTarefasRoute
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/ajuda/novidades'
     | '/cadastros/equipamentos'
     | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/ajuda/novidades'
     | '/cadastros/equipamentos'
     | '/cadastros/lista-tarefas'
     | '/cadastros/mao-de-obra'
@@ -522,6 +534,7 @@ export interface FileRouteTypes {
     | '/_authenticated/galeria'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/ajuda/novidades'
     | '/_authenticated/cadastros/equipamentos'
     | '/_authenticated/cadastros/lista-tarefas'
     | '/_authenticated/cadastros/mao-de-obra'
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ajuda/novidades': {
+      id: '/_authenticated/ajuda/novidades'
+      path: '/ajuda/novidades'
+      fullPath: '/ajuda/novidades'
+      preLoaderRoute: typeof AuthenticatedAjudaNovidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -926,6 +946,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
   AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
+  AuthenticatedAjudaNovidadesRoute: typeof AuthenticatedAjudaNovidadesRoute
   AuthenticatedCadastrosEquipamentosRoute: typeof AuthenticatedCadastrosEquipamentosRoute
   AuthenticatedCadastrosListaTarefasRoute: typeof AuthenticatedCadastrosListaTarefasRoute
   AuthenticatedCadastrosMaoDeObraRoute: typeof AuthenticatedCadastrosMaoDeObraRoute
@@ -949,6 +970,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
   AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
+  AuthenticatedAjudaNovidadesRoute: AuthenticatedAjudaNovidadesRoute,
   AuthenticatedCadastrosEquipamentosRoute:
     AuthenticatedCadastrosEquipamentosRoute,
   AuthenticatedCadastrosListaTarefasRoute:
