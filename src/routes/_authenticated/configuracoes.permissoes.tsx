@@ -183,6 +183,8 @@ function PermissoesPage() {
                 mutRole.mutate({ role: papelSelecionado, resource, action, allowed })
               }
               onBulk={async (resource, allowed) => {
+                const key = `${papelSelecionado}.${resource}`;
+                setBulkKey(key);
                 // Atualização otimista: reflete na UI antes de qualquer request.
                 qc.setQueryData(["matriz-permissoes"], (prev: any) => {
                   if (!prev) return prev;
@@ -202,13 +204,15 @@ function PermissoesPage() {
                       upRoleFn({ data: { role: papelSelecionado, resource, action, allowed } }),
                     ),
                   );
-                  notify.success("Permissões do recurso atualizadas", fastToast);
+                  notify.success(MSG_OK);
                 } catch (e: any) {
-                  notify.error(e?.message ?? "Falha ao atualizar", fastToast);
+                  notify.error(e?.message ?? "Falha ao atualizar");
                 } finally {
+                  setBulkKey(null);
                   invalidate();
                 }
               }}
+              bulkKey={bulkKey}
             />
           </TabsContent>
 
