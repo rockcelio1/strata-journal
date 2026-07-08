@@ -795,7 +795,7 @@ export const logMediaLoadFailure = createServerFn({ method: "POST" })
     );
 
     if (empresaId) {
-      await context.supabase.from("audit_logs_usuarios").insert({
+      const { error: auditErr } = await context.supabase.from("audit_logs_usuarios").insert({
         empresa_id: empresaId,
         autor_id: context.userId,
         acao: "galeria_midia_falha",
@@ -807,9 +807,11 @@ export const logMediaLoadFailure = createServerFn({ method: "POST" })
           anexo_id: data.anexo_id ?? null,
           url: data.url ?? null,
         },
-      }).throwOnError();
+      });
+      if (auditErr) console.warn(`[galeria] audit insert falhou: ${auditErr.message}`);
     }
     return { ok: true };
   });
+
 
 
