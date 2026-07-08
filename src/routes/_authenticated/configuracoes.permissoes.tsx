@@ -180,6 +180,33 @@ function PermissoesPage() {
               onToggle={(resource, action, allowed) =>
                 mutRole.mutate({ role: papelSelecionado, resource, action, allowed })
               }
+              onBulk={async (resource, allowed) => {
+                // Atualização otimista: reflete na UI antes de qualquer request.
+                qc.setQueryData(["matriz-permissoes"], (prev: any) => {
+                  if (!prev) return prev;
+                  const defaults = [...(prev.defaults ?? [])];
+                  for (const action of ACTIONS) {
+                    const idx = defaults.findIndex(
+                      (d: any) => d.role === papelSelecionado && d.resource === resource && d.action === action,
+                    );
+                    if (idx >= 0) defaults[idx] = { ...defaults[idx], allowed };
+                    else defaults.push({ role: papelSelecionado, resource, action, allowed });
+                  }
+                  return { ...prev, defaults };
+                });
+                try {
+                  await Promise.all(
+                    ACTIONS.map((action) =>
+                      upRoleFn({ data: { role: papelSelecionado, resource, action, allowed } }),
+                    ),
+                  );
+                  toast.success("Permissões do recurso atualizadas", fastToast);
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Falha ao atualizar", fastToast);
+                } finally {
+                  invalidate();
+                }
+              }}
             />
           </TabsContent>
 
@@ -286,11 +313,13 @@ function MatrizPapel({
   role,
   defaultsMap,
   onToggle,
+  onBulk,
   isLoading,
 }: {
   role: AppRole;
   defaultsMap: Map<string, boolean>;
   onToggle: (r: AppResource, a: AppAction, allowed: boolean) => void;
+  onBulk: (r: AppResource, allowed: boolean) => void;
   isLoading: boolean;
 }) {
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -328,13 +357,7 @@ function MatrizPapel({
                 <td className="p-2 text-center">
                   <Checkbox
                     checked={allChecked ? true : someChecked ? "indeterminate" : false}
-                    onCheckedChange={(v) => {
-                      const novo = Boolean(v);
-                      for (const act of ACTIONS) {
-                        const atual = defaultsMap.get(`${role}.${res}.${act}`) ?? false;
-                        if (atual !== novo) onToggle(res, act, novo);
-                      }
-                    }}
+                    onCheckedChange={(v) => onBulk(res, Boolean(v))}
                     aria-label={`Selecionar todas as ações de ${RESOURCE_LABELS[res]}`}
                   />
                 </td>

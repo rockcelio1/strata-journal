@@ -158,7 +158,14 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AccessibilityProvider>
         <Outlet />
-        <Toaster position="top-right" richColors closeButton theme="system" />
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          theme="system"
+          duration={1200}
+          toastOptions={{ classNames: { toast: "animate-fade-in" } }}
+        />
         <SkeletonDebugPanel />
       </AccessibilityProvider>
     </QueryClientProvider>
