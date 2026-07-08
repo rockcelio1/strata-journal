@@ -201,7 +201,6 @@ export const saveObraGeo = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("obras")
       .update({
-        ge_lat: undefined,
         geo_lat: data.lat,
         geo_lng: data.lng,
         geo_endereco: data.endereco ?? null,
