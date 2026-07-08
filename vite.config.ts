@@ -18,8 +18,9 @@ export default defineConfig({
         manifest: false,
         workbox: {
           globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-          navigateFallback: "/",
-          navigateFallbackDenylist: [/^\/_serverFn/, /^\/api/, /^\/~oauth/],
+          // Sem navigateFallback: cada rota é SSR e tem seu próprio HTML.
+          // Um fallback fixo (ex.: "/") faria o refresh cair sempre na home
+          // e redirecionar para /dashboard, tirando o usuário da tela atual.
           runtimeCaching: [
             {
               // Navegações HTML: rede primeiro, cai pro cache offline se falhar
