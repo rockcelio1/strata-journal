@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, Trash2, UserPlus, X } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/grupos")({
   component: GruposPage,
@@ -50,12 +50,12 @@ function GruposLista({ tipo }: { tipo: "global" | "equipe_obra" }) {
 
   const criar = useMutation({
     mutationFn: () => criarFn({ data: { nome, tipo, obra_id: tipo === "equipe_obra" ? obraId : null } }),
-    onSuccess: () => { setNome(""); setObraId(""); toast.success("Grupo criado"); qc.invalidateQueries({ queryKey: ["grupos", tipo] }); },
-    onError: (e: any) => toast.error(e?.message ?? "Falha ao criar"),
+    onSuccess: () => { setNome(""); setObraId(""); notify.success("Grupo criado"); qc.invalidateQueries({ queryKey: ["grupos", tipo] }); },
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao criar"),
   });
   const excluir = useMutation({
     mutationFn: (id: string) => excluirFn({ data: { id } }),
-    onSuccess: () => { toast.success("Grupo excluído"); qc.invalidateQueries({ queryKey: ["grupos", tipo] }); },
+    onSuccess: () => { notify.success("Grupo excluído"); qc.invalidateQueries({ queryKey: ["grupos", tipo] }); },
   });
 
   return (

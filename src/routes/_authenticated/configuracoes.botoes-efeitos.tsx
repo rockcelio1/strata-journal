@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,9 +83,9 @@ function ButtonEffectsSettingsPage() {
       if (error) throw error;
       clearButtonEffectsCache();
       setPending((p) => { const { [key]: _, ...rest } = p; return rest; });
-      toast.success(`Efeito salvo para “${entry.label}”`);
+      notify.success(`Efeito salvo para “${entry.label}”`);
     } catch (e: any) {
-      toast.error("Falha ao salvar", { description: e?.message });
+      notify.error("Falha ao salvar", { description: e?.message });
     } finally {
       setSaving(null);
     }

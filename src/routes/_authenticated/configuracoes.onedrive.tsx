@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle, ExternalLink, HardDrive } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
@@ -59,7 +59,7 @@ function OneDriveSettings() {
 
   useEffect(() => {
     if (folders.error) {
-      toast.error("Falha ao listar pastas do OneDrive", { description: (folders.error as Error).message });
+      notify.error("Falha ao listar pastas do OneDrive", { description: (folders.error as Error).message });
     }
   }, [folders.error]);
 
@@ -68,27 +68,27 @@ function OneDriveSettings() {
     try {
       const r = await ensureFn({ data: { path: clean } });
       if (!r.ok) {
-        toast.error("Pasta raiz inválida", { description: r.error });
+        notify.error("Pasta raiz inválida", { description: r.error });
         return;
       }
     } catch (e: any) {
-      toast.error("Falha ao validar pasta", { description: e?.message });
+      notify.error("Falha ao validar pasta", { description: e?.message });
       return;
     }
     setRootFolder(clean);
     localStorage.setItem(ROOT_KEY, clean);
-    toast.success("Pasta raiz salva e validada", { description: clean });
+    notify.success("Pasta raiz salva e validada", { description: clean });
   }
 
   const test = useMutation({
     mutationFn: () => testFn({ data: { path: rootFolder } }),
-    onError: (e: any) => toast.error("Falha no teste", { description: e?.message }),
+    onError: (e: any) => notify.error("Falha no teste", { description: e?.message }),
   });
 
   const testConn = useMutation({
     mutationFn: () => listFn({ data: { path: "" } }),
-    onSuccess: (r) => toast.success("Conexão OK", { description: `${r.folders.length} pasta(s) na raiz do OneDrive` }),
-    onError: (e: any) => toast.error("Conexão falhou", { description: e?.message ?? "Sem resposta do OneDrive" }),
+    onSuccess: (r) => notify.success("Conexão OK", { description: `${r.folders.length} pasta(s) na raiz do OneDrive` }),
+    onError: (e: any) => notify.error("Conexão falhou", { description: e?.message ?? "Sem resposta do OneDrive" }),
   });
 
   const [accountModal, setAccountModal] = useState<null | "switch" | "disconnect">(null);
@@ -415,8 +415,8 @@ function OneDriveSettings() {
                     ? "Trocar a conta do OneDrive conectada a este projeto"
                     : "Desconectar a conta do OneDrive deste projeto";
                   navigator.clipboard?.writeText(msg).then(
-                    () => toast.success("Comando copiado — cole no chat"),
-                    () => toast.error("Não foi possível copiar"),
+                    () => notify.success("Comando copiado — cole no chat"),
+                    () => notify.error("Não foi possível copiar"),
                   );
                 }}
                 className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent"

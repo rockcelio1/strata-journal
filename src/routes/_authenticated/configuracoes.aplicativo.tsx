@@ -8,7 +8,7 @@ import { Smartphone, Tablet, Monitor, RefreshCw, Apple, Download } from "lucide-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe, updateEmpresaAppLinks } from "@/lib/core.functions";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/aplicativo")({
   component: AplicativoPage,
@@ -44,8 +44,8 @@ function AplicativoPage() {
 
   const mSave = useMutation({
     mutationFn: (v: { app_ios_url: string | null; app_android_url: string | null }) => updateLinksFn({ data: v }),
-    onSuccess: () => { toast.success("Links salvos"); qc.invalidateQueries({ queryKey: ["me"] }); },
-    onError: (e: any) => toast.error(e.message),
+    onSuccess: () => { notify.success("Links salvos"); qc.invalidateQueries({ queryKey: ["me"] }); },
+    onError: (e: any) => notify.error(e.message),
   });
 
   return (

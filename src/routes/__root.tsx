@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
+import { SystemNoticeHost } from "@/components/system-notice";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -166,6 +167,7 @@ function RootComponent() {
           duration={1200}
           toastOptions={{ classNames: { toast: "animate-fade-in" } }}
         />
+        <SystemNoticeHost />
         <SkeletonDebugPanel />
       </AccessibilityProvider>
     </QueryClientProvider>

@@ -8,7 +8,7 @@ import { LogoWallpaper } from "@/components/logo-wallpaper";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Building2, Upload, Trash2, Loader2, History, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -139,12 +139,12 @@ function SistemaPage() {
         tamanho_bytes: blob.size, width: preview.isSvg ? null : width, height: preview.isSvg ? null : height,
       } });
       invalidate();
-      toast.success("Logotipo atualizado");
+      notify.success("Logotipo atualizado");
       URL.revokeObjectURL(preview.url);
       setPreview(null);
       if (fileRef.current) fileRef.current.value = "";
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao enviar");
+      notify.error(e.message ?? "Falha ao enviar");
     } finally {
       setUploading(false);
     }
@@ -154,9 +154,9 @@ function SistemaPage() {
     try {
       await updateLogoFn({ data: { logo_url: null } });
       invalidate();
-      toast.success("Logotipo restaurado para o padrão");
+      notify.success("Logotipo restaurado para o padrão");
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao remover");
+      notify.error(e.message ?? "Falha ao remover");
     }
   }
 
@@ -164,10 +164,10 @@ function SistemaPage() {
     try {
       const r: any = await restoreFn({ data: { version_id: versionId } });
       invalidate();
-      toast.success("Versão restaurada");
+      notify.success("Versão restaurada");
       return r;
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao restaurar");
+      notify.error(e.message ?? "Falha ao restaurar");
     }
   }
 
@@ -351,8 +351,8 @@ function SistemaPage() {
                 try {
                   await updateWallpaperFn({ data: { opacity: wallpaperOpacity } });
                   qc.invalidateQueries({ queryKey: ["me"] });
-                  toast.success("Fundo de tela atualizado");
-                } catch (e: any) { toast.error(e.message ?? "Falha ao salvar"); }
+                  notify.success("Fundo de tela atualizado");
+                } catch (e: any) { notify.error(e.message ?? "Falha ao salvar"); }
                 finally { setSavingWallpaper(false); }
               }}
             >
