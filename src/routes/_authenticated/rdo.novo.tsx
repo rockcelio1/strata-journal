@@ -41,6 +41,7 @@ const MIN_WORDS_LEGENDA = 5;
 import { countWords as countWordsBase } from "@/lib/text";
 const countWords = (s: string) => countWordsBase(s ?? "");
 import { createDraftChannel } from "@/lib/draft-channel";
+import { InteractiveTutorial } from "@/components/help/InteractiveTutorial";
 
 const searchSchema = z.object({ obra: z.string().optional(), tutorial: z.string().optional() });
 
