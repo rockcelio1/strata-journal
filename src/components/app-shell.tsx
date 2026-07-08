@@ -123,7 +123,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [me?.profile?.id, queryClient, realtimeReady]);
 
   useEffect(() => {
-    if (me?.empresa?.nome) setEmpresaName(me.empresa.nome);
+    if (me?.empresa?.nome) {
+      // Exibe apenas a marca curta (primeira palavra) no menu — evita nomes
+      // longos como "FACOM F DE ALMEIDA CONSTRUCOES LTDA" em telas pequenas.
+      const short = me.empresa.nome.trim().split(/\s+/)[0] ?? me.empresa.nome;
+      setEmpresaName(short);
+    }
   }, [me]);
 
   // Reconciliação: se a flag local diz "rascunho ativo" mas o IndexedDB
