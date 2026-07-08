@@ -280,7 +280,25 @@ export const listarAuditoriaPermissoes = createServerFn({ method: "GET" })
       .eq("empresa_id", empresaId)
       .like("acao", "permissao_%")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(2000);
     if (error) throw error;
-    return data ?? [];
+
+    const ids = new Set<string>();
+    for (const r of data ?? []) {
+      if (r.autor_id) ids.add(r.autor_id);
+      if (r.alvo_user_id) ids.add(r.alvo_user_id);
+    }
+    let nomes = new Map<string, { nome: string; email: string }>();
+    if (ids.size > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,nome,email")
+        .in("id", Array.from(ids));
+      for (const p of profs ?? []) nomes.set(p.id, { nome: p.nome, email: p.email });
+    }
+    return (data ?? []).map((r: any) => ({
+      ...r,
+      autor: r.autor_id ? nomes.get(r.autor_id) ?? null : null,
+      alvo: r.alvo_user_id ? nomes.get(r.alvo_user_id) ?? null : null,
+    }));
   });
