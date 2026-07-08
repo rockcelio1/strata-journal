@@ -49,6 +49,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
+import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -274,6 +275,12 @@ const AuthenticatedCadastrosTemplatesTarefasIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
   } as any)
+const AuthenticatedAjudaArtigoSlugRoute =
+  AuthenticatedAjudaArtigoSlugRouteImport.update({
+    id: '/ajuda/artigo/$slug',
+    path: '/ajuda/artigo/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -353,6 +361,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
+  '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -396,6 +405,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
+  '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/configuracoes/'
     | '/obras/'
     | '/rdo/'
+    | '/ajuda/artigo/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/obras'
     | '/rdo'
+    | '/ajuda/artigo/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   id:
@@ -521,6 +533,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/'
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
+    | '/_authenticated/ajuda/artigo/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
@@ -821,6 +834,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
       parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
     }
+    '/_authenticated/ajuda/artigo/$slug': {
+      id: '/_authenticated/ajuda/artigo/$slug'
+      path: '/ajuda/artigo/$slug'
+      fullPath: '/ajuda/artigo/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaArtigoSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -899,6 +919,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCadastrosIndexRoute: typeof AuthenticatedCadastrosIndexRoute
   AuthenticatedObrasIndexRoute: typeof AuthenticatedObrasIndexRoute
   AuthenticatedRdoIndexRoute: typeof AuthenticatedRdoIndexRoute
+  AuthenticatedAjudaArtigoSlugRoute: typeof AuthenticatedAjudaArtigoSlugRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -924,6 +945,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCadastrosIndexRoute: AuthenticatedCadastrosIndexRoute,
   AuthenticatedObrasIndexRoute: AuthenticatedObrasIndexRoute,
   AuthenticatedRdoIndexRoute: AuthenticatedRdoIndexRoute,
+  AuthenticatedAjudaArtigoSlugRoute: AuthenticatedAjudaArtigoSlugRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
