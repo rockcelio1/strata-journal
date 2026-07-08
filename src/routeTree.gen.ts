@@ -9,8 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as SolicitacaoLgpdRouteImport } from './routes/solicitacao-lgpd'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LgpdRouteImport } from './routes/lgpd'
 import { Route as InstalarRouteImport } from './routes/instalar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -38,6 +42,7 @@ import { Route as AuthenticatedConfiguracoesSkeletonRouteImport } from './routes
 import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
 import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
+import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
 import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
 import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
 import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
@@ -60,14 +65,34 @@ import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolicitacaoLgpdRoute = SolicitacaoLgpdRouteImport.update({
+  id: '/solicitacao-lgpd',
+  path: '/solicitacao-lgpd',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstalarRoute = InstalarRouteImport.update({
@@ -218,6 +243,12 @@ const AuthenticatedConfiguracoesOnedriveRoute =
     path: '/onedrive',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesLgpdRoute =
+  AuthenticatedConfiguracoesLgpdRouteImport.update({
+    id: '/lgpd',
+    path: '/lgpd',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesGruposRoute =
   AuthenticatedConfiguracoesGruposRouteImport.update({
     id: '/grupos',
@@ -345,8 +376,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
@@ -372,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
+  '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
@@ -396,8 +432,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
@@ -422,6 +462,7 @@ export interface FileRoutesByTo {
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
+  '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
@@ -448,8 +489,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/instalar': typeof InstalarRoute
+  '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/acessibilidade': typeof AuthenticatedAcessibilidadeRoute
@@ -475,6 +520,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
+  '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
@@ -501,8 +547,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/instalar'
+    | '/lgpd'
     | '/mcp'
+    | '/privacidade'
     | '/reset-password'
+    | '/solicitacao-lgpd'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/acessibilidade'
@@ -528,6 +578,7 @@ export interface FileRouteTypes {
     | '/configuracoes/auditoria-midia'
     | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
+    | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
@@ -552,8 +603,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/instalar'
+    | '/lgpd'
     | '/mcp'
+    | '/privacidade'
     | '/reset-password'
+    | '/solicitacao-lgpd'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/acessibilidade'
@@ -578,6 +633,7 @@ export interface FileRouteTypes {
     | '/configuracoes/auditoria-midia'
     | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
+    | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
     | '/configuracoes/sistema'
@@ -603,8 +659,12 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/instalar'
+    | '/lgpd'
     | '/mcp'
+    | '/privacidade'
     | '/reset-password'
+    | '/solicitacao-lgpd'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/acessibilidade'
@@ -630,6 +690,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/auditoria-midia'
     | '/_authenticated/configuracoes/botoes-efeitos'
     | '/_authenticated/configuracoes/grupos'
+    | '/_authenticated/configuracoes/lgpd'
     | '/_authenticated/configuracoes/onedrive'
     | '/_authenticated/configuracoes/permissoes'
     | '/_authenticated/configuracoes/sistema'
@@ -656,8 +717,12 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   InstalarRoute: typeof InstalarRoute
+  LgpdRoute: typeof LgpdRoute
   McpRoute: typeof McpRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SolicitacaoLgpdRoute: typeof SolicitacaoLgpdRoute
+  TermosRoute: typeof TermosRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -668,6 +733,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solicitacao-lgpd': {
+      id: '/solicitacao-lgpd'
+      path: '/solicitacao-lgpd'
+      fullPath: '/solicitacao-lgpd'
+      preLoaderRoute: typeof SolicitacaoLgpdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -675,11 +754,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mcp': {
       id: '/mcp'
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/instalar': {
@@ -871,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/lgpd': {
+      id: '/_authenticated/configuracoes/lgpd'
+      path: '/lgpd'
+      fullPath: '/configuracoes/lgpd'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesLgpdRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/grupos': {
       id: '/_authenticated/configuracoes/grupos'
       path: '/grupos'
@@ -1027,6 +1127,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAuditoriaMidiaRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   AuthenticatedConfiguracoesBotoesEfeitosRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
+  AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesSistemaRoute: typeof AuthenticatedConfiguracoesSistemaRoute
@@ -1047,6 +1148,7 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesBotoesEfeitosRoute,
     AuthenticatedConfiguracoesGruposRoute:
       AuthenticatedConfiguracoesGruposRoute,
+    AuthenticatedConfiguracoesLgpdRoute: AuthenticatedConfiguracoesLgpdRoute,
     AuthenticatedConfiguracoesOnedriveRoute:
       AuthenticatedConfiguracoesOnedriveRoute,
     AuthenticatedConfiguracoesPermissoesRoute:
@@ -1150,8 +1252,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   InstalarRoute: InstalarRoute,
+  LgpdRoute: LgpdRoute,
   McpRoute: McpRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SolicitacaoLgpdRoute: SolicitacaoLgpdRoute,
+  TermosRoute: TermosRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
