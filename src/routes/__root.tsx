@@ -167,6 +167,7 @@ function RootComponent() {
           duration={1200}
           toastOptions={{ classNames: { toast: "animate-fade-in" } }}
         />
+        <SystemNoticeHost />
         <SkeletonDebugPanel />
       </AccessibilityProvider>
     </QueryClientProvider>
