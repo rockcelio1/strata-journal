@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { rdoStatusMeta, severidadeMeta, climaLabel } from "@/components/status";
 import { cn } from "@/lib/utils";
-import { fetchHistoricoEPrevisaoUteis, fetchHistoricoEPrevisaoUteisPorCoords, resolveGeoBrasil, type DiaRegistro } from "@/lib/weather";
+import { fetchHistoricoEPrevisaoUteisPorCoords, resolveGeoBrasil, type DiaRegistro } from "@/lib/weather";
 import { getObraGeo, saveObraGeo } from "@/lib/obras.functions";
 import { toast } from "sonner";
 import {
