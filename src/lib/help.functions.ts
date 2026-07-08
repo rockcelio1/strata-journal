@@ -65,25 +65,51 @@ export const searchHelp = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const term = data.q.trim();
     const like = `%${term}%`;
-    const { data: rows, error } = await context.supabase
-      .from("help_articles")
-      .select("id, slug, title, summary, module_key, route_path, tags")
-      .eq("status", "publicado")
-      .or(`title.ilike.${like},summary.ilike.${like},content.ilike.${like}`)
-      .limit(30);
-    if (error) throw error;
-    // Log da busca (best-effort)
+    // Ranking simples: título > tags > resumo/conteúdo
+    const [t, s, c] = await Promise.all([
+      context.supabase.from("help_articles")
+        .select("id, slug, title, summary, module_key, route_path, tags")
+        .eq("status", "publicado").ilike("title", like).limit(20),
+      context.supabase.from("help_articles")
+        .select("id, slug, title, summary, module_key, route_path, tags")
+        .eq("status", "publicado").ilike("summary", like).limit(20),
+      context.supabase.from("help_articles")
+        .select("id, slug, title, summary, module_key, route_path, tags")
+        .eq("status", "publicado").ilike("content", like).limit(20),
+    ]);
+    const seen = new Set<string>();
+    const rows: any[] = [];
+    for (const list of [t.data ?? [], s.data ?? [], c.data ?? []]) {
+      for (const r of list) if (!seen.has(r.id)) { seen.add(r.id); rows.push(r); }
+    }
+    // Log da busca (best-effort) com empresa_id do usuário — respeita RLS
+    let log_id: string | null = null;
     try {
       const me = await context.supabase
         .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-      await context.supabase.from("help_search_logs").insert({
+      const ins = await context.supabase.from("help_search_logs").insert({
         empresa_id: me.data?.empresa_id ?? null,
         user_id: context.userId,
         search_term: term,
-        results_count: rows?.length ?? 0,
-      });
+        results_count: rows.length,
+      }).select("id").maybeSingle();
+      log_id = ins.data?.id ?? null;
     } catch { /* ignora */ }
-    return rows ?? [];
+    return { rows, log_id };
+  });
+
+export const logSearchClick = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ search_log_id: z.string().uuid(), article_id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await context.supabase
+      .from("help_search_logs")
+      .update({ clicked_article_id: data.article_id })
+      .eq("id", data.search_log_id)
+      .eq("user_id", context.userId);
+    return { ok: true };
   });
 
 // ============ CHANGELOG ============
