@@ -371,8 +371,14 @@ function GaleriaPage() {
                   </div>
                 </>
               )}
-              {preview.tipo === "imagem" && preview.url && (
-                <img src={preview.url} alt={preview.legenda || preview.nome} className="w-full max-h-[80vh] object-contain bg-black" />
+              {(preview.tipo === "imagem" || preview.tipo === "assinatura") && preview.url && (
+                <div className={`w-full max-h-[80vh] flex items-center justify-center ${preview.tipo === "assinatura" ? "bg-white p-6" : "bg-black"}`}>
+                  <img
+                    src={preview.url}
+                    alt={preview.legenda || preview.nome}
+                    className="max-w-full max-h-[80vh] object-contain"
+                  />
+                </div>
               )}
               {preview.tipo === "video" && preview.url && (
                 <video src={preview.url} controls autoPlay className="w-full max-h-[80vh] bg-black" />
