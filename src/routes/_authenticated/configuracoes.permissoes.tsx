@@ -562,10 +562,10 @@ function AuditoriaLista({
       ? "A busca de usuário/autor não filtra registros por papel — os resultados podem ficar amplos."
       : null;
 
-  const setSearch = (patch: Partial<typeof search>) => {
+  const setSearch = (patch: Partial<z.infer<typeof auditSearchSchema>>) => {
     navigate({
       to: Route.fullPath,
-      search: (prev) => ({ ...prev, ...patch, page: patch.page ?? 1 }),
+      search: (prev: any) => ({ ...prev, ...patch, page: patch.page ?? 1 }),
       replace: true,
     });
   };
