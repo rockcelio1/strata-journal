@@ -27,6 +27,8 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         const mimeType = url.searchParams.get("mime") || "application/octet-stream";
         const sig = url.searchParams.get("sig") || "";
         const name = cleanFilename(url.searchParams.get("name"));
+        const thumbRaw = url.searchParams.get("thumb");
+        const thumbSize = thumbRaw === "small" || thumbRaw === "medium" || thumbRaw === "large" ? thumbRaw : null;
 
         const { verifyOneDriveProxyUrl } = await import("@/lib/onedrive-proxy-token.server");
         if (!itemId || !Number.isFinite(expiresAt) || !verifyOneDriveProxyUrl({ itemId, expiresAt, mimeType, sig })) {
@@ -39,7 +41,11 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
           return new Response("OneDrive não conectado", { status: 503 });
         }
 
-        const graphUrl = `${GATEWAY_URL}/me/drive/items/${encodeURIComponent(itemId)}/content`;
+        const encId = encodeURIComponent(itemId);
+        const graphUrl = thumbSize
+          ? `${GATEWAY_URL}/me/drive/items/${encId}/thumbnails/0/${thumbSize}/content`
+          : `${GATEWAY_URL}/me/drive/items/${encId}/content`;
+
         const upstream = await fetch(graphUrl, {
           headers: {
             Authorization: `Bearer ${apiKey}`,
@@ -49,13 +55,30 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
 
         if (!upstream.ok) {
           const body = await upstream.text().catch(() => "");
-          console.error(`[onedrive-proxy] ${upstream.status}: ${body}`);
+          console.error(`[onedrive-proxy] ${upstream.status} thumb=${thumbSize ?? "no"} item=${itemId}: ${body.slice(0, 200)}`);
+          // If thumbnail missing, fall back to full content (some items have no thumb).
+          if (thumbSize && upstream.status === 404) {
+            const fallback = await fetch(`${GATEWAY_URL}/me/drive/items/${encId}/content`, {
+              headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
+            });
+            if (fallback.ok) {
+              const h = new Headers();
+              h.set("Content-Type", fallback.headers.get("content-type") || mimeType);
+              h.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400");
+              return new Response(fallback.body, { status: 200, headers: h });
+            }
+          }
           return new Response("Falha ao carregar anexo", { status: upstream.status });
         }
 
         const headers = new Headers();
         headers.set("Content-Type", upstream.headers.get("content-type") || mimeType);
-        headers.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400");
+        headers.set(
+          "Cache-Control",
+          thumbSize
+            ? "public, max-age=86400, stale-while-revalidate=604800"
+            : "private, max-age=3600, stale-while-revalidate=86400",
+        );
         headers.set("Content-Disposition", `inline; filename="${asciiFilename(name)}"; filename*=UTF-8''${encodeURIComponent(name)}`);
         headers.set("X-Content-Type-Options", "nosniff");
 
