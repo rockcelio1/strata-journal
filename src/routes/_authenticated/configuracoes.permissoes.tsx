@@ -348,7 +348,14 @@ function PermissoesPage() {
 
           {/* ABA 3: auditoria */}
           <TabsContent value="audit">
-            <AuditoriaLista rows={audit ?? []} />
+            <AuditoriaLista
+              rows={auditQuery.data ?? []}
+              isLoading={auditQuery.isLoading}
+              isError={auditQuery.isError}
+              error={auditQuery.error as Error | null}
+              onRetry={() => auditQuery.refetch()}
+            />
+
           </TabsContent>
         </Tabs>
       </div>
