@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_limits: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          request_count: number
+          tokens_used: number
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          request_count?: number
+          tokens_used?: number
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          request_count?: number
+          tokens_used?: number
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_limits_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs_usuarios: {
         Row: {
           acao: string
@@ -48,6 +89,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_logs_usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_restore_tests: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          evidencia_url: string | null
+          executed_at: string
+          executed_by: string
+          id: string
+          observacoes: string | null
+          resultado: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          evidencia_url?: string | null
+          executed_at?: string
+          executed_by: string
+          id?: string
+          observacoes?: string | null
+          resultado: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          evidencia_url?: string | null
+          executed_at?: string
+          executed_by?: string
+          id?: string
+          observacoes?: string | null
+          resultado?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_restore_tests_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -274,6 +362,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "equipamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_jobs: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          empresa_id: string
+          erro: string | null
+          filtros: Json
+          finished_at: string | null
+          formato: Database["public"]["Enums"]["export_job_format"]
+          id: string
+          recurso: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["export_job_status"]
+          total_linhas: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          empresa_id: string
+          erro?: string | null
+          filtros?: Json
+          finished_at?: string | null
+          formato: Database["public"]["Enums"]["export_job_format"]
+          id?: string
+          recurso: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["export_job_status"]
+          total_linhas?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          empresa_id?: string
+          erro?: string | null
+          filtros?: Json
+          finished_at?: string | null
+          formato?: Database["public"]["Enums"]["export_job_format"]
+          id?: string
+          recurso?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["export_job_status"]
+          total_linhas?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -861,6 +1008,68 @@ export type Database = {
           },
         ]
       }
+      lgpd_requests: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          due_at: string
+          empresa_id: string | null
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          protocolo: string
+          request_type: Database["public"]["Enums"]["lgpd_request_type"]
+          requester_email: string
+          requester_nome: string
+          requester_user_id: string | null
+          resposta: string | null
+          status: Database["public"]["Enums"]["lgpd_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          due_at?: string
+          empresa_id?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          protocolo: string
+          request_type: Database["public"]["Enums"]["lgpd_request_type"]
+          requester_email: string
+          requester_nome: string
+          requester_user_id?: string | null
+          resposta?: string | null
+          status?: Database["public"]["Enums"]["lgpd_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          due_at?: string
+          empresa_id?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          protocolo?: string
+          request_type?: Database["public"]["Enums"]["lgpd_request_type"]
+          requester_email?: string
+          requester_nome?: string
+          requester_user_id?: string | null
+          resposta?: string | null
+          status?: Database["public"]["Enums"]["lgpd_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_requests_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lista_tarefas_itens: {
         Row: {
           ativo: boolean
@@ -979,6 +1188,47 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      log_retention_policies: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          empresa_id: string
+          id: string
+          retencao_dias: number
+          tipo_log: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          retencao_dias: number
+          tipo_log: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          retencao_dias?: number
+          tipo_log?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "log_retention_policies_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
@@ -1663,6 +1913,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rate_limits: {
+        Row: {
+          created_at: string
+          empresa_id: string | null
+          id: string
+          request_count: number
+          route: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          request_count?: number
+          route: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          request_count?: number
+          route?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_limits_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -2454,6 +2745,65 @@ export type Database = {
           },
         ]
       }
+      security_alerts: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          detalhes: Json
+          empresa_id: string | null
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          ip_address: string | null
+          severidade: Database["public"]["Enums"]["security_alert_severity"]
+          status: Database["public"]["Enums"]["security_alert_status"]
+          tipo: string
+          titulo: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json
+          empresa_id?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          ip_address?: string | null
+          severidade?: Database["public"]["Enums"]["security_alert_severity"]
+          status?: Database["public"]["Enums"]["security_alert_status"]
+          tipo: string
+          titulo: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json
+          empresa_id?: string | null
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          ip_address?: string | null
+          severidade?: Database["public"]["Enums"]["security_alert_severity"]
+          status?: Database["public"]["Enums"]["security_alert_status"]
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_alerts_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skeleton_loading_settings: {
         Row: {
           created_at: string
@@ -2791,6 +3141,56 @@ export type Database = {
           },
         ]
       }
+      user_security_settings: {
+        Row: {
+          created_at: string
+          empresa_id: string | null
+          last_login_at: string | null
+          last_login_ip: string | null
+          last_password_change_at: string | null
+          mfa_enabled: boolean
+          mfa_enrolled_at: string | null
+          notify_new_login: boolean
+          notify_password_change: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id?: string | null
+          last_login_at?: string | null
+          last_login_ip?: string | null
+          last_password_change_at?: string | null
+          mfa_enabled?: boolean
+          mfa_enrolled_at?: string | null
+          notify_new_login?: boolean
+          notify_password_change?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string | null
+          last_login_at?: string | null
+          last_login_ip?: string | null
+          last_password_change_at?: string | null
+          mfa_enabled?: boolean
+          mfa_enrolled_at?: string | null
+          notify_new_login?: boolean
+          notify_password_change?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_security_settings_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2820,6 +3220,28 @@ export type Database = {
           _user: string
         }
         Returns: boolean
+      }
+      check_ai_quota: {
+        Args: { _tokens?: number }
+        Returns: {
+          allowed: boolean
+          limit_value: number
+          remaining: number
+          used: number
+        }[]
+      }
+      check_rate_limit: {
+        Args: {
+          _max_requests?: number
+          _route: string
+          _window_seconds?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          limit_value: number
+          reset_at: string
+        }[]
       }
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
@@ -2892,6 +3314,13 @@ export type Database = {
         | "chuva_forte"
         | "impraticavel"
       equipamento_status: "disponivel" | "em_uso" | "manutencao"
+      export_job_format: "csv" | "xlsx" | "pdf" | "json"
+      export_job_status:
+        | "pendente"
+        | "processando"
+        | "concluido"
+        | "erro"
+        | "cancelado"
       grupo_tipo: "global" | "equipe_obra"
       help_article_status: "rascunho" | "publicado" | "arquivado"
       help_progress_status:
@@ -2899,6 +3328,20 @@ export type Database = {
         | "em_andamento"
         | "concluido"
         | "dispensado"
+      lgpd_request_status:
+        | "recebido"
+        | "em_analise"
+        | "em_execucao"
+        | "concluido"
+        | "recusado"
+        | "cancelado"
+      lgpd_request_type:
+        | "acesso"
+        | "correcao"
+        | "exclusao"
+        | "portabilidade"
+        | "anonimizacao"
+        | "revogacao"
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
       rdo_acesso_nivel: "ver" | "editar" | "aprovar"
       rdo_acesso_sujeito: "user" | "grupo"
@@ -2912,6 +3355,12 @@ export type Database = {
         | "revisao_solicitada"
         | "reaberto"
         | "cancelado"
+      security_alert_severity: "info" | "baixa" | "media" | "alta" | "critica"
+      security_alert_status:
+        | "aberto"
+        | "em_analise"
+        | "resolvido"
+        | "falso_positivo"
       severidade: "baixa" | "media" | "alta" | "critica"
       tarefa_controle: "porcentagem" | "produtividade" | "misto"
       tarefa_status:
@@ -3095,6 +3544,14 @@ export const Constants = {
         "impraticavel",
       ],
       equipamento_status: ["disponivel", "em_uso", "manutencao"],
+      export_job_format: ["csv", "xlsx", "pdf", "json"],
+      export_job_status: [
+        "pendente",
+        "processando",
+        "concluido",
+        "erro",
+        "cancelado",
+      ],
       grupo_tipo: ["global", "equipe_obra"],
       help_article_status: ["rascunho", "publicado", "arquivado"],
       help_progress_status: [
@@ -3102,6 +3559,22 @@ export const Constants = {
         "em_andamento",
         "concluido",
         "dispensado",
+      ],
+      lgpd_request_status: [
+        "recebido",
+        "em_analise",
+        "em_execucao",
+        "concluido",
+        "recusado",
+        "cancelado",
+      ],
+      lgpd_request_type: [
+        "acesso",
+        "correcao",
+        "exclusao",
+        "portabilidade",
+        "anonimizacao",
+        "revogacao",
       ],
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
       rdo_acesso_nivel: ["ver", "editar", "aprovar"],
@@ -3116,6 +3589,13 @@ export const Constants = {
         "revisao_solicitada",
         "reaberto",
         "cancelado",
+      ],
+      security_alert_severity: ["info", "baixa", "media", "alta", "critica"],
+      security_alert_status: [
+        "aberto",
+        "em_analise",
+        "resolvido",
+        "falso_positivo",
       ],
       severidade: ["baixa", "media", "alta", "critica"],
       tarefa_controle: ["porcentagem", "produtividade", "misto"],
