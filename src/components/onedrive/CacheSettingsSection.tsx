@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { Gauge, Save } from "lucide-react";
 
 const SIZES = ["small", "medium", "large", "full"] as const;
@@ -41,10 +41,10 @@ export function CacheSettingsSection() {
         swr_seconds: Number(r.swr_seconds) || 0,
         ttl_seconds: Number(r.ttl_seconds) || 0,
       }});
-      toast.success(`Configuração de ${size} salva`);
+      notify.success(`Configuração de ${size} salva`);
       qc.invalidateQueries({ queryKey: ["onedrive", "cache-settings"] });
     } catch (e: any) {
-      toast.error("Falha ao salvar", { description: e?.message });
+      notify.error("Falha ao salvar", { description: e?.message });
     }
   }
 
