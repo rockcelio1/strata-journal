@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { listGaleria, removerAnexo } from "@/lib/rdo.functions";
+import { listGaleria, logMediaLoadFailure, removerAnexo } from "@/lib/rdo.functions";
 import { listObras } from "@/lib/obras.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
