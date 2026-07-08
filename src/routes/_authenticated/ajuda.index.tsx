@@ -67,7 +67,8 @@ function AjudaHome() {
   });
 
   const submitSearch = () => {
-    navigate({ to: "/ajuda", search: { q: term || undefined } as any });
+    if (term.trim().length > 1) navigate({ to: "/ajuda/busca", search: { q: term, category: "", module: "", page: 1 } as any });
+    else navigate({ to: "/ajuda", search: { q: term || undefined } as any });
   };
 
   const chgTypeLabel: Record<string, string> = useMemo(() => ({
