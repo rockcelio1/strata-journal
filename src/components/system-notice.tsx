@@ -17,10 +17,18 @@ function emit(kind: Kind, message: string, description?: string) {
   listeners.forEach((l) => l(n));
 }
 
+type NotifyExtra = string | { description?: string } | undefined | null;
+const toDesc = (x: NotifyExtra): string | undefined => {
+  if (!x) return undefined;
+  if (typeof x === "string") return x;
+  if (typeof x === "object" && "description" in x) return x.description;
+  return undefined;
+};
+
 export const notify = {
-  success: (message: string, description?: string) => emit("success", message, description),
-  error: (message: string, description?: string) => emit("error", message, description),
-  info: (message: string, description?: string) => emit("info", message, description),
+  success: (message: string, extra?: NotifyExtra) => emit("success", message, toDesc(extra)),
+  error: (message: string, extra?: NotifyExtra) => emit("error", message, toDesc(extra)),
+  info: (message: string, extra?: NotifyExtra) => emit("info", message, toDesc(extra)),
 };
 
 const DURATION_MS = 900;
