@@ -439,12 +439,13 @@ export const adminToggleUserDisabled = createServerFn({ method: "POST" })
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; password: string; nome: string; role: string }) =>
+  .inputValidator((d: { email: string; password: string; nome: string; role: string; must_change_password?: boolean }) =>
     z.object({
       email: z.string().email(),
       password: z.string().min(8).max(72),
       nome: z.string().min(1).max(120),
       role: roleEnum,
+      must_change_password: z.boolean().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -462,9 +463,15 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       if (/already (registered|exists)/i.test(error.message)) throw new Error("Já existe um usuário com esse e-mail");
       throw error;
     }
+    const mustChange = !!data.must_change_password;
+    if (mustChange && created.user?.id) {
+      await (context.supabase.from("profiles") as any)
+        .update({ must_change_password: true })
+        .eq("id", created.user.id);
+    }
     await logAudit(context.supabase, {
       empresa_id, acao: "usuario_criado", alvo_user_id: created.user?.id, alvo_email: emailLower,
-      detalhes: { role: data.role, nome: data.nome },
+      detalhes: { role: data.role, nome: data.nome, must_change_password: mustChange },
     });
     return { ok: true, user_id: created.user?.id };
   });
