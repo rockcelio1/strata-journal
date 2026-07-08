@@ -1182,7 +1182,7 @@ function NovoRdoPage() {
 
         {stepIdx === 6 && (
           <>
-            <Card className="p-5 space-y-3">
+            <Card data-help="rdo-anexos" className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-lg">Fotos do canteiro</h3>
                 <div className="flex items-center gap-2">
