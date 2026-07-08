@@ -463,7 +463,7 @@ async function geocodeCepBrasilAPI(cep: string): Promise<{ latitude: number; lon
   }
 }
 
-async function resolveGeoBrasil(endereco: string) {
+export async function resolveGeoBrasil(endereco: string) {
   const cep = endereco.match(/\b\d{5}-?\d{3}\b/)?.[0];
   wlog("geocoding:start", { endereco_len: endereco.length, tem_cep: !!cep });
 
