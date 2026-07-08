@@ -111,7 +111,7 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
           if (hit) {
             const h = new Headers(hit.headers);
             h.set("X-Cache", "HIT");
-            h.set("X-Cache-Size", thumbSize);
+              h.set("X-Cache-Size", thumbSize);
             void logEvent({
               empresa_id: empresaId,
               onedrive_item_id: itemId,
