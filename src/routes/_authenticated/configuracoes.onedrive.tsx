@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
+import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
@@ -366,6 +367,7 @@ function OneDriveSettings() {
 
 
 
+      <CacheSettingsSection />
 
 
       <section className="border border-border rounded-lg p-4 bg-card">

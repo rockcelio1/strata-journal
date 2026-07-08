@@ -12,6 +12,7 @@ import { Building2, FileText, AlertTriangle, CheckCircle2, ArrowRight, SlidersHo
 import { rdoStatusMeta } from "@/components/status";
 import { useMemo, useState } from "react";
 import { Bars3D, Pie3D, Chart3DLegend, type Chart3DDatum } from "@/components/charts-3d";
+import { MediaMetricsPanel } from "@/components/dashboard/MediaMetricsPanel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -247,6 +248,9 @@ function DashboardPage() {
           tone="warning"
         />
       </div>
+
+
+      <MediaMetricsPanel />
 
 
 
