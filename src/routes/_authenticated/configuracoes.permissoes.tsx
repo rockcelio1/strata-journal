@@ -782,7 +782,7 @@ function AuditoriaLista({
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="text-left">
-                <th className="p-2 w-[180px]">
+                <th className="p-2 w-[170px]">
                   <button
                     type="button"
                     className="inline-flex items-center gap-1 hover:underline"
@@ -793,8 +793,9 @@ function AuditoriaLista({
                     <span className="text-[10px] text-muted-foreground">({search.sort === "desc" ? "mais recente" : "mais antiga"})</span>
                   </button>
                 </th>
-                <th className="p-2 w-[220px]">Ação</th>
-                <th className="p-2">Detalhes</th>
+                <th className="p-2 w-[180px]">Quem fez</th>
+                <th className="p-2">O que mudou</th>
+                <th className="p-2 w-[220px]">Resultado</th>
               </tr>
             </thead>
             <tbody>
@@ -805,6 +806,8 @@ function AuditoriaLista({
                     key={a.id}
                     className="border-t align-top cursor-pointer hover:bg-muted/40 focus:bg-muted/60 outline-none"
                     tabIndex={0}
+                    role="button"
+                    aria-label={`Ver detalhes: ${f.resumo}`}
                     onClick={() => setSelected(a)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -816,21 +819,33 @@ function AuditoriaLista({
                   >
                     <td className="p-2 whitespace-nowrap">
                       {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
-                      <div className="text-[11px] text-muted-foreground">
-                        por {a.autor?.nome ?? "—"}
+                    </td>
+                    <td className="p-2">
+                      <div className="text-sm">{a.autor?.nome ?? "—"}</div>
+                      {a.autor?.email && (
+                        <div className="text-[11px] text-muted-foreground">{a.autor.email}</div>
+                      )}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={"inline-block px-2 py-0.5 rounded text-xs " + f.badgeClass}>{f.acao}</span>
+                        <span className="text-sm">{f.resumo}</span>
                       </div>
                     </td>
                     <td className="p-2">
-                      <span className={"inline-block px-2 py-0.5 rounded text-xs " + f.badgeClass}>{f.acao}</span>
-                    </td>
-                    <td className="p-2">
-                      <div className="text-sm">{f.resumo}</div>
-                      {f.linhas.length > 0 && (
-                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                          {f.linhas.map((l, i) => (
-                            <li key={i}>{l}</li>
+                      {f.diffs.length > 0 ? (
+                        <ul className="space-y-1">
+                          {f.diffs.map((d, i) => (
+                            <li key={i} className="text-xs flex items-center gap-1 flex-wrap">
+                              <span className="text-muted-foreground">{d.campo}:</span>
+                              <span className="px-1.5 py-0.5 rounded bg-muted line-through decoration-rose-500/60">{d.antes}</span>
+                              <span aria-hidden>→</span>
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100 font-medium">{d.depois}</span>
+                            </li>
                           ))}
                         </ul>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
                   </tr>
