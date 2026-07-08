@@ -357,13 +357,7 @@ function MatrizPapel({
                 <td className="p-2 text-center">
                   <Checkbox
                     checked={allChecked ? true : someChecked ? "indeterminate" : false}
-                    onCheckedChange={(v) => {
-                      const novo = Boolean(v);
-                      for (const act of ACTIONS) {
-                        const atual = defaultsMap.get(`${role}.${res}.${act}`) ?? false;
-                        if (atual !== novo) onToggle(res, act, novo);
-                      }
-                    }}
+                    onCheckedChange={(v) => onBulk(res, Boolean(v))}
                     aria-label={`Selecionar todas as ações de ${RESOURCE_LABELS[res]}`}
                   />
                 </td>
