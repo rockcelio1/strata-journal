@@ -61,41 +61,67 @@ export const getHelpArticle = createServerFn({ method: "GET" })
 
 export const searchHelp = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { q: string }) => z.object({ q: z.string().min(1) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({
+      q: z.string().min(1),
+      category_slug: z.string().optional(),
+      module_key: z.string().optional(),
+      page: z.number().int().min(1).optional(),
+      per_page: z.number().int().min(1).max(50).optional(),
+    }).parse(d),
+  )
   .handler(async ({ context, data }) => {
     const term = data.q.trim();
     const like = `%${term}%`;
-    // Ranking simples: título > tags > resumo/conteúdo
-    const [t, s, c] = await Promise.all([
-      context.supabase.from("help_articles")
-        .select("id, slug, title, summary, module_key, route_path, tags")
-        .eq("status", "publicado").ilike("title", like).limit(20),
-      context.supabase.from("help_articles")
-        .select("id, slug, title, summary, module_key, route_path, tags")
-        .eq("status", "publicado").ilike("summary", like).limit(20),
-      context.supabase.from("help_articles")
-        .select("id, slug, title, summary, module_key, route_path, tags")
-        .eq("status", "publicado").ilike("content", like).limit(20),
+    const select =
+      "id, slug, title, summary, module_key, route_path, tags, category_id, help_categories(slug, name, icon)";
+    const base = () =>
+      context.supabase.from("help_articles").select(select).eq("status", "publicado");
+    const [t, s, c, tg] = await Promise.all([
+      base().ilike("title", like).limit(50),
+      base().ilike("summary", like).limit(50),
+      base().ilike("content", like).limit(50),
+      base().contains("tags", [term]).limit(50),
     ]);
-    const seen = new Set<string>();
-    const rows: any[] = [];
-    for (const list of [t.data ?? [], s.data ?? [], c.data ?? []]) {
-      for (const r of list) if (!seen.has(r.id)) { seen.add(r.id); rows.push(r); }
+    // Ranking: título=4, tags=3, resumo=2, conteúdo=1
+    const rankMap = new Map<string, { row: any; rank: number }>();
+    const add = (list: any[] | null, w: number) => {
+      for (const r of list ?? []) {
+        const prev = rankMap.get(r.id);
+        if (prev) prev.rank = Math.max(prev.rank, w);
+        else rankMap.set(r.id, { row: r, rank: w });
+      }
+    };
+    add(t.data, 4); add(tg.data, 3); add(s.data, 2); add(c.data, 1);
+    let rows = Array.from(rankMap.values())
+      .sort((a, b) => b.rank - a.rank)
+      .map((x) => ({ ...x.row, _rank: x.rank }));
+    if (data.category_slug) {
+      rows = rows.filter((r: any) => r.help_categories?.slug === data.category_slug);
     }
+    if (data.module_key) {
+      rows = rows.filter((r: any) => r.module_key === data.module_key);
+    }
+    const total = rows.length;
+    const per = data.per_page ?? 20;
+    const page = data.page ?? 1;
+    const paged = rows.slice((page - 1) * per, page * per);
     // Log da busca (best-effort) com empresa_id do usuário — respeita RLS
     let log_id: string | null = null;
     try {
       const me = await context.supabase
         .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-      const ins = await context.supabase.from("help_search_logs").insert({
-        empresa_id: me.data?.empresa_id ?? null,
-        user_id: context.userId,
-        search_term: term,
-        results_count: rows.length,
-      }).select("id").maybeSingle();
-      log_id = ins.data?.id ?? null;
+      if (me.data?.empresa_id) {
+        const ins = await context.supabase.from("help_search_logs").insert({
+          empresa_id: me.data.empresa_id,
+          user_id: context.userId,
+          search_term: term,
+          results_count: total,
+        }).select("id").maybeSingle();
+        log_id = ins.data?.id ?? null;
+      }
     } catch { /* ignora */ }
-    return { rows, log_id };
+    return { rows: paged, total, page, per_page: per, log_id };
   });
 
 export const logSearchClick = createServerFn({ method: "POST" })
