@@ -862,3 +862,16 @@ export const seedDemoFacom = createServerFn({ method: "POST" })
     ]);
     return { ok: true };
   });
+
+// ============== TROCAR SENHA FORÇADA ==============
+// Chamada pelo usuário logado após redefinir a própria senha (auth.updateUser)
+// para limpar a flag must_change_password no próprio perfil.
+export const marcarSenhaTrocada = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await (context.supabase.from("profiles") as any)
+      .update({ must_change_password: false })
+      .eq("id", context.userId);
+    if (error) throw error;
+    return { ok: true };
+  });
