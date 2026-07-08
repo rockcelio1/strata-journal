@@ -17,7 +17,7 @@ function emit(kind: Kind, message: string, description?: string) {
   listeners.forEach((l) => l(n));
 }
 
-type NotifyExtra = string | { description?: string } | undefined | null;
+type NotifyExtra = string | { description?: string; [key: string]: unknown } | undefined | null;
 const toDesc = (x: NotifyExtra): string | undefined => {
   if (!x) return undefined;
   if (typeof x === "string") return x;
