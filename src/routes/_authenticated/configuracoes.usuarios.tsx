@@ -562,7 +562,7 @@ function MembroActions({
   m: any;
   onChangePapel: (role: string) => void;
   onEdit: (v: { nome: string; cargo?: string | null }) => Promise<void>;
-  onSetPwd: (password: string) => Promise<void>;
+  onSetPwd: (password: string, must_change_password: boolean) => Promise<void>;
   onReset: () => void;
   onToggle: (disabled: boolean) => void;
   onDelete: () => void;
