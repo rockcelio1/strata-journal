@@ -26,6 +26,7 @@ import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
+import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
 import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
 import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
@@ -139,6 +140,11 @@ const AuthenticatedCadastrosIndexRoute =
     path: '/cadastros/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
+  id: '/ajuda/',
+  path: '/ajuda/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRelatoriosDimRoute =
   AuthenticatedRelatoriosDimRouteImport.update({
     id: '/relatorios/$dim',
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras/': typeof AuthenticatedObrasIndexRoute
@@ -341,6 +348,7 @@ export interface FileRoutesByTo {
   '/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
   '/obras': typeof AuthenticatedObrasIndexRoute
@@ -383,6 +391,7 @@ export interface FileRoutesById {
   '/_authenticated/rdo/$rdoId': typeof AuthenticatedRdoRdoIdRoute
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/_authenticated/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
+  '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
     | '/obras/'
@@ -464,6 +474,7 @@ export interface FileRouteTypes {
     | '/rdo/$rdoId'
     | '/rdo/novo'
     | '/relatorios/$dim'
+    | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
     | '/obras'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rdo/$rdoId'
     | '/_authenticated/rdo/novo'
     | '/_authenticated/relatorios/$dim'
+    | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
     | '/_authenticated/obras/'
@@ -646,6 +658,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastros'
       fullPath: '/cadastros/'
       preLoaderRoute: typeof AuthenticatedCadastrosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/': {
+      id: '/_authenticated/ajuda/'
+      path: '/ajuda'
+      fullPath: '/ajuda/'
+      preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/relatorios/$dim': {
@@ -876,6 +895,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRdoRdoIdRoute: typeof AuthenticatedRdoRdoIdRoute
   AuthenticatedRdoNovoRoute: typeof AuthenticatedRdoNovoRoute
   AuthenticatedRelatoriosDimRoute: typeof AuthenticatedRelatoriosDimRoute
+  AuthenticatedAjudaIndexRoute: typeof AuthenticatedAjudaIndexRoute
   AuthenticatedCadastrosIndexRoute: typeof AuthenticatedCadastrosIndexRoute
   AuthenticatedObrasIndexRoute: typeof AuthenticatedObrasIndexRoute
   AuthenticatedRdoIndexRoute: typeof AuthenticatedRdoIndexRoute
@@ -900,6 +920,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRdoRdoIdRoute: AuthenticatedRdoRdoIdRoute,
   AuthenticatedRdoNovoRoute: AuthenticatedRdoNovoRoute,
   AuthenticatedRelatoriosDimRoute: AuthenticatedRelatoriosDimRoute,
+  AuthenticatedAjudaIndexRoute: AuthenticatedAjudaIndexRoute,
   AuthenticatedCadastrosIndexRoute: AuthenticatedCadastrosIndexRoute,
   AuthenticatedObrasIndexRoute: AuthenticatedObrasIndexRoute,
   AuthenticatedRdoIndexRoute: AuthenticatedRdoIndexRoute,
