@@ -753,9 +753,10 @@ function BulkBar({
   );
 }
 
-function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; password: string; nome: string; role: string }) => Promise<void> }) {
+function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; password: string; nome: string; role: string; must_change_password: boolean }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", password: "", role: "visualizador" });
+  const initial = { nome: "", email: "", password: "", role: "visualizador", must_change_password: true };
+  const [form, setForm] = useState(initial);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -776,11 +777,25 @@ function NovoUsuarioDialog({ onCreate }: { onCreate: (v: { email: string; passwo
               </SelectContent>
             </Select>
           </div>
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={form.must_change_password}
+              onCheckedChange={(v) => setForm({ ...form, must_change_password: !!v })}
+              aria-label="Forçar troca no próximo logon"
+              className="mt-0.5"
+            />
+            <span>
+              Forçar o usuário a trocar a senha no próximo logon
+              <span className="block text-xs text-muted-foreground">
+                Ao entrar pela primeira vez, ele será direcionado para definir uma nova senha.
+              </span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
-            try { await onCreate(form); toast.success("Usuário criado"); setOpen(false); setForm({ nome: "", email: "", password: "", role: "visualizador" }); }
+            try { await onCreate(form); toast.success("Usuário criado"); setOpen(false); setForm(initial); }
             catch (e: any) { toast.error(e.message); }
           }}>Criar</Button>
         </DialogFooter>
