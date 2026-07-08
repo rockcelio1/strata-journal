@@ -63,7 +63,7 @@ export function InteractiveTutorial({
     if (typeof window === "undefined") return;
     if (window.location.pathname !== tut.route_path) {
       try {
-        navigate({ to: tut.route_path as any, search: (prev: any) => ({ ...prev, tutorial: tut.slug }) });
+        navigate({ to: tut.route_path as any, search: { tutorial: tut.slug } as any });
       } catch {
         window.location.assign(`${tut.route_path}?tutorial=${encodeURIComponent(tut.slug)}`);
       }
