@@ -48,6 +48,7 @@ import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes
 import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
 import { Route as AuthenticatedAjudaGlossarioRouteImport } from './routes/_authenticated/ajuda.glossario'
 import { Route as AuthenticatedAjudaFaqRouteImport } from './routes/_authenticated/ajuda.faq'
+import { Route as AuthenticatedAjudaBuscaRouteImport } from './routes/_authenticated/ajuda.busca'
 import { Route as AuthenticatedAjudaAdminRouteImport } from './routes/_authenticated/ajuda.admin'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -274,6 +275,11 @@ const AuthenticatedAjudaFaqRoute = AuthenticatedAjudaFaqRouteImport.update({
   path: '/ajuda/faq',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAjudaBuscaRoute = AuthenticatedAjudaBuscaRouteImport.update({
+  id: '/ajuda/busca',
+  path: '/ajuda/busca',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAjudaAdminRoute = AuthenticatedAjudaAdminRouteImport.update({
   id: '/ajuda/admin',
   path: '/ajuda/admin',
@@ -331,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/ajuda/busca': typeof AuthenticatedAjudaBuscaRoute
   '/ajuda/faq': typeof AuthenticatedAjudaFaqRoute
   '/ajuda/glossario': typeof AuthenticatedAjudaGlossarioRoute
   '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
@@ -377,6 +384,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/ajuda/busca': typeof AuthenticatedAjudaBuscaRoute
   '/ajuda/faq': typeof AuthenticatedAjudaFaqRoute
   '/ajuda/glossario': typeof AuthenticatedAjudaGlossarioRoute
   '/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
@@ -426,6 +434,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
+  '/_authenticated/ajuda/busca': typeof AuthenticatedAjudaBuscaRoute
   '/_authenticated/ajuda/faq': typeof AuthenticatedAjudaFaqRoute
   '/_authenticated/ajuda/glossario': typeof AuthenticatedAjudaGlossarioRoute
   '/_authenticated/ajuda/novidades': typeof AuthenticatedAjudaNovidadesRoute
@@ -475,6 +484,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/ajuda/admin'
+    | '/ajuda/busca'
     | '/ajuda/faq'
     | '/ajuda/glossario'
     | '/ajuda/novidades'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/ajuda/admin'
+    | '/ajuda/busca'
     | '/ajuda/faq'
     | '/ajuda/glossario'
     | '/ajuda/novidades'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/ajuda/admin'
+    | '/_authenticated/ajuda/busca'
     | '/_authenticated/ajuda/faq'
     | '/_authenticated/ajuda/glossario'
     | '/_authenticated/ajuda/novidades'
@@ -890,6 +902,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAjudaFaqRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ajuda/busca': {
+      id: '/_authenticated/ajuda/busca'
+      path: '/ajuda/busca'
+      fullPath: '/ajuda/busca'
+      preLoaderRoute: typeof AuthenticatedAjudaBuscaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ajuda/admin': {
       id: '/_authenticated/ajuda/admin'
       path: '/ajuda/admin'
@@ -1005,6 +1024,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmpresaRoute: typeof AuthenticatedEmpresaRoute
   AuthenticatedGaleriaRoute: typeof AuthenticatedGaleriaRoute
   AuthenticatedAjudaAdminRoute: typeof AuthenticatedAjudaAdminRoute
+  AuthenticatedAjudaBuscaRoute: typeof AuthenticatedAjudaBuscaRoute
   AuthenticatedAjudaFaqRoute: typeof AuthenticatedAjudaFaqRoute
   AuthenticatedAjudaGlossarioRoute: typeof AuthenticatedAjudaGlossarioRoute
   AuthenticatedAjudaNovidadesRoute: typeof AuthenticatedAjudaNovidadesRoute
@@ -1032,6 +1052,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmpresaRoute: AuthenticatedEmpresaRoute,
   AuthenticatedGaleriaRoute: AuthenticatedGaleriaRoute,
   AuthenticatedAjudaAdminRoute: AuthenticatedAjudaAdminRoute,
+  AuthenticatedAjudaBuscaRoute: AuthenticatedAjudaBuscaRoute,
   AuthenticatedAjudaFaqRoute: AuthenticatedAjudaFaqRoute,
   AuthenticatedAjudaGlossarioRoute: AuthenticatedAjudaGlossarioRoute,
   AuthenticatedAjudaNovidadesRoute: AuthenticatedAjudaNovidadesRoute,
