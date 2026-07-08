@@ -49,6 +49,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
+import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -275,6 +276,12 @@ const AuthenticatedCadastrosTemplatesTarefasIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
   } as any)
+const AuthenticatedAjudaCategoriaSlugRoute =
+  AuthenticatedAjudaCategoriaSlugRouteImport.update({
+    id: '/ajuda/categoria/$slug',
+    path: '/ajuda/categoria/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAjudaArtigoSlugRoute =
   AuthenticatedAjudaArtigoSlugRouteImport.update({
     id: '/ajuda/artigo/$slug',
@@ -321,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/obras/': typeof AuthenticatedObrasIndexRoute
   '/rdo/': typeof AuthenticatedRdoIndexRoute
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -362,6 +370,7 @@ export interface FileRoutesByTo {
   '/obras': typeof AuthenticatedObrasIndexRoute
   '/rdo': typeof AuthenticatedRdoIndexRoute
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -406,6 +415,7 @@ export interface FileRoutesById {
   '/_authenticated/obras/': typeof AuthenticatedObrasIndexRoute
   '/_authenticated/rdo/': typeof AuthenticatedRdoIndexRoute
   '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
+  '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/obras/'
     | '/rdo/'
     | '/ajuda/artigo/$slug'
+    | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/rdo'
     | '/ajuda/artigo/$slug'
+    | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   id:
@@ -534,6 +546,7 @@ export interface FileRouteTypes {
     | '/_authenticated/obras/'
     | '/_authenticated/rdo/'
     | '/_authenticated/ajuda/artigo/$slug'
+    | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
@@ -834,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
       parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
     }
+    '/_authenticated/ajuda/categoria/$slug': {
+      id: '/_authenticated/ajuda/categoria/$slug'
+      path: '/ajuda/categoria/$slug'
+      fullPath: '/ajuda/categoria/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaCategoriaSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ajuda/artigo/$slug': {
       id: '/_authenticated/ajuda/artigo/$slug'
       path: '/ajuda/artigo/$slug'
@@ -920,6 +940,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedObrasIndexRoute: typeof AuthenticatedObrasIndexRoute
   AuthenticatedRdoIndexRoute: typeof AuthenticatedRdoIndexRoute
   AuthenticatedAjudaArtigoSlugRoute: typeof AuthenticatedAjudaArtigoSlugRoute
+  AuthenticatedAjudaCategoriaSlugRoute: typeof AuthenticatedAjudaCategoriaSlugRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -946,6 +967,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedObrasIndexRoute: AuthenticatedObrasIndexRoute,
   AuthenticatedRdoIndexRoute: AuthenticatedRdoIndexRoute,
   AuthenticatedAjudaArtigoSlugRoute: AuthenticatedAjudaArtigoSlugRoute,
+  AuthenticatedAjudaCategoriaSlugRoute: AuthenticatedAjudaCategoriaSlugRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
