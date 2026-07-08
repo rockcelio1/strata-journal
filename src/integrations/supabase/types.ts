@@ -358,6 +358,439 @@ export type Database = {
           },
         ]
       }
+      help_article_feedback: {
+        Row: {
+          article_id: string
+          comment: string | null
+          created_at: string
+          empresa_id: string | null
+          helpful: boolean
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          article_id: string
+          comment?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          helpful: boolean
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          article_id?: string
+          comment?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          helpful?: boolean
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_article_feedback_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_article_feedback_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_article_media: {
+        Row: {
+          article_id: string
+          caption: string | null
+          created_at: string
+          empresa_id: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          sort_order: number
+        }
+        Insert: {
+          article_id: string
+          caption?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          sort_order?: number
+        }
+        Update: {
+          article_id?: string
+          caption?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_article_media_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_article_media_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_articles: {
+        Row: {
+          category_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          empresa_id: string | null
+          id: string
+          is_featured: boolean
+          module_key: string | null
+          published_at: string | null
+          route_path: string | null
+          slug: string
+          sort_order: number
+          status: Database["public"]["Enums"]["help_article_status"]
+          summary: string | null
+          tags: string[]
+          target_roles: Database["public"]["Enums"]["app_role"][]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string | null
+          id?: string
+          is_featured?: boolean
+          module_key?: string | null
+          published_at?: string | null
+          route_path?: string | null
+          slug: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["help_article_status"]
+          summary?: string | null
+          tags?: string[]
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string | null
+          id?: string
+          is_featured?: boolean
+          module_key?: string | null
+          published_at?: string | null
+          route_path?: string | null
+          slug?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["help_article_status"]
+          summary?: string | null
+          tags?: string[]
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "help_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_articles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          empresa_id: string | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          empresa_id?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          empresa_id?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_categories_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_search_logs: {
+        Row: {
+          clicked_article_id: string | null
+          created_at: string
+          empresa_id: string | null
+          id: string
+          results_count: number
+          search_term: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_article_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          results_count?: number
+          search_term: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_article_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          results_count?: number
+          search_term?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_search_logs_clicked_article_id_fkey"
+            columns: ["clicked_article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_search_logs_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_tutorial_steps: {
+        Row: {
+          action_required: boolean
+          created_at: string
+          description: string
+          id: string
+          position: string
+          selector: string | null
+          step_order: number
+          title: string
+          tutorial_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_required?: boolean
+          created_at?: string
+          description: string
+          id?: string
+          position?: string
+          selector?: string | null
+          step_order: number
+          title: string
+          tutorial_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_required?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          position?: string
+          selector?: string | null
+          step_order?: number
+          title?: string
+          tutorial_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_tutorial_steps_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "help_tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_tutorials: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          empresa_id: string | null
+          id: string
+          module_key: string | null
+          route_path: string | null
+          slug: string
+          target_roles: Database["public"]["Enums"]["app_role"][]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          empresa_id?: string | null
+          id?: string
+          module_key?: string | null
+          route_path?: string | null
+          slug: string
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          empresa_id?: string | null
+          id?: string
+          module_key?: string | null
+          route_path?: string | null
+          slug?: string
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_tutorials_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_user_progress: {
+        Row: {
+          article_id: string | null
+          completed_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          do_not_show_again: boolean
+          empresa_id: string | null
+          id: string
+          status: Database["public"]["Enums"]["help_progress_status"]
+          tutorial_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          do_not_show_again?: boolean
+          empresa_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["help_progress_status"]
+          tutorial_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          do_not_show_again?: boolean
+          empresa_id?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["help_progress_status"]
+          tutorial_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_user_progress_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_user_progress_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_user_progress_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "help_tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs_tarefas: {
         Row: {
           created_at: string
@@ -1969,6 +2402,69 @@ export type Database = {
         }
         Relationships: []
       }
+      system_changelog: {
+        Row: {
+          change_type: Database["public"]["Enums"]["changelog_type"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          empresa_id: string | null
+          help_article_id: string | null
+          how_to_use: string | null
+          id: string
+          module_key: string | null
+          route_path: string | null
+          target_roles: Database["public"]["Enums"]["app_role"][]
+          title: string
+          version: string | null
+        }
+        Insert: {
+          change_type?: Database["public"]["Enums"]["changelog_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          empresa_id?: string | null
+          help_article_id?: string | null
+          how_to_use?: string | null
+          id?: string
+          module_key?: string | null
+          route_path?: string | null
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title: string
+          version?: string | null
+        }
+        Update: {
+          change_type?: Database["public"]["Enums"]["changelog_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          empresa_id?: string | null
+          help_article_id?: string | null
+          how_to_use?: string | null
+          id?: string
+          module_key?: string | null
+          route_path?: string | null
+          target_roles?: Database["public"]["Enums"]["app_role"][]
+          title?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_changelog_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_changelog_help_article_id_fkey"
+            columns: ["help_article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template_tarefa_itens: {
         Row: {
           ativo: boolean
@@ -2297,6 +2793,13 @@ export type Database = {
         | "visualizador"
         | "master"
         | "gestor_acessos"
+      changelog_type:
+        | "novo"
+        | "correcao"
+        | "melhoria"
+        | "seguranca"
+        | "integracao"
+        | "visual"
       clima:
         | "ensolarado"
         | "nublado"
@@ -2305,6 +2808,12 @@ export type Database = {
         | "impraticavel"
       equipamento_status: "disponivel" | "em_uso" | "manutencao"
       grupo_tipo: "global" | "equipe_obra"
+      help_article_status: "rascunho" | "publicado" | "arquivado"
+      help_progress_status:
+        | "nao_iniciado"
+        | "em_andamento"
+        | "concluido"
+        | "dispensado"
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
       rdo_acesso_nivel: "ver" | "editar" | "aprovar"
       rdo_acesso_sujeito: "user" | "grupo"
@@ -2485,6 +2994,14 @@ export const Constants = {
         "master",
         "gestor_acessos",
       ],
+      changelog_type: [
+        "novo",
+        "correcao",
+        "melhoria",
+        "seguranca",
+        "integracao",
+        "visual",
+      ],
       clima: [
         "ensolarado",
         "nublado",
@@ -2494,6 +3011,13 @@ export const Constants = {
       ],
       equipamento_status: ["disponivel", "em_uso", "manutencao"],
       grupo_tipo: ["global", "equipe_obra"],
+      help_article_status: ["rascunho", "publicado", "arquivado"],
+      help_progress_status: [
+        "nao_iniciado",
+        "em_andamento",
+        "concluido",
+        "dispensado",
+      ],
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
       rdo_acesso_nivel: ["ver", "editar", "aprovar"],
       rdo_acesso_sujeito: ["user", "grupo"],
