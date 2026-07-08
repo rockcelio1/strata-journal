@@ -801,7 +801,19 @@ function AuditoriaLista({
               {slice.map((a) => {
                 const f = formatAudit(a);
                 return (
-                  <tr key={a.id} className="border-t align-top">
+                  <tr
+                    key={a.id}
+                    className="border-t align-top cursor-pointer hover:bg-muted/40 focus:bg-muted/60 outline-none"
+                    tabIndex={0}
+                    onClick={() => setSelected(a)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelected(a);
+                      }
+                    }}
+                    title="Clique para ver os detalhes"
+                  >
                     <td className="p-2 whitespace-nowrap">
                       {new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                       <div className="text-[11px] text-muted-foreground">
