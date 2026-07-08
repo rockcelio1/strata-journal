@@ -1355,8 +1355,8 @@ function ClimaRelatorio({
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={exportarCsv} disabled={!state.dias?.length}>CSV</Button>
-          <Button size="sm" variant="outline" onClick={() => executar(1, true)} disabled={state.status === "loading"}>
-            {state.status === "loading" ? "Atualizando…" : "Atualizar"}
+          <Button size="sm" variant="outline" onClick={() => executar(1, true, true)} disabled={state.status === "loading"}>
+            {state.status === "loading" ? "Atualizando…" : "Atualizar clima"}
           </Button>
         </div>
       </div>
