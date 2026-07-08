@@ -35,7 +35,12 @@ export function verifyOneDriveProxyUrl(input: { itemId: string; expiresAt: numbe
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function createOneDriveProxyUrl(input: { itemId?: string | null; mimeType?: string | null; name?: string | null }) {
+export function createOneDriveProxyUrl(input: {
+  itemId?: string | null;
+  mimeType?: string | null;
+  name?: string | null;
+  thumb?: "small" | "medium" | "large" | null;
+}) {
   if (!input.itemId) return null;
   const signed = signOneDriveProxyUrl({ itemId: input.itemId, mimeType: input.mimeType });
   if (!signed) return null;
@@ -46,6 +51,7 @@ export function createOneDriveProxyUrl(input: { itemId?: string | null; mimeType
     sig: signed.sig,
   });
   if (input.name) params.set("name", input.name);
+  if (input.thumb) params.set("thumb", input.thumb);
 
   return `/api/public/onedrive-file/${encodeURIComponent(input.itemId)}?${params.toString()}`;
 }
