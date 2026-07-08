@@ -518,14 +518,113 @@ const PAGE_SIZE = 100;
 
 function AuditoriaLista({ rows }: { rows: any[] }) {
   const [page, setPage] = useState(1);
-  const total = rows.length;
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [q, setQ] = useState("");
+  const [fRecurso, setFRecurso] = useState<string>("all");
+  const [fAcao, setFAcao] = useState<string>("all");
+  const [fTipo, setFTipo] = useState<string>("all"); // INSERT/UPDATE/DELETE
+  const [fEscopo, setFEscopo] = useState<string>("all"); // role/override
+  const [fPapel, setFPapel] = useState<string>("all");
+
+  const filtered = useMemo(() => {
+    const t = q.toLowerCase().trim();
+    const arr = rows.filter((a: any) => {
+      const det = a.detalhes ?? {};
+      const rec = det.new ?? det.old ?? {};
+      const acao: string = a.acao ?? "";
+      const isRole = acao.includes("role_permissions");
+      const isOverride = acao.includes("user_permission_overrides");
+      const op: string = det.op ?? (acao.endsWith("_insert") ? "INSERT" : acao.endsWith("_update") ? "UPDATE" : acao.endsWith("_delete") ? "DELETE" : "");
+
+      if (fRecurso !== "all" && rec.resource !== fRecurso) return false;
+      if (fAcao !== "all" && rec.action !== fAcao) return false;
+      if (fTipo !== "all" && op !== fTipo) return false;
+      if (fEscopo === "role" && !isRole) return false;
+      if (fEscopo === "override" && !isOverride) return false;
+      if (fPapel !== "all" && rec.role !== fPapel) return false;
+
+      if (t) {
+        const hay = [
+          a.autor?.nome, a.autor?.email, a.alvo?.nome, a.alvo?.email,
+          rec.resource, rec.action, rec.role,
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(t)) return false;
+      }
+      return true;
+    });
+    arr.sort((a: any, b: any) => {
+      const da = new Date(a.created_at).getTime();
+      const db = new Date(b.created_at).getTime();
+      return sortDir === "desc" ? db - da : da - db;
+    });
+    return arr;
+  }, [rows, q, fRecurso, fAcao, fTipo, fEscopo, fPapel, sortDir]);
+
+  useEffect(() => { setPage(1); }, [q, fRecurso, fAcao, fTipo, fEscopo, fPapel, sortDir]);
+
+  const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const p = Math.min(page, pages);
   const start = (p - 1) * PAGE_SIZE;
-  const slice = rows.slice(start, start + PAGE_SIZE);
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+
+  const limparFiltros = () => {
+    setQ(""); setFRecurso("all"); setFAcao("all"); setFTipo("all"); setFEscopo("all"); setFPapel("all");
+  };
+  const hasFilters = q || fRecurso !== "all" || fAcao !== "all" || fTipo !== "all" || fEscopo !== "all" || fPapel !== "all";
 
   return (
     <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-8 w-[240px] h-9" placeholder="Buscar usuário/autor…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <Select value={fRecurso} onValueChange={setFRecurso}>
+          <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Recurso" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os recursos</SelectItem>
+            {RESOURCES.map((r) => <SelectItem key={r} value={r}>{RESOURCE_LABELS[r]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={fAcao} onValueChange={setFAcao}>
+          <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Ação" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as ações</SelectItem>
+            {ACTIONS.map((a) => <SelectItem key={a} value={a}>{ACTION_LABELS[a]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={fTipo} onValueChange={setFTipo}>
+          <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toda mudança</SelectItem>
+            <SelectItem value="INSERT">Criada</SelectItem>
+            <SelectItem value="UPDATE">Alterada</SelectItem>
+            <SelectItem value="DELETE">Removida</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={fEscopo} onValueChange={setFEscopo}>
+          <SelectTrigger className="h-9 w-[170px]"><SelectValue placeholder="Escopo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Papel e usuário</SelectItem>
+            <SelectItem value="role">Somente por papel</SelectItem>
+            <SelectItem value="override">Somente por usuário</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={fPapel} onValueChange={setFPapel}>
+          <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Papel" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os papéis</SelectItem>
+            {ROLES.map((r) => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={limparFiltros}>
+            <X className="h-4 w-4 mr-1" /> Limpar
+          </Button>
+        )}
+      </div>
+
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {total === 0
@@ -536,9 +635,7 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
           <Button variant="outline" size="sm" onClick={() => setPage((v) => Math.max(1, v - 1))} disabled={p <= 1}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="px-2">
-            Página {p} / {pages}
-          </span>
+          <span className="px-2">Página {p} / {pages}</span>
           <Button variant="outline" size="sm" onClick={() => setPage((v) => Math.min(pages, v + 1))} disabled={p >= pages}>
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -548,7 +645,17 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="text-left">
-              <th className="p-2 w-[170px]">Quando</th>
+              <th className="p-2 w-[180px]">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 hover:underline"
+                  onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+                  title="Alternar ordenação"
+                >
+                  Quando <ArrowUpDown className="h-3 w-3" />
+                  <span className="text-[10px] text-muted-foreground">({sortDir === "desc" ? "mais recente" : "mais antiga"})</span>
+                </button>
+              </th>
               <th className="p-2 w-[220px]">Ação</th>
               <th className="p-2">Detalhes</th>
             </tr>
@@ -583,7 +690,7 @@ function AuditoriaLista({ rows }: { rows: any[] }) {
             {slice.length === 0 && (
               <tr>
                 <td colSpan={3} className="p-6 text-center text-muted-foreground">
-                  Sem registros ainda.
+                  {hasFilters ? "Nenhum registro para os filtros aplicados." : "Sem registros ainda."}
                 </td>
               </tr>
             )}
