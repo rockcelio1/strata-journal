@@ -47,7 +47,6 @@ export function registerPwa() {
         wb.messageSkipWaiting();
       };
       wb.addEventListener("waiting", promptUpdate);
-      wb.addEventListener("externalwaiting", promptUpdate);
 
       wb.register().catch(() => {});
     })

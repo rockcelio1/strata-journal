@@ -1,9 +1,7 @@
 // Detecta redirecionamentos inesperados logo após um refresh/deep-link.
 // Se a rota inicial mudar sem clique/submit do usuário nos primeiros 4s,
 // registra um aviso no console (e dispara um evento para métricas externas).
-export function installRefreshAudit(router: {
-  subscribe: (event: string, cb: (e: any) => void) => () => void;
-}) {
+export function installRefreshAudit(router: { subscribe: any }) {
   if (typeof window === "undefined") return () => {};
 
   const initialPath = window.location.pathname + window.location.search;
