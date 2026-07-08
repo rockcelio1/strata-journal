@@ -32,39 +32,65 @@ export const notify = {
 };
 
 const DURATION_MS = 900;
+const MAX_VISIBLE = 3;
 
 export function SystemNoticeHost() {
-  const [items, setItems] = useState<Notice[]>([]);
+  const [visible, setVisible] = useState<Notice[]>([]);
 
   useEffect(() => {
-    const listener: Listener = (n) => {
-      setItems((prev) => [...prev, n]);
-      window.setTimeout(() => {
-        setItems((prev) => prev.filter((x) => x.id !== n.id));
-      }, DURATION_MS);
+    const queue: Notice[] = [];
+    const timers = new Map<number, number>();
+
+    const dismiss = (id: number) => {
+      const t = timers.get(id);
+      if (t) window.clearTimeout(t);
+      timers.delete(id);
+      setVisible((prev) => prev.filter((x) => x.id !== id));
+      // Após soltar um slot, promove o próximo da fila.
+      queueMicrotask(pump);
     };
+
+    const pump = () => {
+      setVisible((prev) => {
+        if (prev.length >= MAX_VISIBLE) return prev;
+        const next = queue.shift();
+        if (!next) return prev;
+        timers.set(
+          next.id,
+          window.setTimeout(() => dismiss(next.id), DURATION_MS),
+        );
+        return [...prev, next];
+      });
+    };
+
+    const listener: Listener = (n) => {
+      queue.push(n);
+      pump();
+    };
+
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
+      timers.forEach((t) => window.clearTimeout(t));
     };
   }, []);
 
   if (typeof document === "undefined") return null;
-  if (items.length === 0) return null;
+  if (visible.length === 0) return null;
 
   return createPortal(
     <div
       aria-live="polite"
-      aria-atomic="true"
+      aria-atomic="false"
       role="status"
       className="pointer-events-none fixed inset-0 z-[100] grid place-items-center"
     >
       <div className="flex flex-col gap-2">
-        {items.map((n) => (
+        {visible.map((n) => (
           <NoticeCard
             key={n.id}
             item={n}
-            onClose={() => setItems((prev) => prev.filter((x) => x.id !== n.id))}
+            onClose={() => setVisible((prev) => prev.filter((x) => x.id !== n.id))}
           />
         ))}
       </div>

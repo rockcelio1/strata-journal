@@ -57,36 +57,38 @@ function PermissoesPage() {
     qc.invalidateQueries({ queryKey: ["minhas-permissoes"] });
   };
 
-  // Toast rápido, centralizado, para feedback instantâneo do usuário.
-  const fastToast = { position: "top-center" as const, duration: 1200 };
+  // Mensagem padrão de sucesso para toda ação de permissão (papel/override/reset/bulk).
+  const MSG_OK = "Permissão atualizada";
+
+  const [bulkKey, setBulkKey] = useState<string | null>(null);
 
   const mutRole = useMutation({
     mutationFn: (v: { role: AppRole; resource: AppResource; action: AppAction; allowed: boolean }) =>
       upRoleFn({ data: v }),
     onSuccess: () => {
-      notify.success("Permissão atualizada", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar"),
   });
 
   const mutOv = useMutation({
     mutationFn: (v: { user_id: string; resource: AppResource; action: AppAction; allowed: boolean | null }) =>
       upOvFn({ data: v }),
     onSuccess: () => {
-      notify.success("Permissão atualizada", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao atualizar"),
   });
 
   const mutReset = useMutation({
     mutationFn: (user_id: string) => resetFn({ data: { user_id } }),
     onSuccess: () => {
-      notify.success("Permissões restauradas", fastToast);
+      notify.success(MSG_OK);
       invalidate();
     },
-    onError: (e: any) => notify.error(e?.message ?? "Falha ao resetar", fastToast),
+    onError: (e: any) => notify.error(e?.message ?? "Falha ao resetar"),
   });
 
   const [papelSelecionado, setPapelSelecionado] = useState<AppRole>("engenheiro");
@@ -181,6 +183,8 @@ function PermissoesPage() {
                 mutRole.mutate({ role: papelSelecionado, resource, action, allowed })
               }
               onBulk={async (resource, allowed) => {
+                const key = `${papelSelecionado}.${resource}`;
+                setBulkKey(key);
                 // Atualização otimista: reflete na UI antes de qualquer request.
                 qc.setQueryData(["matriz-permissoes"], (prev: any) => {
                   if (!prev) return prev;
@@ -200,13 +204,15 @@ function PermissoesPage() {
                       upRoleFn({ data: { role: papelSelecionado, resource, action, allowed } }),
                     ),
                   );
-                  notify.success("Permissões do recurso atualizadas", fastToast);
+                  notify.success(MSG_OK);
                 } catch (e: any) {
-                  notify.error(e?.message ?? "Falha ao atualizar", fastToast);
+                  notify.error(e?.message ?? "Falha ao atualizar");
                 } finally {
+                  setBulkKey(null);
                   invalidate();
                 }
               }}
+              bulkKey={bulkKey}
             />
           </TabsContent>
 
@@ -314,12 +320,14 @@ function MatrizPapel({
   defaultsMap,
   onToggle,
   onBulk,
+  bulkKey,
   isLoading,
 }: {
   role: AppRole;
   defaultsMap: Map<string, boolean>;
   onToggle: (r: AppResource, a: AppAction, allowed: boolean) => void;
   onBulk: (r: AppResource, allowed: boolean) => void;
+  bulkKey: string | null;
   isLoading: boolean;
 }) {
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -346,6 +354,7 @@ function MatrizPapel({
             const total = ACTIONS.length;
             const allChecked = marcados === total;
             const someChecked = marcados > 0 && marcados < total;
+            const busy = bulkKey === `${role}.${res}`;
             return (
               <tr key={res} className="border-t">
                 <td className="p-2 font-medium">
@@ -358,7 +367,9 @@ function MatrizPapel({
                   <Checkbox
                     checked={allChecked ? true : someChecked ? "indeterminate" : false}
                     onCheckedChange={(v) => onBulk(res, Boolean(v))}
+                    disabled={busy}
                     aria-label={`Selecionar todas as ações de ${RESOURCE_LABELS[res]}`}
+                    aria-busy={busy}
                   />
                 </td>
                 {ACTIONS.map((act) => {
