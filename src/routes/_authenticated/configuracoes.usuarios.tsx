@@ -851,11 +851,12 @@ function EditMembroDialog({ m, onSave }: { m: any; onSave: (v: { nome: string; c
   );
 }
 
-function SetPasswordDialog({ onSave }: { onSave: (password: string) => Promise<void> }) {
+function SetPasswordDialog({ onSave }: { onSave: (password: string, must_change_password: boolean) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+  const [mustChange, setMustChange] = useState(true);
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPassword(""); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setPassword(""); setMustChange(true); } }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="ghost" aria-label="Definir nova senha" className="min-h-11 min-w-11 focus-visible:ring-2 focus-visible:ring-ring">
           <KeyRound className="h-4 w-4" />
@@ -866,12 +867,26 @@ function SetPasswordDialog({ onSave }: { onSave: (password: string) => Promise<v
         <div className="space-y-3">
           <Label>Senha (mín. 8 caracteres)</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="flex items-start gap-2 text-sm cursor-pointer pt-1">
+            <Checkbox
+              checked={mustChange}
+              onCheckedChange={(v) => setMustChange(!!v)}
+              aria-label="Forçar troca no próximo logon"
+              className="mt-0.5"
+            />
+            <span>
+              Forçar o usuário a trocar a senha no próximo logon
+              <span className="block text-xs text-muted-foreground">
+                Ao entrar, ele será direcionado para uma tela para definir uma nova senha antes de usar o sistema.
+              </span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={async () => {
             if (password.length < 8) { toast.error("Senha muito curta"); return; }
-            try { await onSave(password); toast.success("Senha atualizada"); setOpen(false); setPassword(""); }
+            try { await onSave(password, mustChange); toast.success("Senha atualizada"); setOpen(false); setPassword(""); setMustChange(true); }
             catch (e: any) { toast.error(e.message); }
           }}>Salvar</Button>
         </DialogFooter>
