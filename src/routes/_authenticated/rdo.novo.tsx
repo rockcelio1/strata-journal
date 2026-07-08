@@ -42,7 +42,7 @@ import { countWords as countWordsBase } from "@/lib/text";
 const countWords = (s: string) => countWordsBase(s ?? "");
 import { createDraftChannel } from "@/lib/draft-channel";
 
-const searchSchema = z.object({ obra: z.string().optional() });
+const searchSchema = z.object({ obra: z.string().optional(), tutorial: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/rdo/novo")({
   validateSearch: searchSchema,
@@ -866,7 +866,7 @@ function NovoRdoPage() {
 
         {stepIdx === 0 && (
           <Card className="p-5 space-y-4">
-            <div>
+            <div data-help="rdo-select-obra">
               <Label>Obra</Label>
               <Select value={form.obra_id} onValueChange={(v) => setForm({ ...form, obra_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -875,7 +875,7 @@ function NovoRdoPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div data-help="rdo-data">
               <Label>Data</Label>
               <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
             </div>
@@ -887,7 +887,7 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 1 && (
-          <Card className="p-5 space-y-3">
+          <Card data-help="rdo-clima" className="p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <h3 className="font-serif text-lg">Clima do dia</h3>
@@ -1019,6 +1019,7 @@ function NovoRdoPage() {
         )}
 
         {stepIdx === 2 && (
+          <div data-help="rdo-atividades">
           <Section title="Atividades" onAdd={() => add("atividades", { descricao: "", pct_executado: 0 })}>
             {form.atividades.map((it: any, i: number) => (
               <Card key={i} className="p-3 space-y-2">
@@ -1030,9 +1031,11 @@ function NovoRdoPage() {
               </Card>
             ))}
           </Section>
+          </div>
         )}
 
         {stepIdx === 3 && (
+          <div data-help="rdo-mao-de-obra">
           <Section title="Mão de obra" onAdd={() => add("mao_de_obra", { mao_de_obra_id: "", horas: 1 })}>
             {form.mao_de_obra.map((it: any, i: number) => {
               const invalid = !isUuid(it.mao_de_obra_id);
@@ -1087,7 +1090,7 @@ function NovoRdoPage() {
               );
             })}
           </Section>
-
+          </div>
         )}
 
         {stepIdx === 4 && (

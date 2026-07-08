@@ -26,8 +26,11 @@ export function NotificationBell() {
   });
 
   useEffect(() => {
+    // nome único por mount evita "cannot add postgres_changes callbacks after subscribe()"
+    // quando o mesmo canal é reaproveitado pelo Supabase (StrictMode/remount).
+    const name = `notif-rt-${Math.random().toString(36).slice(2, 10)}`;
     const ch = supabase
-      .channel("notif-rt")
+      .channel(name)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notificacoes" },
         () => qc.invalidateQueries({ queryKey: ["notificacoes"] }))
       .subscribe();
