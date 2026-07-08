@@ -376,7 +376,7 @@ function UsuariosPage() {
                       m={m}
                       onChangePapel={(role) => mUpdatePapel.mutate({ user_id: m.id, role })}
                       onEdit={async (v) => { await adminUpdateFn({ data: { user_id: m.id, ...v } }); invalidate(); }}
-                      onSetPwd={async (password) => { await adminSetPwdFn({ data: { user_id: m.id, password } }); }}
+                      onSetPwd={async (password, must_change_password) => { await adminSetPwdFn({ data: { user_id: m.id, password, must_change_password } }); }}
                       onReset={() => mReset.mutate(m.email)}
                       onToggle={(disabled) => mToggle.mutate({ user_id: m.id, disabled })}
                       onDelete={() => mDelete.mutate(m.id)}
