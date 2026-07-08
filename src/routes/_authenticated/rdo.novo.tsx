@@ -730,6 +730,12 @@ function NovoRdoPage() {
 
   return (
     <>
+      {search.tutorial && (
+        <InteractiveTutorial
+          slug={search.tutorial}
+          onClose={() => navigate({ to: "/rdo/novo", search: (prev: any) => ({ ...prev, tutorial: undefined }) as any })}
+        />
+      )}
       {showResumePrompt && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
           <div className="max-w-md w-full rounded-xl border-2 border-brand bg-card shadow-2xl p-6 text-center space-y-4">
