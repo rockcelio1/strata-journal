@@ -1507,6 +1507,7 @@ function NovoRdoPage() {
               </ButtonEffectRenderer>
               <ButtonEffectRenderer buttonKey="rdo_enviar_aprovacao">
                 <Button
+                  data-help="rdo-enviar"
                   className="bg-brand text-brand-foreground"
                   disabled={!canSubmit || save.isPending}
                   onClick={() => { setSubmitError(null); save.mutate(true); }}
