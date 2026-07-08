@@ -26,6 +26,7 @@ import { Highlight } from "@/components/Highlight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listQueued, flushQueue, removeQueued, retryQueued, updateQueuedPayload, type QueuedRdo } from "@/lib/offline-queue";
 import { sanitizeRdoPayload } from "@/lib/rdo-validate";
+import { sanitizeExportCell } from "@/lib/security/sanitize-export";
 import { fuzzyFilter, normalizeForSearch, fuzzyScore } from "@/lib/fuzzy-search";
 import { toast } from "sonner";
 
@@ -46,10 +47,10 @@ function exportCsv(rows: any[]) {
   const head = ["numero", "obra", "data", "status"];
   const body = rows.map((r) => [
     r.numero,
-    (r.obras?.nome ?? "").replace(/[";\n]/g, " "),
+    r.obras?.nome ?? "",
     r.data,
     r.status,
-  ].map((v) => `"${String(v ?? "")}"`).join(";"));
+  ].map((v) => `"${String(sanitizeExportCell(v) ?? "").replace(/"/g, '""')}"`).join(";"));
   const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

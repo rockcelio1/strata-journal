@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { sanitizeExportCell } from "@/lib/security/sanitize-export";
 
 // ============== PUBLIC: CHECK EMAIL ==============
 // Helpers puros e testáveis (sem o wrapper de createServerFn).
@@ -580,8 +581,9 @@ export const exportAuditLogsCsv = createServerFn({ method: "POST" })
       for (const p of (profs.data ?? []) as any[]) profilesMap.set(p.id, { nome: p.nome, email: p.email });
     }
     const esc = (v: any) => {
-      const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
-      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      const raw = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
+      const safe = sanitizeExportCell(raw) as string;
+      return /[",\n;]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
     };
     const header = ["data", "acao", "autor_nome", "autor_email", "alvo_nome", "alvo_email", "detalhes"].join(",");
     const lines = rows.map((r: any) => {

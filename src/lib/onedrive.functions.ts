@@ -82,6 +82,7 @@ async function gatewayFetch(path: string, init?: RequestInit, retries = 2, step 
     try {
       const res = await fetch(url, {
         ...init,
+        signal: init?.signal ?? AbortSignal.timeout(15000),
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "X-Connection-Api-Key": connKey,

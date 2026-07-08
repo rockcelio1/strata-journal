@@ -40,6 +40,7 @@ import { RdoAcessoCard } from "@/components/rdo/RdoAcessoCard";
 import { SignaturesCard } from "@/components/rdo/SignaturesCard";
 import { AdminConfirmTwiceButton } from "@/components/rdo/AdminConfirmTwiceButton";
 import { SmartImage } from "@/components/rdo/SmartImage";
+import { sanitizeExportCell } from "@/lib/security/sanitize-export";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
@@ -1119,8 +1120,8 @@ function exportAuditCsv(logs: any[]) {
     l.autor?.email ?? "",
     l.status_anterior ?? "",
     l.status_novo ?? "",
-    (l.motivo ?? "").replace(/"/g, '""'),
-  ].map((v) => `"${v}"`).join(";"));
+    l.motivo ?? "",
+  ].map((v) => `"${String(sanitizeExportCell(v) ?? "").replace(/"/g, '""')}"`).join(";"));
   const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
@@ -1178,7 +1179,7 @@ function exportSummaryCsv(rows: any[], f: { autor_id?: string; from?: string; to
     r.editou ?? 0,
     r.alterou ?? 0,
     r.ultima ? fmtBR(r.ultima) : "",
-  ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"));
+  ].map((v) => `"${String(sanitizeExportCell(v) ?? "").replace(/"/g, '""')}"`).join(";"));
   const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
@@ -1312,8 +1313,8 @@ function ClimaRelatorio({
     const body = dias.map((d) => [
       new Date(`${d.data}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: TZ_BR }),
       d.dia_semana, d.origem, d.t_min_c, d.t_max_c, d.precipitacao_mm, d.prob_chuva_pct, d.codigo,
-      String(d.descricao ?? "").replace(/"/g, '""'),
-    ].map((v) => `"${v}"`).join(";"));
+      d.descricao ?? "",
+    ].map((v) => `"${String(sanitizeExportCell(v) ?? "").replace(/"/g, '""')}"`).join(";"));
     const csv = "\uFEFF" + [head.join(";"), ...body].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
