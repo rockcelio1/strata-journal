@@ -840,6 +840,100 @@ function AuditoriaLista({
           </table>
         </div>
       )}
+
+      <AuditoriaDetalheDialog registro={selected} onClose={() => setSelected(null)} />
+    </div>
+  );
+}
+
+function AuditoriaDetalheDialog({ registro, onClose }: { registro: any | null; onClose: () => void }) {
+  const a = registro;
+  if (!a) return (
+    <Dialog open={false} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent />
+    </Dialog>
+  );
+  const f = formatAudit(a);
+  const det = a.detalhes ?? {};
+  const rec = det.new ?? det.old ?? {};
+  const acao: string = a.acao ?? "";
+  const isRole = acao.includes("role_permissions");
+  const isOverride = acao.includes("user_permission_overrides");
+  const op: string = det.op ?? (acao.endsWith("_insert") ? "INSERT" : acao.endsWith("_update") ? "UPDATE" : acao.endsWith("_delete") ? "DELETE" : "");
+  const opLabel = op === "INSERT" ? "Criação" : op === "UPDATE" ? "Alteração" : op === "DELETE" ? "Remoção" : "Alteração";
+  const escopo = isRole ? "Permissão por papel" : isOverride ? "Exceção por usuário" : "Permissão";
+  const quandoTxt = new Date(a.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "full", timeStyle: "medium" });
+
+  const resource = rec.resource as AppResource | undefined;
+  const action = rec.action as AppAction | undefined;
+  const role = rec.role as AppRole | undefined;
+  const antes = det.old?.allowed;
+  const depois = det.new?.allowed;
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className={"inline-block px-2 py-0.5 rounded text-xs " + f.badgeClass}>{opLabel}</span>
+            <span>{escopo}</span>
+          </DialogTitle>
+          <DialogDescription>{f.resumo}</DialogDescription>
+        </DialogHeader>
+
+        <dl className="text-sm divide-y">
+          <Row label="Quando">{quandoTxt}</Row>
+          <Row label="Quem alterou">
+            {a.autor?.nome ?? "—"}
+            {a.autor?.email && <div className="text-xs text-muted-foreground">{a.autor.email}</div>}
+          </Row>
+          {isOverride && (
+            <Row label="Usuário afetado">
+              {a.alvo?.nome ?? "—"}
+              {a.alvo?.email && <div className="text-xs text-muted-foreground">{a.alvo.email}</div>}
+            </Row>
+          )}
+          {isRole && role && <Row label="Papel">{ROLE_LABELS[role] ?? role}</Row>}
+          {resource && (
+            <Row label="Recurso">
+              {RESOURCE_LABELS[resource] ?? resource}
+              <div className="text-xs text-muted-foreground">{descResource(resource)}</div>
+            </Row>
+          )}
+          {action && (
+            <Row label="Ação">
+              {ACTION_LABELS[action] ?? action}
+              <div className="text-xs text-muted-foreground">{descAction(action)}</div>
+            </Row>
+          )}
+          {(antes !== undefined || depois !== undefined) && (
+            <Row label="Mudança">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-muted text-xs">Antes: {boolLabel(antes)}</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs">Depois: {boolLabel(depois)}</span>
+              </div>
+              {op === "DELETE" && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  A exceção foi removida — o usuário voltou a herdar a permissão do papel.
+                </div>
+              )}
+            </Row>
+          )}
+          <Row label="Identificador">
+            <code className="text-[11px] break-all">{a.id}</code>
+          </Row>
+        </dl>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[130px_1fr] gap-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-sm">{children}</dd>
     </div>
   );
 }
