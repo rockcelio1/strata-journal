@@ -21,8 +21,8 @@ type NotifyExtra = string | { description?: string; [key: string]: unknown } | u
 const toDesc = (x: NotifyExtra): string | undefined => {
   if (!x) return undefined;
   if (typeof x === "string") return x;
-  if (typeof x === "object" && "description" in x) return x.description;
-  return undefined;
+  const d = (x as { description?: unknown }).description;
+  return typeof d === "string" ? d : undefined;
 };
 
 export const notify = {
