@@ -363,8 +363,12 @@ async function logAudit(supabase: any, p: {
 
 export const adminSetUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { user_id: string; password: string }) =>
-    z.object({ user_id: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
+  .inputValidator((d: { user_id: string; password: string; must_change_password?: boolean }) =>
+    z.object({
+      user_id: z.string().uuid(),
+      password: z.string().min(8).max(72),
+      must_change_password: z.boolean().optional(),
+    }).parse(d),
   )
   .handler(async ({ context, data }) => {
     await assertAdminOrMaster(context.supabase, context.userId);
@@ -372,7 +376,16 @@ export const adminSetUserPassword = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
     if (error) throw error;
-    await logAudit(context.supabase, { empresa_id, acao: "senha_definida", alvo_user_id: data.user_id });
+    const mustChange = !!data.must_change_password;
+    await (context.supabase.from("profiles") as any)
+      .update({ must_change_password: mustChange })
+      .eq("id", data.user_id);
+    await logAudit(context.supabase, {
+      empresa_id,
+      acao: "senha_definida",
+      alvo_user_id: data.user_id,
+      detalhes: { must_change_password: mustChange },
+    });
     return { ok: true };
   });
 
