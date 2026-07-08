@@ -14,6 +14,7 @@ import {
   Images,
   Settings,
   Menu,
+  HelpCircle,
 } from "lucide-react";
 import { BackNav } from "@/components/back-nav";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
