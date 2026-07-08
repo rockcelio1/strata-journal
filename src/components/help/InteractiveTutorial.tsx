@@ -22,6 +22,7 @@ type Tutorial = {
   slug: string;
   title: string;
   description: string | null;
+  route_path: string | null;
   help_tutorial_steps: Step[];
 };
 
