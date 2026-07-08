@@ -553,6 +553,8 @@ function AuditoriaLista({
 }) {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const [selected, setSelected] = useState<any | null>(null);
+
 
   // Validação: escopo=role → papel livre, mas texto de "usuário" perde sentido; escopo=override → papel não se aplica.
   const escopoRoleWithUserSearch = search.escopo === "role" && !!search.q.trim();
