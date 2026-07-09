@@ -38,7 +38,7 @@ export async function exportRdoPdf(args: {
   ocorrencias: AnyRec[];
   logs: AnyRec[];
   anexos: AnyRec[];
-  empresa?: { nome?: string; cnpj?: string | null } | null;
+  empresa?: { nome?: string; cnpj?: string | null; logo_url?: string | null } | null;
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
 }) {
@@ -47,15 +47,26 @@ export async function exportRdoPdf(args: {
   const W = doc.internal.pageSize.getWidth();
   let y = 40;
 
-  // Cabeçalho
+  // Cabeçalho — logo colorida da empresa ao lado do título/nome
+  let headerLeft = 40;
+  const logo = empresa?.logo_url ? await urlToDataUrl(empresa.logo_url) : null;
+  if (logo) {
+    const maxH = 48, maxW = 90;
+    const ratio = logo.w / logo.h;
+    let lw = maxW, lh = maxW / ratio;
+    if (lh > maxH) { lh = maxH; lw = maxH * ratio; }
+    try { doc.addImage(logo.dataUrl, "PNG", 40, y - 4, lw, lh, undefined, "FAST"); }
+    catch { try { doc.addImage(logo.dataUrl, "JPEG", 40, y - 4, lw, lh, undefined, "FAST"); } catch { /* skip */ } }
+    headerLeft = 40 + lw + 12;
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(`Relatório Diário de Obra #${rdo.numero}`, 40, y);
+  doc.text(`Relatório Diário de Obra #${rdo.numero}`, headerLeft, y + 4);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  y += 18;
-  doc.text(`${empresa?.nome ?? "Empresa"}${empresa?.cnpj ? ` · CNPJ ${empresa.cnpj}` : ""}`, 40, y);
-  y += 14;
+  y += 22;
+  doc.text(`${empresa?.nome ?? "Empresa"}${empresa?.cnpj ? ` · CNPJ ${empresa.cnpj}` : ""}`, headerLeft, y);
+  y = Math.max(y, 40 + (logo ? 48 : 0)) + 6;
   doc.text(`Obra: ${rdo.obras?.nome ?? "—"}   Data: ${fmtDay(rdo.data)}   Status: ${rdoStatusMeta[rdo.status as keyof typeof rdoStatusMeta]?.label ?? rdo.status}`, 40, y);
   y += 14;
   doc.text(`Autor: ${rdo.autor?.nome ?? "—"}${rdo.aprovador?.nome ? `   Aprovador: ${rdo.aprovador.nome}` : ""}`, 40, y);
