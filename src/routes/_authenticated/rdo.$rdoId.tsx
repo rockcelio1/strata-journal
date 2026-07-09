@@ -901,6 +901,11 @@ function RdoDetailPage() {
         />
       )}
 
+      <RdoExportPreview
+        kind={previewKind}
+        args={previewArgs}
+        onClose={() => setPreviewKind(null)}
+      />
     </div>
   );
 }
