@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { climaLabel, rdoStatusMeta } from "@/components/status";
 import { sanitizeExportRow } from "@/lib/security/sanitize-export";
+import { paletteFromLogo, type LogoImage, type LogoPalette, DEFAULT_PALETTE } from "@/lib/logo-palette";
 
 type AnyRec = Record<string, any>;
 
@@ -13,17 +14,22 @@ const fmtDayBR = (yyyyMmDd?: string | null) =>
     ? new Date(`${yyyyMmDd}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
     : "";
 
-// ---------- Paleta corporativa ----------
-const COLOR = {
-  brand: "FF1F3A5F",       // azul petróleo (cabeçalho principal)
-  brandSoft: "FFE8EEF5",   // azul muito claro (linhas alternadas)
-  headerFill: "FF2E5E8C",  // azul médio (cabeçalho das tabelas)
-  headerText: "FFFFFFFF",
-  border: "FFB5C2D1",
-  label: "FF5A6B80",
-  title: "FF0F1F33",
-  zebra: "FFF6F8FB",
-};
+// ---------- Paleta corporativa (derivada da logo da empresa) ----------
+function buildColors(p: LogoPalette) {
+  return {
+    brand: `FF${p.brand}`,
+    brandDark: `FF${p.brandDark}`,
+    brandSoft: `FF${p.brandSoft}`,
+    headerFill: `FF${p.brandDark}`,
+    headerText: `FF${p.onBrand}`,
+    border: "FFB5C2D1",
+    label: "FF5A6B80",
+    title: "FF0F1F33",
+    zebra: "FFF6F8FB",
+  };
+}
+type ColorSet = ReturnType<typeof buildColors>;
+let COLOR: ColorSet = buildColors(DEFAULT_PALETTE);
 
 type ColDef = {
   header: string;
@@ -33,29 +39,54 @@ type ColDef = {
   align?: "left" | "center" | "right";
 };
 
-function styleTitleBlock(
+/**
+ * Insere a faixa de identificação da empresa (logo + nome) nas duas
+ * primeiras linhas da planilha e define-as como títulos de impressão para
+ * que apareçam em todas as páginas. Retorna a próxima linha disponível.
+ */
+function brandBand(
   ws: ExcelJS.Worksheet,
-  title: string,
-  subtitle: string,
   cols: number,
+  empresaLabel: string,
+  logoImageId: number | null,
+  sheetTitle: string,
+  subtitle: string,
 ) {
-  ws.mergeCells(1, 1, 1, cols);
-  const t = ws.getCell(1, 1);
-  t.value = title;
-  t.font = { name: "Calibri", size: 18, bold: true, color: { argb: COLOR.headerText } };
-  t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
-  ws.getRow(1).height = 30;
+  const width = Math.max(cols, 6);
+  // Linha 1: faixa colorida com logo à esquerda e nome da empresa
+  ws.mergeCells(1, 1, 1, width);
+  const c1 = ws.getCell(1, 1);
+  c1.value = empresaLabel || "Empresa";
+  c1.font = { name: "Calibri", size: 14, bold: true, color: { argb: COLOR.headerText } };
+  c1.alignment = { vertical: "middle", horizontal: "left", indent: logoImageId != null ? 8 : 1 };
+  c1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
+  ws.getRow(1).height = 42;
 
-  ws.mergeCells(2, 1, 2, cols);
-  const s = ws.getCell(2, 1);
-  s.value = subtitle;
-  s.font = { name: "Calibri", size: 10, color: { argb: COLOR.label } };
-  s.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  ws.getRow(2).height = 18;
+  if (logoImageId != null) {
+    // Coloca a logo dentro da faixa, ancorada em A1
+    ws.addImage(logoImageId, {
+      tl: { col: 0.1, row: 0.15 } as any,
+      ext: { width: 110, height: 44 },
+      editAs: "oneCell",
+    });
+  }
 
-  // linha em branco
+  // Linha 2: título do relatório + subtítulo (obra/data)
+  ws.mergeCells(2, 1, 2, width);
+  const c2 = ws.getCell(2, 1);
+  c2.value = { richText: [
+    { text: `${sheetTitle}   `, font: { name: "Calibri", size: 12, bold: true, color: { argb: COLOR.title } } },
+    { text: subtitle, font: { name: "Calibri", size: 10, color: { argb: COLOR.label } } },
+  ] } as any;
+  c2.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  c2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brandSoft } };
+  ws.getRow(2).height = 22;
+
+  // Linha 3: separadora fina
   ws.getRow(3).height = 6;
+
+  // Repetir linhas 1-2 em todas as páginas impressas
+  (ws.pageSetup as any).printTitlesRow = "1:2";
 }
 
 function writeTable(
@@ -142,7 +173,6 @@ function writeTable(
     r += 1;
   });
 
-  // autofilter só quando há dados
   if (rows.length) {
     ws.autoFilter = {
       from: { row: headerRow, column: 1 },
@@ -151,7 +181,6 @@ function writeTable(
   }
   ws.views = [{ state: "frozen", ySplit: headerRow }];
 
-  // ajuste de largura automático mínimo
   columns.forEach((col, i) => {
     const wsCol = ws.getColumn(i + 1);
     let max = col.header.length + 2;
@@ -173,6 +202,7 @@ function addSection(
   subtitle: string,
   columns: ColDef[],
   rows: AnyRec[],
+  brand: { empresaLabel: string; logoImageId: number | null },
 ) {
   const safe = name.replace(/[[\]:*?/\\]/g, " ").slice(0, 31);
   const ws = wb.addWorksheet(safe, {
@@ -186,10 +216,10 @@ function addSection(
       margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
     },
     headerFooter: {
-      oddFooter: "&L&F  &C&A  &RPág. &P de &N",
+      oddFooter: `&L${brand.empresaLabel}  &C&A  &RPág. &P de &N`,
     },
   });
-  styleTitleBlock(ws, title, subtitle, Math.max(columns.length, 4));
+  brandBand(ws, Math.max(columns.length, 4), brand.empresaLabel, brand.logoImageId, title, subtitle);
   writeTable(ws, 4, columns, rows);
 }
 
@@ -208,12 +238,16 @@ export async function exportRdoExcel(args: {
   logs: AnyRec[];
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
-  empresa?: { nome?: string; cnpj?: string | null } | null;
+  empresa?: { nome?: string; cnpj?: string | null; logo_url?: string | null } | null;
 }) {
   const {
     rdo, atividades, avancos, mao_de_obra, equipamentos,
-    ocorrencias, anexos, logs, clima_dias, clima_local, empresa,
+    ocorrencias, clima_dias, clima_local, empresa,
   } = args;
+
+  // Paleta derivada da logo + carregamento da imagem
+  const { logo, palette } = await paletteFromLogo(empresa?.logo_url ?? null);
+  COLOR = buildColors(palette);
 
   const wb = new ExcelJS.Workbook();
   wb.creator = empresa?.nome ?? "Sistema RDO";
@@ -222,9 +256,18 @@ export async function exportRdoExcel(args: {
   wb.title = `RDO ${rdo.numero} — ${rdo.obras?.nome ?? ""}`;
   wb.subject = "Relatório Diário de Obra";
 
+  // Registra logo uma única vez no workbook (referenciada em cada aba)
+  let logoImageId: number | null = null;
+  if (logo) {
+    try {
+      logoImageId = wb.addImage({ buffer: logo.bytes.buffer as ArrayBuffer, extension: logo.ext === "jpg" ? "jpeg" : "png" });
+    } catch { logoImageId = null; }
+  }
+
   const empresaLinha = [empresa?.nome, empresa?.cnpj ? `CNPJ ${empresa.cnpj}` : null]
     .filter(Boolean).join(" · ");
-  const subtitleBase = `${empresaLinha}${empresaLinha ? " · " : ""}Obra: ${rdo.obras?.nome ?? "—"} · Data: ${fmtDay(rdo.data)}`;
+  const subtitleBase = `Obra: ${rdo.obras?.nome ?? "—"} · Data: ${fmtDay(rdo.data)}`;
+  const brand = { empresaLabel: empresaLinha || "Empresa", logoImageId };
 
   // ---------- Capa / Resumo ----------
   const capa = wb.addWorksheet("Capa", {
@@ -237,23 +280,13 @@ export async function exportRdoExcel(args: {
       fitToHeight: 0,
       margins: { left: 0.5, right: 0.5, top: 0.6, bottom: 0.5, header: 0.2, footer: 0.2 },
     },
+    headerFooter: {
+      oddFooter: `&L${brand.empresaLabel}  &C&A  &RPág. &P de &N`,
+    },
   });
 
-  // Faixa título
-  capa.mergeCells("A1:D1");
-  capa.getCell("A1").value = `Relatório Diário de Obra Nº ${rdo.numero}`;
-  capa.getCell("A1").font = { name: "Calibri", size: 22, bold: true, color: { argb: COLOR.headerText } };
-  capa.getCell("A1").alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  capa.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
-  capa.getRow(1).height = 38;
-
-  capa.mergeCells("A2:D2");
-  capa.getCell("A2").value = empresaLinha || "Empresa";
-  capa.getCell("A2").font = { name: "Calibri", size: 11, color: { argb: COLOR.label } };
-  capa.getCell("A2").alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  capa.getRow(2).height = 20;
-
-  capa.getRow(3).height = 8;
+  brandBand(capa, 4, brand.empresaLabel, brand.logoImageId,
+    `Relatório Diário de Obra Nº ${rdo.numero}`, subtitleBase);
 
   const info: Array<[string, string]> = [
     ["Obra", rdo.obras?.nome ?? "—"],
@@ -343,7 +376,7 @@ export async function exportRdoExcel(args: {
   capa.getColumn(3).width = 24;
   capa.getColumn(4).width = 40;
 
-  // ---------- Abas de dados ----------
+  // ---------- Abas de dados (Anexos e Histórico removidos) ----------
   addSection(wb, "Atividades", "Atividades executadas", subtitleBase,
     [
       { header: "Descrição", key: "descricao", width: 50 },
@@ -353,6 +386,7 @@ export async function exportRdoExcel(args: {
       descricao: a.descricao ?? "",
       pct: Number(a.pct_executado ?? 0) / 100,
     })),
+    brand,
   );
 
   addSection(wb, "Avancos", "Avanços de tarefas", subtitleBase,
@@ -378,6 +412,7 @@ export async function exportRdoExcel(args: {
       total_hours: a.total_hours != null ? Number(a.total_hours) : "",
       comment: a.comment ?? "",
     })),
+    brand,
   );
 
   addSection(wb, "Mao de obra", "Mão de obra", subtitleBase,
@@ -391,6 +426,7 @@ export async function exportRdoExcel(args: {
       funcao: m.mao_de_obra?.funcao ?? "",
       horas: Number(m.horas ?? 0),
     })),
+    brand,
   );
 
   addSection(wb, "Equipamentos", "Equipamentos", subtitleBase,
@@ -406,6 +442,7 @@ export async function exportRdoExcel(args: {
       status_uso: e.status_uso ?? "",
       horas_uso: Number(e.horas_uso ?? 0),
     })),
+    brand,
   );
 
   addSection(wb, "Ocorrencias", "Ocorrências", subtitleBase,
@@ -419,6 +456,7 @@ export async function exportRdoExcel(args: {
       severidade: o.tipos_ocorrencia?.severidade ?? "",
       descricao: o.descricao ?? "",
     })),
+    brand,
   );
 
   addSection(wb, "Clima", `Evidências meteorológicas${clima_local ? " — " + clima_local : ""}`, subtitleBase,
@@ -442,52 +480,7 @@ export async function exportRdoExcel(args: {
       precipitacao_mm: d.precipitacao_mm != null ? Number(d.precipitacao_mm) : "",
       condicao: d.descricao ?? "",
     })),
-  );
-
-  // Anexos e Histórico permanecem disponíveis como abas técnicas
-  // (não aparecem no PDF, mas úteis em Excel para auditoria).
-  const findAtiv = (id?: string | null) => {
-    if (!id) return "";
-    const av = (avancos ?? []).find((a: AnyRec) => a.task_item_id === id || a.id === id);
-    return av ? `${av.item_code ? av.item_code + " · " : ""}${av.descricao ?? ""}` : "";
-  };
-
-  addSection(wb, "Anexos", "Anexos e mídias", subtitleBase,
-    [
-      { header: "Nome", key: "nome", width: 40 },
-      { header: "Atividade", key: "atividade", width: 36 },
-      { header: "Autor", key: "autor", width: 22 },
-      { header: "Tipo", key: "mime_type", width: 18, align: "center" },
-      { header: "Tamanho (bytes)", key: "tamanho_bytes", width: 16, align: "right", numFmt: "#,##0" },
-      { header: "Enviado em", key: "enviado_em", width: 20, align: "center" },
-    ],
-    anexos.map((a: AnyRec) => ({
-      nome: a.nome ?? "",
-      atividade: findAtiv(a.task_item_id),
-      autor: a.autor?.nome ?? "",
-      mime_type: a.mime_type ?? "",
-      tamanho_bytes: a.tamanho_bytes ?? "",
-      enviado_em: fmtDate(a.created_at),
-    })),
-  );
-
-  addSection(wb, "Historico", "Histórico de status", subtitleBase,
-    [
-      { header: "Quando", key: "quando", width: 20, align: "center" },
-      { header: "Ação", key: "acao", width: 22 },
-      { header: "Status anterior", key: "status_anterior", width: 18, align: "center" },
-      { header: "Status novo", key: "status_novo", width: 18, align: "center" },
-      { header: "Autor", key: "autor", width: 22 },
-      { header: "Motivo", key: "motivo", width: 40 },
-    ],
-    logs.map((l) => ({
-      quando: fmtDate(l.created_at),
-      acao: l.acao,
-      status_anterior: l.status_anterior ?? "",
-      status_novo: l.status_novo ?? "",
-      autor: l.autor?.nome ?? "",
-      motivo: l.motivo ?? "",
-    })),
+    brand,
   );
 
   // ---------- Download ----------
