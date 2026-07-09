@@ -538,6 +538,32 @@ function UsuariosPage() {
 
 import { friendlyAction, friendlySummary, friendlyDetails } from "@/lib/audit-format";
 
+const ACAO_FILTRO_LABELS: Record<string, string> = {
+  convite_criado: "Convite criado",
+  convite_reenviado: "Convite reenviado",
+  convite_revogado: "Convite revogado",
+  usuario_criado: "Usuário criado",
+  usuario_editado: "Usuário editado",
+  usuario_excluido: "Usuário excluído",
+  usuario_desabilitado: "Usuário desabilitado",
+  usuario_habilitado: "Usuário habilitado",
+  usuario_aprovado: "Usuário aprovado",
+  usuario_reprovado: "Aprovação removida",
+  senha_definida: "Senha redefinida",
+  senha_reset_enviado: "E-mail de reset enviado",
+  papel_alterado: "Papel alterado",
+  permissao_insert_role_permissions: "Permissão de papel concedida",
+  permissao_delete_role_permissions: "Permissão de papel removida",
+  permissao_update_role_permissions: "Permissão de papel alterada",
+  permissao_insert_user_permission_overrides: "Exceção de permissão adicionada",
+  permissao_delete_user_permission_overrides: "Exceção de permissão removida",
+  permissao_update_user_permission_overrides: "Exceção de permissão alterada",
+  rdo_acesso_insert: "Compartilhamento de RDO",
+  rdo_acesso_delete: "Acesso a RDO removido",
+  rdo_acesso_update: "Acesso a RDO alterado",
+};
+
+
 function AuditLogButton({ log, autorNome, alvoNome }: { log: any; autorNome?: string | null; alvoNome?: string | null }) {
   const [open, setOpen] = useState(false);
   const titulo = friendlyAction(log.acao, log.detalhes);
