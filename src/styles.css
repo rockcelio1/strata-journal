@@ -740,24 +740,24 @@ table { min-width: max-content; }
   .animate-rdo-alert-blink { animation: none; opacity: 0.6; }
 }
 
-/* Borda piscando leve em laranja (brand) — alerta RDO rascunho */
+/* Borda laranja intermitente e mais grossa — alerta RDO rascunho */
 @keyframes rdo-alert-border {
   0%, 100% {
-    box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand, #f97316) 35%, transparent),
-                0 0 6px 1px color-mix(in oklab, var(--brand, #f97316) 15%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand, #f97316) 55%, transparent),
+                0 0 12px 3px color-mix(in oklab, var(--brand, #f97316) 25%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand, #f97316) 75%, transparent),
-                0 0 12px 3px color-mix(in oklab, var(--brand, #f97316) 35%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--brand, #f97316) 95%, transparent),
+                0 0 22px 6px color-mix(in oklab, var(--brand, #f97316) 55%, transparent);
   }
 }
 .animate-rdo-alert-border {
-  animation: rdo-alert-border 1.8s ease-in-out infinite;
+  animation: rdo-alert-border 1.1s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-rdo-alert-border {
     animation: none;
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand, #f97316) 60%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand, #f97316) 80%, transparent);
   }
 }
 
