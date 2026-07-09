@@ -164,12 +164,11 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
 
         <div className="flex-1 min-h-0 bg-muted/30 animate-fade-in">
           {loading && (
-            <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground animate-fade-in">
+            <div className="h-full flex items-center justify-center animate-fade-in" role="status" aria-label="Carregando">
               <div className="relative">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
               </div>
-              <p className="text-sm font-medium">{kind === "pdf" ? "Carregando PDF..." : "Gerando pré-visualização…"}</p>
             </div>
           )}
 
@@ -391,12 +390,11 @@ function PdfCanvasPreview({
 
       <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
         {loading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 text-muted-foreground animate-fade-in">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 animate-fade-in" role="status" aria-label="Carregando">
             <div className="relative">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
             </div>
-            <p className="text-sm font-medium">Carregando PDF...</p>
           </div>
         )}
 
