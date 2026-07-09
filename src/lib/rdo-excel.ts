@@ -238,12 +238,16 @@ export async function exportRdoExcel(args: {
   logs: AnyRec[];
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
-  empresa?: { nome?: string; cnpj?: string | null } | null;
+  empresa?: { nome?: string; cnpj?: string | null; logo_url?: string | null } | null;
 }) {
   const {
     rdo, atividades, avancos, mao_de_obra, equipamentos,
-    ocorrencias, anexos, logs, clima_dias, clima_local, empresa,
+    ocorrencias, clima_dias, clima_local, empresa,
   } = args;
+
+  // Paleta derivada da logo + carregamento da imagem
+  const { logo, palette } = await paletteFromLogo(empresa?.logo_url ?? null);
+  COLOR = buildColors(palette);
 
   const wb = new ExcelJS.Workbook();
   wb.creator = empresa?.nome ?? "Sistema RDO";
@@ -252,9 +256,18 @@ export async function exportRdoExcel(args: {
   wb.title = `RDO ${rdo.numero} — ${rdo.obras?.nome ?? ""}`;
   wb.subject = "Relatório Diário de Obra";
 
+  // Registra logo uma única vez no workbook (referenciada em cada aba)
+  let logoImageId: number | null = null;
+  if (logo) {
+    try {
+      logoImageId = wb.addImage({ buffer: logo.bytes.buffer as ArrayBuffer, extension: logo.ext });
+    } catch { logoImageId = null; }
+  }
+
   const empresaLinha = [empresa?.nome, empresa?.cnpj ? `CNPJ ${empresa.cnpj}` : null]
     .filter(Boolean).join(" · ");
-  const subtitleBase = `${empresaLinha}${empresaLinha ? " · " : ""}Obra: ${rdo.obras?.nome ?? "—"} · Data: ${fmtDay(rdo.data)}`;
+  const subtitleBase = `Obra: ${rdo.obras?.nome ?? "—"} · Data: ${fmtDay(rdo.data)}`;
+  const brand = { empresaLabel: empresaLinha || "Empresa", logoImageId };
 
   // ---------- Capa / Resumo ----------
   const capa = wb.addWorksheet("Capa", {
@@ -267,23 +280,13 @@ export async function exportRdoExcel(args: {
       fitToHeight: 0,
       margins: { left: 0.5, right: 0.5, top: 0.6, bottom: 0.5, header: 0.2, footer: 0.2 },
     },
+    headerFooter: {
+      oddFooter: `&L${brand.empresaLabel}  &C&A  &RPág. &P de &N`,
+    },
   });
 
-  // Faixa título
-  capa.mergeCells("A1:D1");
-  capa.getCell("A1").value = `Relatório Diário de Obra Nº ${rdo.numero}`;
-  capa.getCell("A1").font = { name: "Calibri", size: 22, bold: true, color: { argb: COLOR.headerText } };
-  capa.getCell("A1").alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  capa.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
-  capa.getRow(1).height = 38;
-
-  capa.mergeCells("A2:D2");
-  capa.getCell("A2").value = empresaLinha || "Empresa";
-  capa.getCell("A2").font = { name: "Calibri", size: 11, color: { argb: COLOR.label } };
-  capa.getCell("A2").alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  capa.getRow(2).height = 20;
-
-  capa.getRow(3).height = 8;
+  brandBand(capa, 4, brand.empresaLabel, brand.logoImageId,
+    `Relatório Diário de Obra Nº ${rdo.numero}`, subtitleBase);
 
   const info: Array<[string, string]> = [
     ["Obra", rdo.obras?.nome ?? "—"],
@@ -373,7 +376,7 @@ export async function exportRdoExcel(args: {
   capa.getColumn(3).width = 24;
   capa.getColumn(4).width = 40;
 
-  // ---------- Abas de dados ----------
+  // ---------- Abas de dados (Anexos e Histórico removidos) ----------
   addSection(wb, "Atividades", "Atividades executadas", subtitleBase,
     [
       { header: "Descrição", key: "descricao", width: 50 },
@@ -383,6 +386,7 @@ export async function exportRdoExcel(args: {
       descricao: a.descricao ?? "",
       pct: Number(a.pct_executado ?? 0) / 100,
     })),
+    brand,
   );
 
   addSection(wb, "Avancos", "Avanços de tarefas", subtitleBase,
@@ -408,6 +412,7 @@ export async function exportRdoExcel(args: {
       total_hours: a.total_hours != null ? Number(a.total_hours) : "",
       comment: a.comment ?? "",
     })),
+    brand,
   );
 
   addSection(wb, "Mao de obra", "Mão de obra", subtitleBase,
@@ -421,6 +426,7 @@ export async function exportRdoExcel(args: {
       funcao: m.mao_de_obra?.funcao ?? "",
       horas: Number(m.horas ?? 0),
     })),
+    brand,
   );
 
   addSection(wb, "Equipamentos", "Equipamentos", subtitleBase,
@@ -436,6 +442,7 @@ export async function exportRdoExcel(args: {
       status_uso: e.status_uso ?? "",
       horas_uso: Number(e.horas_uso ?? 0),
     })),
+    brand,
   );
 
   addSection(wb, "Ocorrencias", "Ocorrências", subtitleBase,
@@ -449,6 +456,7 @@ export async function exportRdoExcel(args: {
       severidade: o.tipos_ocorrencia?.severidade ?? "",
       descricao: o.descricao ?? "",
     })),
+    brand,
   );
 
   addSection(wb, "Clima", `Evidências meteorológicas${clima_local ? " — " + clima_local : ""}`, subtitleBase,
@@ -472,52 +480,7 @@ export async function exportRdoExcel(args: {
       precipitacao_mm: d.precipitacao_mm != null ? Number(d.precipitacao_mm) : "",
       condicao: d.descricao ?? "",
     })),
-  );
-
-  // Anexos e Histórico permanecem disponíveis como abas técnicas
-  // (não aparecem no PDF, mas úteis em Excel para auditoria).
-  const findAtiv = (id?: string | null) => {
-    if (!id) return "";
-    const av = (avancos ?? []).find((a: AnyRec) => a.task_item_id === id || a.id === id);
-    return av ? `${av.item_code ? av.item_code + " · " : ""}${av.descricao ?? ""}` : "";
-  };
-
-  addSection(wb, "Anexos", "Anexos e mídias", subtitleBase,
-    [
-      { header: "Nome", key: "nome", width: 40 },
-      { header: "Atividade", key: "atividade", width: 36 },
-      { header: "Autor", key: "autor", width: 22 },
-      { header: "Tipo", key: "mime_type", width: 18, align: "center" },
-      { header: "Tamanho (bytes)", key: "tamanho_bytes", width: 16, align: "right", numFmt: "#,##0" },
-      { header: "Enviado em", key: "enviado_em", width: 20, align: "center" },
-    ],
-    anexos.map((a: AnyRec) => ({
-      nome: a.nome ?? "",
-      atividade: findAtiv(a.task_item_id),
-      autor: a.autor?.nome ?? "",
-      mime_type: a.mime_type ?? "",
-      tamanho_bytes: a.tamanho_bytes ?? "",
-      enviado_em: fmtDate(a.created_at),
-    })),
-  );
-
-  addSection(wb, "Historico", "Histórico de status", subtitleBase,
-    [
-      { header: "Quando", key: "quando", width: 20, align: "center" },
-      { header: "Ação", key: "acao", width: 22 },
-      { header: "Status anterior", key: "status_anterior", width: 18, align: "center" },
-      { header: "Status novo", key: "status_novo", width: 18, align: "center" },
-      { header: "Autor", key: "autor", width: 22 },
-      { header: "Motivo", key: "motivo", width: 40 },
-    ],
-    logs.map((l) => ({
-      quando: fmtDate(l.created_at),
-      acao: l.acao,
-      status_anterior: l.status_anterior ?? "",
-      status_novo: l.status_novo ?? "",
-      autor: l.autor?.nome ?? "",
-      motivo: l.motivo ?? "",
-    })),
+    brand,
   );
 
   // ---------- Download ----------
