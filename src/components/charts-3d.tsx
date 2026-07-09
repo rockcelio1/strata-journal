@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Text, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Html, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { Pause, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
