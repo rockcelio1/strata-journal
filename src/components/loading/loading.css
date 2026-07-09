@@ -1,0 +1,74 @@
+/* =========================================================
+ * Loading Spinner — dots giratórios estilo boot Windows
+ * Usado por <LoadingSpinner /> e <LoadingOverlay />.
+ * Prefixo .lspn para evitar colisão com utilitários do projeto.
+ * ========================================================= */
+
+.lspn {
+  --uib-size: 40px;
+  --uib-color: currentColor;
+  --uib-speed: 1.5s;
+  --dot-size: calc(var(--uib-size) * 0.17);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+  color: var(--uib-color);
+  animation: lspn-smooth-rotate calc(var(--uib-speed) * 1.8) linear infinite;
+}
+
+.lspn-dot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  animation: lspn-rotate var(--uib-speed) ease-in-out infinite;
+}
+
+.lspn-dot::before {
+  content: "";
+  height: var(--dot-size);
+  width: var(--dot-size);
+  border-radius: 9999px;
+  background-color: var(--uib-color);
+  transition: background-color 0.3s ease;
+}
+
+.lspn-dot:nth-child(2),
+.lspn-dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.835 * 0.5); }
+.lspn-dot:nth-child(3),
+.lspn-dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.668 * 0.5); }
+.lspn-dot:nth-child(4),
+.lspn-dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.501 * 0.5); }
+.lspn-dot:nth-child(5),
+.lspn-dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.334 * 0.5); }
+.lspn-dot:nth-child(6),
+.lspn-dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.167 * 0.5); }
+
+@keyframes lspn-rotate {
+  0%   { transform: rotate(0deg); }
+  65%, 100% { transform: rotate(360deg); }
+}
+
+@keyframes lspn-smooth-rotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lspn,
+  .lspn-dot {
+    animation: none !important;
+  }
+  .lspn-dot:nth-child(n+2) { display: none; }
+  .lspn-dot::before {
+    animation: lspn-fade 1.2s ease-in-out infinite;
+  }
+  @keyframes lspn-fade {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1; }
+  }
+}
