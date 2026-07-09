@@ -322,22 +322,6 @@ export async function exportRdoPdf(args: {
     y += 18;
   }
 
-  // Clima detalhado
-  if (clima_dias && clima_dias.length) {
-    sectionTitle(`Evidências meteorológicas${clima_local ? ` — ${clima_local}` : ""}`);
-    const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
-    table(
-      ["Data", "Dia", "Origem", "Mín/Máx (°C)", "Chuva", "Condição"],
-      ordered.map((d) => [
-        fmtDayBR(d.data),
-        d.dia_semana ?? "—",
-        d.origem ?? "—",
-        `${Math.round(Number(d.t_min_c ?? 0))} / ${Math.round(Number(d.t_max_c ?? 0))}`,
-        `${d.prob_chuva_pct ?? 0}% · ${d.precipitacao_mm ?? 0} mm`,
-        d.descricao ?? "—",
-      ]),
-    );
-  }
 
   // ===== Registros fotográficos =====
   const fotos = (anexos ?? []).filter((a: AnyRec) =>
