@@ -127,8 +127,7 @@ export async function exportRdoPdf(args: {
   section("Ocorrências", ["Tipo", "Severidade", "Descrição"],
     ocorrencias.map((o) => [o.tipos_ocorrencia?.nome ?? "Geral", o.tipos_ocorrencia?.severidade ?? "—", o.descricao]));
 
-  section("Anexos", ["Nome", "Enviado por", "Em"],
-    anexos.map((a) => [a.nome, a.autor?.nome ?? "—", fmtDate(a.created_at)]));
+  // Seção "Anexos" removida a pedido: nomes de arquivo não devem aparecer no PDF.
 
   if (clima_dias && clima_dias.length) {
     const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
