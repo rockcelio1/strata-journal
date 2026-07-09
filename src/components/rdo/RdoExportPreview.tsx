@@ -236,10 +236,11 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                       <Sheet name="Equipamentos" n={counts.equip} />
                       <Sheet name="Ocorrências" n={counts.ocor} />
                       <Sheet name="Clima" n={args?.clima_dias?.length ?? 0} />
+                      <Sheet name="Anexos" n={counts.anexos} />
                     </ul>
                   </div>
                   <p className="text-xs text-muted-foreground pt-2 border-t">
-                    Cores derivadas da logo da empresa · Anexos e Histórico não são incluídos.
+                    Cores derivadas da logo da empresa · Anexos incluídos com imagem e legenda.
                   </p>
                 </div>
               </div>
