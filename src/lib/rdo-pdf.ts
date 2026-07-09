@@ -81,9 +81,9 @@ export async function exportRdoPdf(args: {
   clima_local?: string | null;
   mode?: "save" | "blob";
 }): Promise<{ blob: Blob; url: string; filename: string } | void> {
-  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
+  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa } = args;
   const mode = args.mode ?? "save";
-  void logs;
+  void logs; void clima_dias; void clima_local;
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
