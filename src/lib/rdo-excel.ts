@@ -485,6 +485,59 @@ export async function exportRdoExcel(args: {
     brand,
   );
 
+  // ---------- Anexos (imagens embutidas) ----------
+  const fotos = (anexos ?? []).filter(
+    (a: AnyRec) => (a.mime_type ?? "").toString().startsWith("image/") && a.url,
+  );
+  if (fotos.length) {
+    const wsA = wb.addWorksheet("Anexos", {
+      views: [{ showGridLines: false }],
+      pageSetup: {
+        paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+        margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
+      },
+      headerFooter: { oddFooter: `&L${brand.empresaLabel}  &C&A  &RPág. &P de &N` },
+    });
+    brandBand(wsA, 4, brand.empresaLabel, brand.logoImageId, "Anexos", subtitleBase);
+    wsA.getColumn(1).width = 4;
+    wsA.getColumn(2).width = 60;
+    wsA.getColumn(3).width = 40;
+
+    const itemLabel = (id?: string | null) => {
+      if (!id) return "Sem atividade";
+      const av = (avancos ?? []).find((a: AnyRec) => a.task_item_id === id || a.id === id);
+      return av ? `${av.item_code ? av.item_code + " · " : ""}${av.descricao ?? "Atividade"}` : "Atividade";
+    };
+
+    let r = 4;
+    for (const f of fotos) {
+      try {
+        const resp = await fetch(f.url as string);
+        if (!resp.ok) continue;
+        const buf = await resp.arrayBuffer();
+        const mime = (f.mime_type ?? "").toString();
+        const ext = mime.includes("png") ? "png" : mime.includes("gif") ? "gif" : "jpeg";
+        const imgId = wb.addImage({ buffer: buf, extension: ext as "png" | "jpeg" | "gif" });
+        const rowHeight = 180;
+        wsA.getRow(r).height = rowHeight;
+        wsA.addImage(imgId, {
+          tl: { col: 1, row: r - 1 } as any,
+          ext: { width: 380, height: rowHeight * 1.25 },
+          editAs: "oneCell",
+        });
+        const legenda = (f.legenda ?? "").toString().trim() || "(sem descrição)";
+        const c = wsA.getCell(r, 3);
+        c.value = { richText: [
+          { text: itemLabel(f.task_item_id) + "\n", font: { name: "Calibri", size: 10, bold: true, color: { argb: COLOR.title } } },
+          { text: legenda, font: { name: "Calibri", size: 10, color: { argb: COLOR.label } } },
+        ] } as any;
+        c.alignment = { vertical: "top", horizontal: "left", wrapText: true, indent: 1 };
+        r += 1;
+      } catch { /* pula anexo com erro de carregamento */ }
+    }
+  }
+
+
   // ---------- Download ----------
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
