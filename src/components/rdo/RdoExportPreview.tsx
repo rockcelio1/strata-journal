@@ -124,8 +124,9 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
           )}
 
           {!loading && kind === "excel" && counts && (
-            <div className="h-full overflow-auto p-6">
-              <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border">
+            <div className="h-full overflow-auto p-6 animate-fade-in">
+              <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border animate-scale-in">
+
                 {/* Faixa header simulando a planilha */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 text-white rounded-t-lg">
                   {empresa?.logo_url ? (
