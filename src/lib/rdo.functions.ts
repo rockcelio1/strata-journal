@@ -153,6 +153,8 @@ export const createRdo = createServerFn({ method: "POST" })
     return data;
   })
   .handler(async ({ context, data }) => {
+    // Rate limit: no máx. 20 criações de RDO por minuto por usuário.
+    await checkRateLimit(context.supabase, "createRdo", 20, 60);
     const sanitize: SanitizeResult<any> | undefined = (data as any).__sanitize;
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
