@@ -1,7 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Download, Loader2, FileText, FileSpreadsheet } from "lucide-react";
+import {
+  AlertCircle,
+  Copy,
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  FileText,
+  Loader2,
+  RefreshCw,
+  SearchMinus,
+  SearchPlus,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
 import { exportRdoExcel } from "@/lib/rdo-excel";
 import { rdoStatusMeta } from "@/components/status";
@@ -18,6 +31,7 @@ type Props = {
 export function RdoExportPreview({ kind, args, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ blob: Blob; url: string; filename: string } | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!kind || !args) return;
@@ -25,6 +39,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
     let currentUrl: string | null = null;
     setLoading(true);
     setResult(null);
+    setGenerationError(null);
     (async () => {
       try {
         const out =
@@ -39,6 +54,21 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
           currentUrl = out.url;
           setResult(out);
         }
+      } catch (err) {
+        console.error("[rdo-export-preview] Falha ao gerar arquivo para pré-visualização", {
+          ...getRdoLogContext(args),
+          kind,
+          error: technicalError(err),
+          request_id: crypto.randomUUID?.() ?? `${Date.now()}`,
+          timestamp: new Date().toISOString(),
+        });
+        if (!cancelled) {
+          setGenerationError(
+            kind === "pdf"
+              ? "Ocorreu um erro ao carregar o PDF. Tente novamente."
+              : "Ocorreu um erro ao carregar a planilha. Tente novamente.",
+          );
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -52,6 +82,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
   const open = kind !== null;
   const rdo: any = args?.rdo ?? {};
   const empresa: any = args?.empresa ?? {};
+  const logContext = getRdoLogContext(args);
   const counts = args
     ? {
         atividades: args.atividades?.length ?? 0,
@@ -63,7 +94,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
       }
     : null;
 
-  const download = () => {
+  const download = useCallback(() => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result.url;
@@ -71,19 +102,63 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
     document.body.appendChild(a);
     a.click();
     a.remove();
-  };
+  }, [result]);
+
+  const openInNewTab = useCallback(() => {
+    if (!result) return;
+    window.open(result.url, "_blank", "noopener,noreferrer");
+  }, [result]);
+
+  const copyUrl = useCallback(async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result.url);
+      toast.success("URL copiada.");
+    } catch (err) {
+      console.error("[rdo-export-preview] Falha ao copiar URL do PDF", { ...logContext, error: technicalError(err) });
+      toast.error("Não foi possível copiar a URL.");
+    }
+  }, [logContext, result]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
+        <DialogHeader className="px-4 py-3 border-b flex-row flex-wrap items-center justify-between gap-2 space-y-0 pr-12">
           <DialogTitle className="flex items-center gap-2 text-base">
             {kind === "pdf" ? <FileText className="h-4 w-4" /> : <FileSpreadsheet className="h-4 w-4" />}
             Pré-visualização — {kind === "pdf" ? "PDF" : "Planilha Excel"}
           </DialogTitle>
-          <Button size="sm" onClick={download} disabled={!result || loading}>
-            <Download className="h-4 w-4 mr-1" /> Baixar {kind === "pdf" ? "PDF" : "Excel"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {kind === "pdf" && result ? (
+              <Button asChild size="sm" variant="outline">
+                <a href={result.url}>
+                  <ExternalLink className="h-4 w-4" /> Abrir PDF nesta aba
+                </a>
+              </Button>
+            ) : kind === "pdf" ? (
+              <Button size="sm" variant="outline" disabled>
+                <ExternalLink className="h-4 w-4" /> Abrir PDF nesta aba
+              </Button>
+            ) : null}
+            {kind === "pdf" && (
+              <Button size="sm" variant="outline" onClick={openInNewTab} disabled={!result || loading}>
+                <ExternalLink className="h-4 w-4" /> Abrir em nova aba
+              </Button>
+            )}
+            {kind === "pdf" && (
+              <Button size="sm" variant="outline" onClick={copyUrl} disabled={!result || loading}>
+                <Copy className="h-4 w-4" /> Copiar URL
+              </Button>
+            )}
+            <Button size="sm" onClick={download} disabled={!result || loading}>
+              <Download className="h-4 w-4" /> Baixar {kind === "pdf" ? "PDF" : "Excel"}
+            </Button>
+            <DialogClose asChild>
+              <Button size="sm" variant="ghost">
+                <X className="h-4 w-4" /> Fechar
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 bg-muted/30 animate-fade-in">
@@ -93,15 +168,33 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
               </div>
-              <p className="text-sm font-medium">Gerando pré-visualização…</p>
+              <p className="text-sm font-medium">{kind === "pdf" ? "Carregando PDF..." : "Gerando pré-visualização…"}</p>
             </div>
           )}
 
-          {!loading && kind === "pdf" && result && (
-            <PdfCanvasPreview blob={result.blob} />
+          {!loading && generationError && (
+            <PdfPreviewFallback
+              message={generationError}
+              result={result}
+              onOpenNewTab={openInNewTab}
+              onDownload={download}
+              onCopyUrl={copyUrl}
+            />
           )}
 
-          {!loading && kind === "excel" && counts && (
+          {!loading && kind === "pdf" && result && (
+            <PdfCanvasPreview
+              blob={result.blob}
+              url={result.url}
+              filename={result.filename}
+              logContext={logContext}
+              onOpenNewTab={openInNewTab}
+              onDownload={download}
+              onCopyUrl={copyUrl}
+            />
+          )}
+
+          {!loading && !generationError && kind === "excel" && counts && (
             <div className="h-full overflow-auto p-6 animate-fade-in">
               <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border animate-scale-in">
 
@@ -153,47 +246,212 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
   );
 }
 
-function PdfCanvasPreview({ blob }: { blob: Blob }) {
+type PdfPreviewResult = { blob: Blob; url: string; filename: string } | null;
+
+type PdfLogContext = {
+  report_id: string | null;
+  work_id: string | null;
+  company_id: string | null;
+  status: string | null;
+};
+
+const MAX_PDF_PREVIEW_BYTES = 60 * 1024 * 1024;
+
+function PdfCanvasPreview({
+  blob,
+  url,
+  filename,
+  logContext,
+  onOpenNewTab,
+  onDownload,
+  onCopyUrl,
+}: {
+  blob: Blob;
+  url: string;
+  filename: string;
+  logContext: PdfLogContext;
+  onOpenNewTab: () => void;
+  onDownload: () => void;
+  onCopyUrl: () => void;
+}) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [pdfDocument, setPdfDocument] = useState<any>(null);
   const [pageCount, setPageCount] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [rendering, setRendering] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(760);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
-    setPageNumber(1);
-    setPageCount(0);
-    setError(null);
-  }, [blob]);
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const update = () => setContainerWidth(wrapper.clientWidth || 760);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    let resizeTimer: number | undefined;
     let pdfDocument: any = null;
+
+    const loadPdf = async () => {
+      setLoading(true);
+      setError(null);
+      setPageCount(0);
+      setPdfDocument(null);
+      try {
+        const loaded = await loadPdfBytes({ blob, url });
+        if (loaded.size > MAX_PDF_PREVIEW_BYTES) {
+          throw new PdfPreviewError("PDF_TOO_LARGE", "O PDF é muito grande para pré-visualização. Use o botão Baixar PDF.", loaded);
+        }
+
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        pdfDocument = await pdfjs.getDocument({ data: loaded.bytes }).promise;
+        if (!pdfDocument?.numPages) {
+          throw new PdfPreviewError("INVALID_PDF", "O arquivo retornado não é um PDF válido.", loaded);
+        }
+        if (!cancelled) {
+          setPageCount(pdfDocument.numPages);
+          setPdfDocument(pdfDocument);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const friendlyMessage = friendlyPdfError(err);
+          setError(friendlyMessage);
+          console.error("[rdo-pdf-preview] Falha técnica na pré-visualização", {
+            ...logContext,
+            filename,
+            pdf_url: maskUrl(url),
+            ...technicalPdfError(err),
+            request_id: crypto.randomUUID?.() ?? `${Date.now()}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadPdf();
+
+    return () => {
+      cancelled = true;
+      pdfDocument?.destroy?.();
+    };
+  }, [blob, filename, logContext, retryKey, url]);
+
+  return (
+    <div className="h-full flex flex-col bg-muted/40 animate-fade-in">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-background px-4 py-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="h-4 w-4" />
+          <span>{pageCount ? `${pageCount} ${pageCount === 1 ? "página" : "páginas"}` : "Prévia renderizada do PDF"}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setZoom((value) => Math.max(0.75, Number((value - 0.15).toFixed(2))))}
+            disabled={loading || !!error || zoom <= 0.75}
+            aria-label="Reduzir zoom"
+          >
+            <SearchMinus className="h-4 w-4" />
+          </Button>
+          <span className="min-w-14 text-center text-xs font-medium text-muted-foreground">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setZoom((value) => Math.min(2, Number((value + 0.15).toFixed(2))))}
+            disabled={loading || !!error || zoom >= 2}
+            aria-label="Aumentar zoom"
+          >
+            <SearchPlus className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setRetryKey((key) => key + 1)} disabled={loading}>
+            <RefreshCw className="h-4 w-4" /> Recarregar
+          </Button>
+        </div>
+      </div>
+
+      <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 text-muted-foreground animate-fade-in">
+            <div className="relative">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+            </div>
+            <p className="text-sm font-medium">Carregando PDF...</p>
+          </div>
+        )}
+
+        {error ? (
+          <PdfPreviewFallback
+            message={error}
+            result={{ blob, url, filename }}
+            onOpenNewTab={onOpenNewTab}
+            onDownload={onDownload}
+            onCopyUrl={onCopyUrl}
+            onRetry={() => setRetryKey((key) => key + 1)}
+          />
+        ) : (
+          <div className="mx-auto flex w-full flex-col items-center gap-4 pb-4">
+            {pdfDocument && Array.from({ length: pageCount }, (_, index) => (
+              <PdfPageCanvas
+                key={`${retryKey}-${index + 1}-${zoom}-${containerWidth}`}
+                pdfDocument={pdfDocument}
+                pageNumber={index + 1}
+                zoom={zoom}
+                containerWidth={containerWidth}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PdfPageCanvas({
+  pdfDocument,
+  pageNumber,
+  zoom,
+  containerWidth,
+}: {
+  pdfDocument: any;
+  pageNumber: number;
+  zoom: number;
+  containerWidth: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [rendering, setRendering] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
     let renderTask: any = null;
 
     const renderPage = async () => {
       setRendering(true);
-      setError(null);
+      setError(false);
       try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-        if (!pdfDocument) {
-          const data = await blob.arrayBuffer();
-          pdfDocument = await pdfjs.getDocument({ data }).promise;
-          if (!cancelled) setPageCount(pdfDocument.numPages);
-        }
-
-        const canvas = canvasRef.current;
-        const wrapper = wrapperRef.current;
-        if (!canvas || !wrapper || cancelled) return;
-
         const page = await pdfDocument.getPage(pageNumber);
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+
         const baseViewport = page.getViewport({ scale: 1 });
-        const availableWidth = Math.max(wrapper.clientWidth - 48, 320);
-        const scale = Math.min(availableWidth / baseViewport.width, 1.45);
+        const availableWidth = Math.max(containerWidth - 48, 320);
+        const fitScale = availableWidth / baseViewport.width;
+        const scale = Math.min(Math.max(fitScale * zoom, 0.45), 3);
         const viewport = page.getViewport({ scale });
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const context = canvas.getContext("2d");
@@ -210,88 +468,187 @@ function PdfCanvasPreview({ blob }: { blob: Blob }) {
         renderTask = page.render({ canvasContext: context, viewport });
         await renderTask.promise;
       } catch (err: any) {
-        if (!cancelled && err?.name !== "RenderingCancelledException") {
-          setError("Não foi possível montar a pré-visualização do PDF. Baixe o arquivo para conferir o conteúdo final.");
-        }
+        if (!cancelled && err?.name !== "RenderingCancelledException") setError(true);
       } finally {
         if (!cancelled) setRendering(false);
       }
     };
 
     renderPage();
-    const onResize = () => {
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(renderPage, 180);
-    };
-    window.addEventListener("resize", onResize);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(resizeTimer);
-      window.removeEventListener("resize", onResize);
       renderTask?.cancel?.();
-      pdfDocument?.destroy?.();
     };
-  }, [blob, pageNumber]);
+  }, [containerWidth, pageNumber, pdfDocument, zoom]);
 
   return (
-    <div className="h-full flex flex-col bg-zinc-100 animate-fade-in">
-      <div className="flex items-center justify-between gap-3 border-b bg-background px-4 py-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="h-4 w-4" />
-          <span>Prévia renderizada do PDF</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
-            disabled={rendering || pageNumber <= 1}
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-20 text-center text-xs font-medium text-muted-foreground">
-            Página {pageNumber}{pageCount ? ` de ${pageCount}` : ""}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setPageNumber((page) => Math.min(pageCount || page + 1, page + 1))}
-            disabled={rendering || !pageCount || pageNumber >= pageCount}
-            aria-label="Próxima página"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="w-full max-w-full animate-scale-in" aria-label={`Página ${pageNumber} do PDF`}>
+      <div className="mx-auto mb-2 w-fit rounded border bg-background px-2 py-1 text-xs text-muted-foreground">
+        Página {pageNumber}
       </div>
-
-      <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
+      <div className="relative mx-auto w-fit max-w-full">
         {rendering && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 text-muted-foreground animate-fade-in">
-            <div className="relative">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
-            </div>
-            <p className="text-sm font-medium">Abrindo pré-visualização do PDF…</p>
+          <div className="absolute inset-0 z-10 flex min-h-64 items-center justify-center bg-background/80 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         )}
-
         {error ? (
-          <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-            <FileText className="h-8 w-8" />
-            <p className="text-sm">{error}</p>
+          <div className="flex min-h-64 w-full max-w-xl items-center justify-center rounded border bg-background p-6 text-center text-sm text-muted-foreground">
+            Não foi possível renderizar esta página.
           </div>
         ) : (
-          <canvas ref={canvasRef} className="mx-auto block bg-white shadow-lg animate-scale-in" aria-label="Pré-visualização do PDF" />
+          <canvas ref={canvasRef} className="block max-w-full bg-background shadow-lg" />
         )}
       </div>
     </div>
   );
+}
+
+function PdfPreviewFallback({
+  message,
+  result,
+  onOpenNewTab,
+  onDownload,
+  onCopyUrl,
+  onRetry,
+}: {
+  message: string;
+  result: PdfPreviewResult;
+  onOpenNewTab: () => void;
+  onDownload: () => void;
+  onCopyUrl: () => void;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-muted-foreground">
+      <div className="rounded-full bg-destructive/10 p-3 text-destructive">
+        <AlertCircle className="h-8 w-8" />
+      </div>
+      <div className="max-w-lg space-y-2">
+        <p className="text-sm font-medium text-foreground">{message}</p>
+        <p className="text-sm">
+          Não foi possível exibir o PDF dentro do sistema. Você ainda pode abrir em nova aba ou baixar o arquivo.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {result ? (
+          <Button asChild variant="outline">
+            <a href={result.url}>
+              <ExternalLink className="h-4 w-4" /> Abrir PDF nesta aba
+            </a>
+          </Button>
+        ) : null}
+        <Button variant="outline" onClick={onOpenNewTab} disabled={!result}>
+          <ExternalLink className="h-4 w-4" /> Abrir em nova aba
+        </Button>
+        <Button onClick={onDownload} disabled={!result}>
+          <Download className="h-4 w-4" /> Baixar PDF
+        </Button>
+        <Button variant="outline" onClick={onCopyUrl} disabled={!result}>
+          <Copy className="h-4 w-4" /> Copiar URL
+        </Button>
+        {onRetry && (
+          <Button variant="outline" onClick={onRetry}>
+            <RefreshCw className="h-4 w-4" /> Tentar novamente
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+class PdfPreviewError extends Error {
+  constructor(
+    public code: string,
+    public userMessage: string,
+    public details?: Record<string, unknown>,
+  ) {
+    super(userMessage);
+    this.name = "PdfPreviewError";
+  }
+}
+
+async function loadPdfBytes({ blob, url }: { blob: Blob; url: string }) {
+  if (!url) throw new PdfPreviewError("EMPTY_URL", "Ocorreu um erro ao carregar o PDF. Tente novamente.");
+
+  let arrayBuffer: ArrayBuffer;
+  let status = 200;
+  let contentType = blob.type || "";
+
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    status = response.status;
+    contentType = response.headers.get("content-type") || contentType;
+    if (!response.ok) {
+      throw new PdfPreviewError(`HTTP_${response.status}`, messageForStatus(response.status), { status, content_type: contentType });
+    }
+    arrayBuffer = await response.arrayBuffer();
+  } catch (err) {
+    if (err instanceof PdfPreviewError) throw err;
+    if (!blob.size) throw new PdfPreviewError("FETCH_FAILED", "Ocorreu um erro ao carregar o PDF. Tente novamente.", { error: technicalError(err) });
+    arrayBuffer = await blob.arrayBuffer();
+  }
+
+  const size = arrayBuffer.byteLength;
+  if (!size) throw new PdfPreviewError("EMPTY_FILE", "O arquivo retornado não é um PDF válido.", { status, content_type: contentType, size });
+
+  const bytes = new Uint8Array(arrayBuffer);
+  if (!hasPdfSignature(bytes)) {
+    throw new PdfPreviewError("INVALID_PDF", "O arquivo retornado não é um PDF válido.", { status, content_type: contentType, size });
+  }
+
+  return { bytes, status, content_type: contentType || "application/pdf", size };
+}
+
+function hasPdfSignature(bytes: Uint8Array) {
+  const header = new TextDecoder("ascii").decode(bytes.slice(0, Math.min(bytes.length, 1024)));
+  return header.includes("%PDF-");
+}
+
+function messageForStatus(status: number) {
+  if (status === 401 || status === 403) return "Você não tem permissão para visualizar este PDF.";
+  if (status === 404) return "O PDF não foi encontrado. Gere o relatório novamente.";
+  if (status >= 500) return "Ocorreu um erro ao carregar o PDF. Tente novamente.";
+  return "Não foi possível exibir o PDF dentro do sistema. Você ainda pode abrir em nova aba ou baixar o arquivo.";
+}
+
+function friendlyPdfError(err: unknown) {
+  if (err instanceof PdfPreviewError) return err.userMessage;
+  return "Não foi possível exibir o PDF dentro do sistema. Você ainda pode abrir em nova aba ou baixar o arquivo.";
+}
+
+function technicalPdfError(err: unknown) {
+  if (err instanceof PdfPreviewError) return { code: err.code, message: err.message, ...(err.details ?? {}) };
+  return { code: "UNKNOWN", error: technicalError(err) };
+}
+
+function technicalError(err: unknown) {
+  if (err instanceof Error) return { name: err.name, message: err.message };
+  return { message: String(err) };
+}
+
+function maskUrl(url?: string | null) {
+  if (!url) return null;
+  if (url.startsWith("blob:")) return `${url.slice(0, 18)}…`;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.search) parsed.search = "?…";
+    return parsed.toString();
+  } catch {
+    return `${url.slice(0, 24)}…`;
+  }
+}
+
+function getRdoLogContext(args: Omit<ExportArgs, "mode"> | null): PdfLogContext {
+  const rdo: any = args?.rdo ?? {};
+  const empresa: any = args?.empresa ?? {};
+  return {
+    report_id: rdo.id ?? null,
+    work_id: rdo.obra_id ?? rdo.obras?.id ?? null,
+    company_id: rdo.empresa_id ?? empresa.id ?? null,
+    status: rdo.status ?? null,
+  };
 }
 
 function Info({ label, value }: { label: string; value: string }) {
