@@ -72,7 +72,7 @@ function Stage({ children }: { children: React.ReactNode }) {
 }
 
 /* ---------------- Barra 3D ---------------- */
-function Bar({
+function BarInner({
   d, index, total, max, onClick,
 }: { d: Chart3DDatum; index: number; total: number; max: number; onClick: (d: Chart3DDatum) => void }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -88,11 +88,12 @@ function Bar({
     const next = THREE.MathUtils.damp(cur, targetH, 6, dt);
     ref.current.scale.y = next;
     ref.current.position.y = next / 2;
-    // Pulso sutil no hover ("4D")
     const pulse = hover ? 1 + Math.sin(state.clock.elapsedTime * 6) * 0.03 : 1;
     ref.current.scale.x = 0.8 * pulse;
     ref.current.scale.z = 0.8 * pulse;
   });
+
+  const displayName = d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name;
 
   return (
     <group position={[x, 0, 0]}>
@@ -116,19 +117,18 @@ function Bar({
           reflectivity={0.9}
         />
       </mesh>
-      {/* Valor sobre a barra */}
-      <Html position={[0, targetH + 0.22, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+      <Label3D position={[0, targetH + 0.22, 0]} distanceFactor={8}>
         <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
           {d.value.toLocaleString("pt-BR")}
         </div>
-      </Html>
-      <Html position={[0, -0.15, 0.5]} center distanceFactor={9} style={{ pointerEvents: "none" }}>
+      </Label3D>
+      <Label3D position={[0, -0.15, 0.5]} distanceFactor={9}>
         <div className="text-[10px] text-slate-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] max-w-[110px] text-center leading-tight">
-          {d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name}
+          {displayName}
         </div>
-      </Html>
+      </Label3D>
       {hover && (
-        <Html position={[0, targetH + 0.6, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <Label3D position={[0, targetH + 0.6, 0]} distanceFactor={8}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
             <div className="font-semibold">{d.name}</div>
             <div className="flex items-center gap-2">
@@ -137,11 +137,21 @@ function Bar({
               {d.extra && <span className="text-muted-foreground">· {d.extra}</span>}
             </div>
           </div>
-        </Html>
+        </Label3D>
       )}
     </group>
   );
 }
+const Bar = memo(BarInner, (a, b) =>
+  a.d.id === b.d.id &&
+  a.d.value === b.d.value &&
+  a.d.name === b.d.name &&
+  a.d.extra === b.d.extra &&
+  a.index === b.index &&
+  a.total === b.total &&
+  a.max === b.max &&
+  a.onClick === b.onClick
+);
 
 /* ---------------- HUD de ajuda ---------------- */
 function Hud() {
