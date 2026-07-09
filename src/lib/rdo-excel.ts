@@ -260,7 +260,7 @@ export async function exportRdoExcel(args: {
   let logoImageId: number | null = null;
   if (logo) {
     try {
-      logoImageId = wb.addImage({ buffer: logo.bytes.buffer as ArrayBuffer, extension: logo.ext });
+      logoImageId = wb.addImage({ buffer: logo.bytes.buffer as ArrayBuffer, extension: logo.ext === "jpg" ? "jpeg" : "png" });
     } catch { logoImageId = null; }
   }
 
