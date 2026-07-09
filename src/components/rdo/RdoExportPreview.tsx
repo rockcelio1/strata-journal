@@ -124,10 +124,18 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b flex-row flex-wrap items-center justify-between gap-2 space-y-0 pr-12">
-          <DialogTitle className="flex items-center gap-2 text-base">
+        <DialogHeader className="px-4 py-3 border-b bg-gradient-to-r from-slate-900 to-slate-800 flex-row flex-wrap items-center justify-between gap-2 space-y-0 pr-12">
+          <DialogTitle className="flex items-center gap-2 text-base text-white">
             {kind === "pdf" ? <FileText className="h-4 w-4" /> : <FileSpreadsheet className="h-4 w-4" />}
-            Pré-visualização — {kind === "pdf" ? "PDF" : "Planilha Excel"}
+            <span>Pré-visualização — {kind === "pdf" ? "PDF" : "Planilha Excel"}</span>
+            {rdo.numero && (
+              <span className="ml-2 text-xs font-normal opacity-80">RDO Nº {rdo.numero}</span>
+            )}
+            {rdo.status && (
+              <span className="ml-1 rounded-full bg-orange-500/90 text-white text-[10px] font-semibold uppercase px-2 py-0.5">
+                {rdoStatusMeta[rdo.status as keyof typeof rdoStatusMeta]?.label ?? rdo.status}
+              </span>
+            )}
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-2">
             {kind === "pdf" && result ? (
