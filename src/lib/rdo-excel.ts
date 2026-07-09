@@ -461,29 +461,7 @@ export async function exportRdoExcel(args: {
     brand,
   );
 
-  addSection(wb, "Clima", `Evidências meteorológicas${clima_local ? " — " + clima_local : ""}`, subtitleBase,
-    [
-      { header: "Data", key: "data", width: 14, align: "center" },
-      { header: "Dia da semana", key: "dia_semana", width: 16, align: "center" },
-      { header: "Origem", key: "origem", width: 14, align: "center" },
-      { header: "Mín. (°C)", key: "t_min_c", width: 12, align: "right", numFmt: "0.0" },
-      { header: "Máx. (°C)", key: "t_max_c", width: 12, align: "right", numFmt: "0.0" },
-      { header: "Prob. chuva", key: "prob_chuva_pct", width: 14, align: "right", numFmt: "0%" },
-      { header: "Precipitação (mm)", key: "precipitacao_mm", width: 18, align: "right", numFmt: "#,##0.0" },
-      { header: "Condição", key: "condicao", width: 40 },
-    ],
-    (clima_dias ?? []).map((d: AnyRec) => ({
-      data: fmtDayBR(d.data),
-      dia_semana: d.dia_semana ?? "",
-      origem: d.origem ?? "",
-      t_min_c: d.t_min_c != null ? Number(d.t_min_c) : "",
-      t_max_c: d.t_max_c != null ? Number(d.t_max_c) : "",
-      prob_chuva_pct: d.prob_chuva_pct != null ? Number(d.prob_chuva_pct) / 100 : "",
-      precipitacao_mm: d.precipitacao_mm != null ? Number(d.precipitacao_mm) : "",
-      condicao: d.descricao ?? "",
-    })),
-    brand,
-  );
+  void clima_dias; void clima_local;
 
   // ---------- Anexos (imagens embutidas) ----------
   const fotos = (anexos ?? []).filter(
