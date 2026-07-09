@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+// supabase client não é mais necessário aqui — envio via /api/public/lgpd-request.
 import { PublicPageShell } from "@/components/public-page-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
