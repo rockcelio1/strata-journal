@@ -390,12 +390,11 @@ function PdfCanvasPreview({
 
       <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
         {loading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 text-muted-foreground animate-fade-in">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 animate-fade-in" role="status" aria-label="Carregando">
             <div className="relative">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
             </div>
-            <p className="text-sm font-medium">Carregando PDF...</p>
           </div>
         )}
 
