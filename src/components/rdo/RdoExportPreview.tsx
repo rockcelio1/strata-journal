@@ -305,14 +305,14 @@ function PdfCanvasPreview({
       try {
         const loaded = await loadPdfBytes({ blob, url });
         if (loaded.size > MAX_PDF_PREVIEW_BYTES) {
-          throw new PdfPreviewError("PDF_TOO_LARGE", "O PDF é muito grande para pré-visualização. Use o botão Baixar PDF.", loaded);
+          throw new PdfPreviewError("PDF_TOO_LARGE", "O PDF é muito grande para pré-visualização. Use o botão Baixar PDF.", summarizeLoadedPdf(loaded));
         }
 
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         pdfDocument = await pdfjs.getDocument({ data: loaded.bytes }).promise;
         if (!pdfDocument?.numPages) {
-          throw new PdfPreviewError("INVALID_PDF", "O arquivo retornado não é um PDF válido.", loaded);
+          throw new PdfPreviewError("INVALID_PDF", "O arquivo retornado não é um PDF válido.", summarizeLoadedPdf(loaded));
         }
         if (!cancelled) {
           setPageCount(pdfDocument.numPages);
@@ -621,6 +621,10 @@ function friendlyPdfError(err: unknown) {
 function technicalPdfError(err: unknown) {
   if (err instanceof PdfPreviewError) return { code: err.code, message: err.message, ...(err.details ?? {}) };
   return { code: "UNKNOWN", error: technicalError(err) };
+}
+
+function summarizeLoadedPdf(loaded: { status: number; content_type: string; size: number }) {
+  return { status: loaded.status, content_type: loaded.content_type, size: loaded.size };
 }
 
 function technicalError(err: unknown) {
