@@ -1,0 +1,2 @@
+ALTER TABLE public.empresas ADD COLUMN IF NOT EXISTS mfa_required boolean NOT NULL DEFAULT false;
+ALTER TABLE public.user_security_settings ADD COLUMN IF NOT EXISTS mfa_required boolean NOT NULL DEFAULT false;
