@@ -49,11 +49,17 @@ const CSP_DIRECTIVES = [
 ].join("; ");
 
 const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
-  const response = await next();
-  const res = response as unknown as Response;
+  const result = await next();
+  // TSS pode retornar { response } (novas versões) OU a Response diretamente.
+  const res: Response | undefined =
+    (result as any)?.response instanceof Response
+      ? (result as any).response
+      : (result as unknown as Response) instanceof Response
+        ? (result as unknown as Response)
+        : undefined;
   try {
-    if (res && typeof res === "object" && "headers" in res && res.headers && typeof (res.headers as any).set === "function") {
-      const ct = res.headers.get?.("content-type") ?? "";
+    if (res && typeof (res.headers as any).set === "function") {
+      const ct = res.headers.get("content-type") ?? "";
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
         if (!res.headers.get(k)) res.headers.set(k, v);
       }
@@ -65,7 +71,7 @@ const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => 
   } catch {
     // nunca deixar a middleware quebrar a resposta
   }
-  return response;
+  return result;
 });
 
 export const startInstance = createStart(() => ({
