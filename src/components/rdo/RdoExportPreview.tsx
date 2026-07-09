@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, FileText, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Loader2, FileText, FileSpreadsheet } from "lucide-react";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
 import { exportRdoExcel } from "@/lib/rdo-excel";
 import { rdoStatusMeta } from "@/components/status";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 type ExportArgs = Parameters<typeof exportRdoPdf>[0];
 
@@ -100,25 +101,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
           )}
 
           {!loading && kind === "pdf" && result && (
-            <object
-              data={`${result.url}#toolbar=1&navpanes=0&view=FitH`}
-              type="application/pdf"
-              className="w-full h-full bg-white animate-scale-in"
-              aria-label="Pré-visualização do PDF"
-            >
-              <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
-                <FileText className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Seu navegador não conseguiu exibir o PDF embutido.
-                </p>
-                <a
-                  href={result.url}
-                  className="text-sm text-primary underline"
-                >
-                  Abrir PDF nesta aba
-                </a>
-              </div>
-            </object>
+            <PdfCanvasPreview blob={result.blob} />
           )}
 
           {!loading && kind === "excel" && counts && (
@@ -170,6 +153,147 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PdfCanvasPreview({ blob }: { blob: Blob }) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [pageCount, setPageCount] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [rendering, setRendering] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPageNumber(1);
+    setPageCount(0);
+    setError(null);
+  }, [blob]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let resizeTimer: number | undefined;
+    let pdfDocument: any = null;
+    let renderTask: any = null;
+
+    const renderPage = async () => {
+      setRendering(true);
+      setError(null);
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+        if (!pdfDocument) {
+          const data = await blob.arrayBuffer();
+          pdfDocument = await pdfjs.getDocument({ data }).promise;
+          if (!cancelled) setPageCount(pdfDocument.numPages);
+        }
+
+        const canvas = canvasRef.current;
+        const wrapper = wrapperRef.current;
+        if (!canvas || !wrapper || cancelled) return;
+
+        const page = await pdfDocument.getPage(pageNumber);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const availableWidth = Math.max(wrapper.clientWidth - 48, 320);
+        const scale = Math.min(availableWidth / baseViewport.width, 1.45);
+        const viewport = page.getViewport({ scale });
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas indisponível para a pré-visualização.");
+
+        canvas.width = Math.floor(viewport.width * ratio);
+        canvas.height = Math.floor(viewport.height * ratio);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, viewport.width, viewport.height);
+
+        renderTask = page.render({ canvasContext: context, viewport });
+        await renderTask.promise;
+      } catch (err: any) {
+        if (!cancelled && err?.name !== "RenderingCancelledException") {
+          setError("Não foi possível montar a pré-visualização do PDF. Baixe o arquivo para conferir o conteúdo final.");
+        }
+      } finally {
+        if (!cancelled) setRendering(false);
+      }
+    };
+
+    renderPage();
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(renderPage, 180);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
+      renderTask?.cancel?.();
+      pdfDocument?.destroy?.();
+    };
+  }, [blob, pageNumber]);
+
+  return (
+    <div className="h-full flex flex-col bg-zinc-100 animate-fade-in">
+      <div className="flex items-center justify-between gap-3 border-b bg-background px-4 py-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="h-4 w-4" />
+          <span>Prévia renderizada do PDF</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
+            disabled={rendering || pageNumber <= 1}
+            aria-label="Página anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-20 text-center text-xs font-medium text-muted-foreground">
+            Página {pageNumber}{pageCount ? ` de ${pageCount}` : ""}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setPageNumber((page) => Math.min(pageCount || page + 1, page + 1))}
+            disabled={rendering || !pageCount || pageNumber >= pageCount}
+            aria-label="Próxima página"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
+        {rendering && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/80 text-muted-foreground animate-fade-in">
+            <div className="relative">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+            </div>
+            <p className="text-sm font-medium">Abrindo pré-visualização do PDF…</p>
+          </div>
+        )}
+
+        {error ? (
+          <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+            <FileText className="h-8 w-8" />
+            <p className="text-sm">{error}</p>
+          </div>
+        ) : (
+          <canvas ref={canvasRef} className="mx-auto block bg-white shadow-lg animate-scale-in" aria-label="Pré-visualização do PDF" />
+        )}
+      </div>
+    </div>
   );
 }
 
