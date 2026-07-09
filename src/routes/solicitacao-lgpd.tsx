@@ -62,22 +62,24 @@ function SolicitacaoLgpdPage() {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("lgpd_requests")
-        .insert({
-          protocolo: "", // gerado pelo trigger no banco
-          requester_nome: parsed.data.requester_nome,
-          requester_email: parsed.data.requester_email.toLowerCase(),
-          request_type: parsed.data.request_type,
-          descricao: parsed.data.descricao,
-        })
-        .select("protocolo")
-        .single();
-      if (error) throw error;
+      const res = await fetch("/api/public/lgpd-request", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      if (res.status === 429) {
+        toast.error("Muitas solicitações deste IP. Aguarde alguns minutos e tente novamente.");
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { protocolo?: string };
+      if (!data.protocolo) throw new Error("Sem protocolo");
       setProtocolo(data.protocolo);
       toast.success("Solicitação registrada");
     } catch (err) {
-      console.error("[lgpd] insert failed", err);
+      console.error("[lgpd] submit failed", err);
       toast.error("Não foi possível registrar sua solicitação. Tente novamente em instantes.");
     } finally {
       setLoading(false);
