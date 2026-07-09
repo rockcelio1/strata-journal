@@ -203,7 +203,7 @@ export async function exportRdoPdf(args: {
         doc.setFontSize(8);
         doc.setTextColor(90);
         doc.text(
-          doc.splitTextToSize(f.nome ?? "", cellW),
+          doc.splitTextToSize(String(f.legenda ?? ""), cellW),
           40 + col * (cellW + gap),
           rowY + cellH + 10,
         );
