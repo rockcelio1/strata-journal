@@ -264,7 +264,7 @@ function RdoDetailPage() {
 
   const baixarExcel = async () => {
     if (!data) return;
-    exportRdoExcel({
+    await exportRdoExcel({
       rdo: data.rdo,
       atividades: data.atividades,
       avancos: avancosRows,
