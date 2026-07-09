@@ -127,8 +127,7 @@ export async function exportRdoPdf(args: {
   section("Ocorrências", ["Tipo", "Severidade", "Descrição"],
     ocorrencias.map((o) => [o.tipos_ocorrencia?.nome ?? "Geral", o.tipos_ocorrencia?.severidade ?? "—", o.descricao]));
 
-  section("Anexos", ["Nome", "Enviado por", "Em"],
-    anexos.map((a) => [a.nome, a.autor?.nome ?? "—", fmtDate(a.created_at)]));
+  // Seção "Anexos" removida a pedido: nomes de arquivo não devem aparecer no PDF.
 
   if (clima_dias && clima_dias.length) {
     const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
@@ -146,14 +145,7 @@ export async function exportRdoPdf(args: {
     );
   }
 
-  section("Histórico de status", ["Quando", "Ação", "De → Para", "Por", "Motivo"],
-    logs.map((l) => [
-      fmtDate(l.created_at),
-      l.acao,
-      `${l.status_anterior ?? "—"} → ${l.status_novo ?? "—"}`,
-      l.autor?.nome ?? "—",
-      l.motivo ?? "",
-    ]));
+  // Seção "Histórico de status" removida a pedido.
 
   // ===== Fotos por atividade =====
   const fotos = (anexos ?? []).filter((a: AnyRec) =>
@@ -211,7 +203,7 @@ export async function exportRdoPdf(args: {
         doc.setFontSize(8);
         doc.setTextColor(90);
         doc.text(
-          doc.splitTextToSize(f.nome ?? "", cellW),
+          doc.splitTextToSize(String(f.legenda ?? ""), cellW),
           40 + col * (cellW + gap),
           rowY + cellH + 10,
         );
