@@ -39,29 +39,54 @@ type ColDef = {
   align?: "left" | "center" | "right";
 };
 
-function styleTitleBlock(
+/**
+ * Insere a faixa de identificação da empresa (logo + nome) nas duas
+ * primeiras linhas da planilha e define-as como títulos de impressão para
+ * que apareçam em todas as páginas. Retorna a próxima linha disponível.
+ */
+function brandBand(
   ws: ExcelJS.Worksheet,
-  title: string,
-  subtitle: string,
   cols: number,
+  empresaLabel: string,
+  logoImageId: number | null,
+  sheetTitle: string,
+  subtitle: string,
 ) {
-  ws.mergeCells(1, 1, 1, cols);
-  const t = ws.getCell(1, 1);
-  t.value = title;
-  t.font = { name: "Calibri", size: 18, bold: true, color: { argb: COLOR.headerText } };
-  t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
-  ws.getRow(1).height = 30;
+  const width = Math.max(cols, 6);
+  // Linha 1: faixa colorida com logo à esquerda e nome da empresa
+  ws.mergeCells(1, 1, 1, width);
+  const c1 = ws.getCell(1, 1);
+  c1.value = empresaLabel || "Empresa";
+  c1.font = { name: "Calibri", size: 14, bold: true, color: { argb: COLOR.headerText } };
+  c1.alignment = { vertical: "middle", horizontal: "left", indent: logoImageId != null ? 8 : 1 };
+  c1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brand } };
+  ws.getRow(1).height = 42;
 
-  ws.mergeCells(2, 1, 2, cols);
-  const s = ws.getCell(2, 1);
-  s.value = subtitle;
-  s.font = { name: "Calibri", size: 10, color: { argb: COLOR.label } };
-  s.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  ws.getRow(2).height = 18;
+  if (logoImageId != null) {
+    // Coloca a logo dentro da faixa, ancorada em A1
+    ws.addImage(logoImageId, {
+      tl: { col: 0.1, row: 0.15 } as any,
+      ext: { width: 110, height: 44 },
+      editAs: "oneCell",
+    });
+  }
 
-  // linha em branco
+  // Linha 2: título do relatório + subtítulo (obra/data)
+  ws.mergeCells(2, 1, 2, width);
+  const c2 = ws.getCell(2, 1);
+  c2.value = { richText: [
+    { text: `${sheetTitle}   `, font: { name: "Calibri", size: 12, bold: true, color: { argb: COLOR.title } } },
+    { text: subtitle, font: { name: "Calibri", size: 10, color: { argb: COLOR.label } } },
+  ] } as any;
+  c2.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  c2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLOR.brandSoft } };
+  ws.getRow(2).height = 22;
+
+  // Linha 3: separadora fina
   ws.getRow(3).height = 6;
+
+  // Repetir linhas 1-2 em todas as páginas impressas
+  (ws.pageSetup as any).printTitlesRow = "1:2";
 }
 
 function writeTable(
@@ -148,7 +173,6 @@ function writeTable(
     r += 1;
   });
 
-  // autofilter só quando há dados
   if (rows.length) {
     ws.autoFilter = {
       from: { row: headerRow, column: 1 },
@@ -157,7 +181,6 @@ function writeTable(
   }
   ws.views = [{ state: "frozen", ySplit: headerRow }];
 
-  // ajuste de largura automático mínimo
   columns.forEach((col, i) => {
     const wsCol = ws.getColumn(i + 1);
     let max = col.header.length + 2;
@@ -179,6 +202,7 @@ function addSection(
   subtitle: string,
   columns: ColDef[],
   rows: AnyRec[],
+  brand: { empresaLabel: string; logoImageId: number | null },
 ) {
   const safe = name.replace(/[[\]:*?/\\]/g, " ").slice(0, 31);
   const ws = wb.addWorksheet(safe, {
@@ -192,10 +216,10 @@ function addSection(
       margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
     },
     headerFooter: {
-      oddFooter: "&L&F  &C&A  &RPág. &P de &N",
+      oddFooter: `&L${brand.empresaLabel}  &C&A  &RPág. &P de &N`,
     },
   });
-  styleTitleBlock(ws, title, subtitle, Math.max(columns.length, 4));
+  brandBand(ws, Math.max(columns.length, 4), brand.empresaLabel, brand.logoImageId, title, subtitle);
   writeTable(ws, 4, columns, rows);
 }
 
