@@ -104,8 +104,8 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         const cacheControl = isPdfRequest
           ? "private, max-age=300"
           : thumbSize
-          ? `public, max-age=${rule.max_age_seconds}, stale-while-revalidate=${rule.swr_seconds}`
-          : `private, max-age=${Math.min(rule.max_age_seconds, 3600)}, stale-while-revalidate=${Math.min(rule.swr_seconds, 86400)}`;
+            ? `public, max-age=${rule.max_age_seconds}, stale-while-revalidate=${rule.swr_seconds}`
+            : `private, max-age=${Math.min(rule.max_age_seconds, 3600)}, stale-while-revalidate=${Math.min(rule.swr_seconds, 86400)}`;
 
         // 1) Edge cache (thumbnails)
         const cache = thumbSize ? edgeCache() : null;
