@@ -332,7 +332,7 @@ export function Bars3D({
 }
 
 /* ---------------- Fatia da pizza ---------------- */
-function Slice({
+function SliceInner({
   d, index, start, end, total, onClick,
 }: { d: Chart3DDatum; index: number; start: number; end: number; total: number; onClick: (d: Chart3DDatum) => void }) {
   const [hover, setHover] = useState(false);
@@ -369,14 +369,13 @@ function Slice({
           reflectivity={0.9}
         />
       </mesh>
-      {/* % sobre a fatia */}
-      <Html position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+      <Label3D position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]} distanceFactor={8}>
         <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
           {pct}%
         </div>
-      </Html>
+      </Label3D>
       {hover && (
-        <Html position={[Math.cos(mid) * 2.6, 0.9, -Math.sin(mid) * 2.6]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <Label3D position={[Math.cos(mid) * 2.6, 0.9, -Math.sin(mid) * 2.6]} distanceFactor={8}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
             <div className="font-semibold">{d.name}</div>
             <div className="flex items-center gap-2">
@@ -385,11 +384,21 @@ function Slice({
               <span className="text-muted-foreground">· {pct}%</span>
             </div>
           </div>
-        </Html>
+        </Label3D>
       )}
     </group>
   );
 }
+const Slice = memo(SliceInner, (a, b) =>
+  a.d.id === b.d.id &&
+  a.d.value === b.d.value &&
+  a.d.name === b.d.name &&
+  a.index === b.index &&
+  a.start === b.start &&
+  a.end === b.end &&
+  a.total === b.total &&
+  a.onClick === b.onClick
+);
 
 export function Pie3D({
   data, onSelect, storageKey = "chart3d:pie",
