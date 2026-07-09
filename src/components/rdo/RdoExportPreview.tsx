@@ -94,9 +94,6 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
               </div>
               <p className="text-sm font-medium">Gerando pré-visualização…</p>
-              <p className="text-xs text-muted-foreground">
-                Montando cabeçalho com logo e padrão ABNT
-              </p>
             </div>
           )}
 
