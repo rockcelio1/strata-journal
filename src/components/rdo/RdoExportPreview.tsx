@@ -238,7 +238,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                       <Sheet name="Mão de obra" n={counts.mao} />
                       <Sheet name="Equipamentos" n={counts.equip} />
                       <Sheet name="Ocorrências" n={counts.ocor} />
-                      <Sheet name="Clima" n={args?.clima_dias?.length ?? 0} />
+                      
                       <Sheet name="Anexos" n={counts.anexos} />
                     </ul>
                   </div>
