@@ -283,7 +283,8 @@ export async function exportRdoPdf(args: {
 
   const filename = `RDO-${rdo.numero}-${String(rdo.obras?.nome ?? "obra").replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
   if (mode === "blob") {
-    const blob = doc.output("blob") as Blob;
+    const raw = doc.output("blob") as Blob;
+    const blob = raw.type === "application/pdf" ? raw : new Blob([raw], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     return { blob, url, filename };
   }

@@ -85,21 +85,48 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
           </Button>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 bg-muted/30">
+        <div className="flex-1 min-h-0 bg-muted/30 animate-fade-in">
           {loading && (
-            <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <p className="text-sm">Gerando pré-visualização…</p>
+            <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground animate-fade-in">
+              <div className="relative">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+              </div>
+              <p className="text-sm font-medium">Gerando pré-visualização…</p>
+              <p className="text-xs text-muted-foreground">
+                Montando cabeçalho com logo e padrão ABNT
+              </p>
             </div>
           )}
 
           {!loading && kind === "pdf" && result && (
-            <iframe title="Pré-visualização do PDF" src={result.url} className="w-full h-full border-0 bg-white" />
+            <object
+              data={`${result.url}#toolbar=1&navpanes=0&view=FitH`}
+              type="application/pdf"
+              className="w-full h-full bg-white animate-scale-in"
+              aria-label="Pré-visualização do PDF"
+            >
+              <div className="h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Seu navegador não conseguiu exibir o PDF embutido.
+                </p>
+                <a
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary underline"
+                >
+                  Abrir PDF em nova aba
+                </a>
+              </div>
+            </object>
           )}
 
           {!loading && kind === "excel" && counts && (
-            <div className="h-full overflow-auto p-6">
-              <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border">
+            <div className="h-full overflow-auto p-6 animate-fade-in">
+              <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border animate-scale-in">
+
                 {/* Faixa header simulando a planilha */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 text-white rounded-t-lg">
                   {empresa?.logo_url ? (
