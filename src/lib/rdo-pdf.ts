@@ -145,14 +145,7 @@ export async function exportRdoPdf(args: {
     );
   }
 
-  section("Histórico de status", ["Quando", "Ação", "De → Para", "Por", "Motivo"],
-    logs.map((l) => [
-      fmtDate(l.created_at),
-      l.acao,
-      `${l.status_anterior ?? "—"} → ${l.status_novo ?? "—"}`,
-      l.autor?.nome ?? "—",
-      l.motivo ?? "",
-    ]));
+  // Seção "Histórico de status" removida a pedido.
 
   // ===== Fotos por atividade =====
   const fotos = (anexos ?? []).filter((a: AnyRec) =>
