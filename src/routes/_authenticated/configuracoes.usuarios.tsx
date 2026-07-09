@@ -486,8 +486,8 @@ function UsuariosPage() {
             <SelectTrigger className="h-10"><SelectValue placeholder="Ação" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as ações</SelectItem>
-              {Object.entries(ACAO_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              {Object.entries(ACAO_FILTRO_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v as string}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -501,15 +501,11 @@ function UsuariosPage() {
               const autor = log.autor_id ? membrosById.get(log.autor_id) : null;
               const alvo = log.alvo_user_id ? membrosById.get(log.alvo_user_id) : null;
               return (
-                <li key={log.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <div>
-                    <div className="font-medium">{acaoLabel(log.acao)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      por {autor?.nome ?? "—"} {alvo || log.alvo_email ? `· alvo: ${alvo?.nome ?? log.alvo_email}` : ""}
-                      {log.detalhes ? ` · ${JSON.stringify(log.detalhes)}` : ""}
-                    </div>
+                <li key={log.id} className="p-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <AuditLogButton log={log} autorNome={autor?.nome} alvoNome={alvo?.nome ?? log.alvo_email} />
                   </div>
-                  <div className="text-xs text-muted-foreground tabular-nums">
+                  <div className="text-xs text-muted-foreground tabular-nums shrink-0">
                     {new Date(log.created_at).toLocaleString()}
                   </div>
                 </li>
@@ -522,6 +518,7 @@ function UsuariosPage() {
             )}
           </ul>
         </Card>
+
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{auditTotal} registro(s) · página {auditPage} de {totalPages}</span>
@@ -539,7 +536,9 @@ function UsuariosPage() {
   );
 }
 
-const ACAO_LABELS: Record<string, string> = {
+import { friendlyAction, friendlySummary, friendlyDetails } from "@/lib/audit-format";
+
+const ACAO_FILTRO_LABELS: Record<string, string> = {
   convite_criado: "Convite criado",
   convite_reenviado: "Convite reenviado",
   convite_revogado: "Convite revogado",
@@ -553,8 +552,69 @@ const ACAO_LABELS: Record<string, string> = {
   senha_definida: "Senha redefinida",
   senha_reset_enviado: "E-mail de reset enviado",
   papel_alterado: "Papel alterado",
+  permissao_insert_role_permissions: "Permissão de papel concedida",
+  permissao_delete_role_permissions: "Permissão de papel removida",
+  permissao_update_role_permissions: "Permissão de papel alterada",
+  permissao_insert_user_permission_overrides: "Exceção de permissão adicionada",
+  permissao_delete_user_permission_overrides: "Exceção de permissão removida",
+  permissao_update_user_permission_overrides: "Exceção de permissão alterada",
+  rdo_acesso_insert: "Compartilhamento de RDO",
+  rdo_acesso_delete: "Acesso a RDO removido",
+  rdo_acesso_update: "Acesso a RDO alterado",
 };
-const acaoLabel = (a: string) => ACAO_LABELS[a] ?? a;
+
+
+function AuditLogButton({ log, autorNome, alvoNome }: { log: any; autorNome?: string | null; alvoNome?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const titulo = friendlyAction(log.acao, log.detalhes);
+  const resumo = friendlySummary(log.acao, log.detalhes);
+  const campos = friendlyDetails(log.acao, log.detalhes);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="text-left w-full rounded-md -m-1 p-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Ver detalhes: ${titulo}`}
+        >
+          <div className="font-medium">{titulo}</div>
+          <div className="text-xs text-muted-foreground">
+            por {autorNome ?? "—"}
+            {alvoNome ? ` · alvo: ${alvoNome}` : ""}
+            {resumo ? ` · ${resumo}` : ""}
+          </div>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+        </DialogHeader>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+          <dt className="text-muted-foreground">Quando</dt>
+          <dd className="font-mono tabular-nums">{new Date(log.created_at).toLocaleString()}</dd>
+          <dt className="text-muted-foreground">Autor</dt>
+          <dd>{autorNome ?? "—"}</dd>
+          {alvoNome && (<><dt className="text-muted-foreground">Alvo</dt><dd>{alvoNome}</dd></>)}
+          {campos.map((c) => (
+            <div key={c.label} className="contents">
+              <dt className="text-muted-foreground">{c.label}</dt>
+              <dd className="break-words">{c.value}</dd>
+            </div>
+          ))}
+        </dl>
+        {log.detalhes && (
+          <details className="mt-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none">Ver JSON bruto</summary>
+            <pre className="mt-2 p-2 rounded bg-muted overflow-auto max-h-72 whitespace-pre-wrap break-all">
+              {JSON.stringify(log.detalhes, null, 2)}
+            </pre>
+          </details>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function MembroActions({
   m, onChangePapel, onEdit, onSetPwd, onReset, onToggle, onDelete,
