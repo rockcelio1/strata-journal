@@ -392,6 +392,8 @@ export const registrarAnexo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    // Rate limit generoso para uploads (canteiro faz muitos anexos por RDO)
+    await checkRateLimit(context.supabase, "registrarAnexo", 120, 60);
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
     const hint = `${data.storage_path ?? ""} ${data.nome ?? ""}`.toLowerCase();
