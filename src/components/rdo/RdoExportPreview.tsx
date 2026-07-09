@@ -242,9 +242,8 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                       <Sheet name="Anexos" n={counts.anexos} />
                     </ul>
                   </div>
-                  </div>
-
                 </div>
+
               </div>
             </div>
           )}
