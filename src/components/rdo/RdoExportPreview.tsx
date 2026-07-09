@@ -10,9 +10,9 @@ import {
   FileText,
   Loader2,
   RefreshCw,
-  SearchMinus,
-  SearchPlus,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportRdoPdf } from "@/lib/rdo-pdf";
@@ -361,7 +361,7 @@ function PdfCanvasPreview({
             disabled={loading || !!error || zoom <= 0.75}
             aria-label="Reduzir zoom"
           >
-            <SearchMinus className="h-4 w-4" />
+            <ZoomOut className="h-4 w-4" />
           </Button>
           <span className="min-w-14 text-center text-xs font-medium text-muted-foreground">
             {Math.round(zoom * 100)}%
@@ -375,7 +375,7 @@ function PdfCanvasPreview({
             disabled={loading || !!error || zoom >= 2}
             aria-label="Aumentar zoom"
           >
-            <SearchPlus className="h-4 w-4" />
+            <ZoomIn className="h-4 w-4" />
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setRetryKey((key) => key + 1)} disabled={loading}>
             <RefreshCw className="h-4 w-4" /> Recarregar
