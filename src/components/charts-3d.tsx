@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, memo, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -8,6 +8,30 @@ import { useAccessibility } from "@/hooks/useAccessibility";
 import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
 export type Chart3DDatum = { id: string; name: string; value: number; extra?: string };
+
+/* ---------------- Label 3D com fallback ----------------
+ * Usa <Html> do drei (alternativa ao <Text> baseado em troika, que falha ao
+ * reidratar via worker em alguns bundlers). Caso <Html> quebre em runtime,
+ * o ErrorBoundary silencia o rótulo em vez de derrubar toda a cena 3D. */
+class Label3DBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) {
+    if (typeof console !== "undefined") console.warn("[charts-3d] label fallback:", err);
+  }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+function Label3D({
+  position, distanceFactor = 8, children,
+}: { position: [number, number, number]; distanceFactor?: number; children: ReactNode }) {
+  return (
+    <Label3DBoundary>
+      <Html position={position} center distanceFactor={distanceFactor} style={{ pointerEvents: "none" }}>
+        {children}
+      </Html>
+    </Label3DBoundary>
+  );
+}
 
 // Paleta vívida (cores saturadas + espelhadas via metalness alto)
 const PALETTE = [
@@ -48,7 +72,7 @@ function Stage({ children }: { children: React.ReactNode }) {
 }
 
 /* ---------------- Barra 3D ---------------- */
-function Bar({
+function BarInner({
   d, index, total, max, onClick,
 }: { d: Chart3DDatum; index: number; total: number; max: number; onClick: (d: Chart3DDatum) => void }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -64,11 +88,12 @@ function Bar({
     const next = THREE.MathUtils.damp(cur, targetH, 6, dt);
     ref.current.scale.y = next;
     ref.current.position.y = next / 2;
-    // Pulso sutil no hover ("4D")
     const pulse = hover ? 1 + Math.sin(state.clock.elapsedTime * 6) * 0.03 : 1;
     ref.current.scale.x = 0.8 * pulse;
     ref.current.scale.z = 0.8 * pulse;
   });
+
+  const displayName = d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name;
 
   return (
     <group position={[x, 0, 0]}>
@@ -92,19 +117,18 @@ function Bar({
           reflectivity={0.9}
         />
       </mesh>
-      {/* Valor sobre a barra */}
-      <Html position={[0, targetH + 0.22, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+      <Label3D position={[0, targetH + 0.22, 0]} distanceFactor={8}>
         <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
           {d.value.toLocaleString("pt-BR")}
         </div>
-      </Html>
-      <Html position={[0, -0.15, 0.5]} center distanceFactor={9} style={{ pointerEvents: "none" }}>
+      </Label3D>
+      <Label3D position={[0, -0.15, 0.5]} distanceFactor={9}>
         <div className="text-[10px] text-slate-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] max-w-[110px] text-center leading-tight">
-          {d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name}
+          {displayName}
         </div>
-      </Html>
+      </Label3D>
       {hover && (
-        <Html position={[0, targetH + 0.6, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <Label3D position={[0, targetH + 0.6, 0]} distanceFactor={8}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
             <div className="font-semibold">{d.name}</div>
             <div className="flex items-center gap-2">
@@ -113,11 +137,21 @@ function Bar({
               {d.extra && <span className="text-muted-foreground">· {d.extra}</span>}
             </div>
           </div>
-        </Html>
+        </Label3D>
       )}
     </group>
   );
 }
+const Bar = memo(BarInner, (a, b) =>
+  a.d.id === b.d.id &&
+  a.d.value === b.d.value &&
+  a.d.name === b.d.name &&
+  a.d.extra === b.d.extra &&
+  a.index === b.index &&
+  a.total === b.total &&
+  a.max === b.max &&
+  a.onClick === b.onClick
+);
 
 /* ---------------- HUD de ajuda ---------------- */
 function Hud() {
@@ -258,7 +292,7 @@ function usePausedState(storageKey: string) {
 export function Bars3D({
   data, onSelect, storageKey = "chart3d:bars",
 }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
+  const max = useMemo(() => Math.max(1, ...data.map((d) => d.value)), [data]);
   const { effectiveReducedMotion: reducedMotion } = useAccessibility();
   const [paused, togglePaused] = usePausedState(storageKey);
   const autoRotate = !reducedMotion && !paused;
@@ -298,7 +332,7 @@ export function Bars3D({
 }
 
 /* ---------------- Fatia da pizza ---------------- */
-function Slice({
+function SliceInner({
   d, index, start, end, total, onClick,
 }: { d: Chart3DDatum; index: number; start: number; end: number; total: number; onClick: (d: Chart3DDatum) => void }) {
   const [hover, setHover] = useState(false);
@@ -335,14 +369,13 @@ function Slice({
           reflectivity={0.9}
         />
       </mesh>
-      {/* % sobre a fatia */}
-      <Html position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+      <Label3D position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]} distanceFactor={8}>
         <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
           {pct}%
         </div>
-      </Html>
+      </Label3D>
       {hover && (
-        <Html position={[Math.cos(mid) * 2.6, 0.9, -Math.sin(mid) * 2.6]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <Label3D position={[Math.cos(mid) * 2.6, 0.9, -Math.sin(mid) * 2.6]} distanceFactor={8}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
             <div className="font-semibold">{d.name}</div>
             <div className="flex items-center gap-2">
@@ -351,23 +384,36 @@ function Slice({
               <span className="text-muted-foreground">· {pct}%</span>
             </div>
           </div>
-        </Html>
+        </Label3D>
       )}
     </group>
   );
 }
+const Slice = memo(SliceInner, (a, b) =>
+  a.d.id === b.d.id &&
+  a.d.value === b.d.value &&
+  a.d.name === b.d.name &&
+  a.index === b.index &&
+  a.start === b.start &&
+  a.end === b.end &&
+  a.total === b.total &&
+  a.onClick === b.onClick
+);
 
 export function Pie3D({
   data, onSelect, storageKey = "chart3d:pie",
 }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  let acc = 0;
-  const slices = data.map((d) => {
-    const start = (acc / total) * Math.PI * 2;
-    acc += d.value;
-    const end = (acc / total) * Math.PI * 2;
-    return { d, start, end };
-  });
+  const { total, slices } = useMemo(() => {
+    const t = data.reduce((s, d) => s + d.value, 0) || 1;
+    let acc = 0;
+    const s = data.map((d) => {
+      const st = (acc / t) * Math.PI * 2;
+      acc += d.value;
+      const en = (acc / t) * Math.PI * 2;
+      return { d, start: st, end: en };
+    });
+    return { total: t, slices: s };
+  }, [data]);
   const { effectiveReducedMotion: reducedMotion } = useAccessibility();
   const [paused, togglePaused] = usePausedState(storageKey);
   const autoRotate = !reducedMotion && !paused;
