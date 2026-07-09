@@ -501,15 +501,11 @@ function UsuariosPage() {
               const autor = log.autor_id ? membrosById.get(log.autor_id) : null;
               const alvo = log.alvo_user_id ? membrosById.get(log.alvo_user_id) : null;
               return (
-                <li key={log.id} className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                  <div>
-                    <div className="font-medium">{acaoLabel(log.acao)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      por {autor?.nome ?? "—"} {alvo || log.alvo_email ? `· alvo: ${alvo?.nome ?? log.alvo_email}` : ""}
-                      {log.detalhes ? ` · ${JSON.stringify(log.detalhes)}` : ""}
-                    </div>
+                <li key={log.id} className="p-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <AuditLogButton log={log} autorNome={autor?.nome} alvoNome={alvo?.nome ?? log.alvo_email} />
                   </div>
-                  <div className="text-xs text-muted-foreground tabular-nums">
+                  <div className="text-xs text-muted-foreground tabular-nums shrink-0">
                     {new Date(log.created_at).toLocaleString()}
                   </div>
                 </li>
@@ -522,6 +518,7 @@ function UsuariosPage() {
             )}
           </ul>
         </Card>
+
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{auditTotal} registro(s) · página {auditPage} de {totalPages}</span>
