@@ -336,11 +336,11 @@ function Slice({
         />
       </mesh>
       {/* % sobre a fatia */}
-      <group position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]}>
-        <Text fontSize={0.22} color="#f8fafc" anchorX="center" anchorY="middle" outlineWidth={0.012} outlineColor="#000" rotation={[Math.PI / 2, 0, 0]}>
+      <Html position={[Math.cos(mid) * 1.25, -Math.sin(mid) * 1.25, 0.8]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
           {pct}%
-        </Text>
-      </group>
+        </div>
+      </Html>
       {hover && (
         <Html position={[Math.cos(mid) * 2.6, 0.9, -Math.sin(mid) * 2.6]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
