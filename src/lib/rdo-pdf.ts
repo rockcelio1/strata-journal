@@ -242,11 +242,10 @@ export async function exportRdoPdf(args: {
       doc.setFont("helvetica", "normal");
       y += 10;
 
-      let col = 0;
-      let rowY = y + 4;
-      for (const f of g.items) {
+      // Pré-carrega todas as imagens do grupo em paralelo (acelera muito o export)
+      const loaded = await Promise.all(g.items.map((f) => urlToDataUrl(f.url as string).then((img) => ({ f, img }))));
+      for (const { f, img } of loaded) {
         if (rowY + cellH > H - 40) { doc.addPage(); rowY = 40; y = 40; col = 0; }
-        const img = await urlToDataUrl(f.url as string);
         if (!img) continue;
         const ratio = img.w / img.h;
         let w = cellW, h = cellW / ratio;
