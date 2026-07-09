@@ -536,22 +536,59 @@ function UsuariosPage() {
   );
 }
 
-const ACAO_LABELS: Record<string, string> = {
-  convite_criado: "Convite criado",
-  convite_reenviado: "Convite reenviado",
-  convite_revogado: "Convite revogado",
-  usuario_criado: "Usuário criado",
-  usuario_editado: "Usuário editado",
-  usuario_excluido: "Usuário excluído",
-  usuario_desabilitado: "Usuário desabilitado",
-  usuario_habilitado: "Usuário habilitado",
-  usuario_aprovado: "Usuário aprovado",
-  usuario_reprovado: "Aprovação removida",
-  senha_definida: "Senha redefinida",
-  senha_reset_enviado: "E-mail de reset enviado",
-  papel_alterado: "Papel alterado",
-};
-const acaoLabel = (a: string) => ACAO_LABELS[a] ?? a;
+import { friendlyAction, friendlySummary, friendlyDetails } from "@/lib/audit-format";
+
+function AuditLogButton({ log, autorNome, alvoNome }: { log: any; autorNome?: string | null; alvoNome?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const titulo = friendlyAction(log.acao, log.detalhes);
+  const resumo = friendlySummary(log.acao, log.detalhes);
+  const campos = friendlyDetails(log.acao, log.detalhes);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="text-left w-full rounded-md -m-1 p-1 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Ver detalhes: ${titulo}`}
+        >
+          <div className="font-medium">{titulo}</div>
+          <div className="text-xs text-muted-foreground">
+            por {autorNome ?? "—"}
+            {alvoNome ? ` · alvo: ${alvoNome}` : ""}
+            {resumo ? ` · ${resumo}` : ""}
+          </div>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+        </DialogHeader>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+          <dt className="text-muted-foreground">Quando</dt>
+          <dd className="font-mono tabular-nums">{new Date(log.created_at).toLocaleString()}</dd>
+          <dt className="text-muted-foreground">Autor</dt>
+          <dd>{autorNome ?? "—"}</dd>
+          {alvoNome && (<><dt className="text-muted-foreground">Alvo</dt><dd>{alvoNome}</dd></>)}
+          {campos.map((c) => (
+            <div key={c.label} className="contents">
+              <dt className="text-muted-foreground">{c.label}</dt>
+              <dd className="break-words">{c.value}</dd>
+            </div>
+          ))}
+        </dl>
+        {log.detalhes && (
+          <details className="mt-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none">Ver JSON bruto</summary>
+            <pre className="mt-2 p-2 rounded bg-muted overflow-auto max-h-72 whitespace-pre-wrap break-all">
+              {JSON.stringify(log.detalhes, null, 2)}
+            </pre>
+          </details>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function MembroActions({
   m, onChangePapel, onEdit, onSetPwd, onReset, onToggle, onDelete,
