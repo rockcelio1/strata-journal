@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles, MousePointerClick, Image as ImageIcon, FileText } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles, MousePointerClick, Image as ImageIcon, FileText, BookOpen, KeyRound } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,8 @@ const subNav = [
   { to: "/configuracoes/skeleton", label: "Efeitos de Carregamento", icon: Sparkles, desc: "Skeleton por tela (9 efeitos)" },
   { to: "/configuracoes/botoes-efeitos", label: "Efeitos dos Botões", icon: MousePointerClick, desc: "10 efeitos visuais por botão" },
   { to: "/configuracoes/lgpd", label: "Solicitações LGPD", icon: FileText, desc: "Pedidos DSAR e prazos" },
+  { to: "/configuracoes/runbook", label: "Runbook", icon: BookOpen, desc: "Procedimentos de incidente e operação" },
+  { to: "/configuracoes/rotacao-chaves", label: "Rotação de chaves", icon: KeyRound, desc: "Política e checklist de segredos" },
 ];
 
 function ConfiguracoesLayout() {

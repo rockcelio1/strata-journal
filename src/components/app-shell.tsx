@@ -40,6 +40,7 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { MfaEnforcer } from "@/components/mfa-enforcer";
 
 
 const baseNav: Array<{ to: string; label: string; icon: any; match?: string }> = [
@@ -363,6 +364,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             url={((me?.empresa as any)?.logo_url as string | null) ?? null}
             opacity={(me?.empresa as any)?.logo_wallpaper_opacity ?? 0}
           />
+          <MfaEnforcer roles={(me as any)?.roles} />
           <div className="relative z-10">{children}</div>
         </main>
       </div>
