@@ -113,11 +113,9 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                 </p>
                 <a
                   href={result.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-sm text-primary underline"
                 >
-                  Abrir PDF em nova aba
+                  Abrir PDF nesta aba
                 </a>
               </div>
             </object>
