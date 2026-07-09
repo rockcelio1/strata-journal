@@ -93,12 +93,16 @@ function Bar({
         />
       </mesh>
       {/* Valor sobre a barra */}
-      <Text position={[0, targetH + 0.22, 0]} fontSize={0.22} color="#e2e8f0" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
-        {d.value.toLocaleString("pt-BR")}
-      </Text>
-      <Text position={[0, -0.25, 0.5]} rotation={[-Math.PI / 4, 0, 0]} fontSize={0.18} color="#cbd5e1" anchorX="center" anchorY="top" maxWidth={1.4} outlineWidth={0.008} outlineColor="#000">
-        {d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name}
-      </Text>
+      <Html position={[0, targetH + 0.22, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
+        <div className="text-[11px] font-mono text-slate-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap">
+          {d.value.toLocaleString("pt-BR")}
+        </div>
+      </Html>
+      <Html position={[0, -0.15, 0.5]} center distanceFactor={9} style={{ pointerEvents: "none" }}>
+        <div className="text-[10px] text-slate-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] max-w-[110px] text-center leading-tight">
+          {d.name.length > 14 ? d.name.slice(0, 14) + "…" : d.name}
+        </div>
+      </Html>
       {hover && (
         <Html position={[0, targetH + 0.6, 0]} center distanceFactor={8} style={{ pointerEvents: "none" }}>
           <div className="rounded-lg border bg-background/95 backdrop-blur px-2.5 py-1.5 shadow-xl text-xs whitespace-nowrap">
