@@ -344,8 +344,8 @@ function RdoDetailPage() {
               </div>
             );
           })()}
-          <Button variant="outline" onClick={baixarPdf}><Download className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" onClick={baixarExcel}><Download className="h-4 w-4 mr-1" />Excel</Button>
+          <Button variant="outline" onClick={baixarPdf} title="Visualizar e baixar PDF"><Download className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" onClick={baixarExcel} title="Visualizar e baixar Excel"><Download className="h-4 w-4 mr-1" />Excel</Button>
           {r.status === "rascunho" && isAuthor && (
             <Button onClick={() => submit.mutate()} className="bg-brand text-brand-foreground"><Send className="h-4 w-4 mr-1" />Enviar</Button>
           )}
