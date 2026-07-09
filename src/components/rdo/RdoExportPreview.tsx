@@ -397,7 +397,7 @@ function PdfCanvasPreview({
         </div>
       </div>
 
-      <div ref={wrapperRef} className="relative flex-1 overflow-auto p-4">
+      <div ref={wrapperRef} className="relative flex-1 overflow-auto p-6 bg-[#EDE9E1]">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 animate-fade-in" role="status" aria-label="Carregando">
             <div className="relative">
@@ -417,15 +417,16 @@ function PdfCanvasPreview({
             onRetry={() => setRetryKey((key) => key + 1)}
           />
         ) : (
-          <div className="mx-auto flex w-full flex-col items-center gap-4 pb-4">
+          <div className="mx-auto flex w-full flex-col items-center gap-6 pb-4">
             {pdfDocument && Array.from({ length: pageCount }, (_, index) => (
-              <PdfPageCanvas
-                key={`${retryKey}-${index + 1}-${zoom}-${containerWidth}`}
-                pdfDocument={pdfDocument}
-                pageNumber={index + 1}
-                zoom={zoom}
-                containerWidth={containerWidth}
-              />
+              <div key={`${retryKey}-${index + 1}-${zoom}-${containerWidth}`} className="bg-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] ring-1 ring-black/5 rounded-sm">
+                <PdfPageCanvas
+                  pdfDocument={pdfDocument}
+                  pageNumber={index + 1}
+                  zoom={zoom}
+                  containerWidth={containerWidth}
+                />
+              </div>
             ))}
           </div>
         )}
