@@ -45,35 +45,76 @@ export async function exportRdoPdf(args: {
   const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
-  let y = 40;
+  const MARGIN = 56; // ~2 cm (ABNT)
+  const CONTENT_W = W - MARGIN * 2;
+  let y = MARGIN;
 
-  // Cabeçalho — logo colorida da empresa ao lado do título/nome
-  let headerLeft = 40;
+  // ---------- Cabeçalho ABNT ----------
   const logo = empresa?.logo_url ? await urlToDataUrl(empresa.logo_url) : null;
+  const logoH = 64;
+  let logoW = 0;
   if (logo) {
-    const maxH = 48, maxW = 90;
     const ratio = logo.w / logo.h;
-    let lw = maxW, lh = maxW / ratio;
-    if (lh > maxH) { lh = maxH; lw = maxH * ratio; }
-    try { doc.addImage(logo.dataUrl, "PNG", 40, y - 4, lw, lh, undefined, "FAST"); }
-    catch { try { doc.addImage(logo.dataUrl, "JPEG", 40, y - 4, lw, lh, undefined, "FAST"); } catch { /* skip */ } }
-    headerLeft = 40 + lw + 12;
+    logoW = Math.min(120, logoH * ratio);
+    try { doc.addImage(logo.dataUrl, "PNG", MARGIN, y, logoW, logoH, undefined, "FAST"); }
+    catch { try { doc.addImage(logo.dataUrl, "JPEG", MARGIN, y, logoW, logoH, undefined, "FAST"); } catch { /* skip */ } }
   }
+
+  const textLeft = MARGIN + (logo ? logoW + 16 : 0);
+  const textRight = W - MARGIN;
+  const textW = textRight - textLeft;
+
+  // Nome da empresa
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(`Relatório Diário de Obra #${rdo.numero}`, headerLeft, y + 4);
+  doc.setFontSize(13);
+  doc.setTextColor(15, 31, 51);
+  const nomeLines = doc.splitTextToSize(String(empresa?.nome ?? "Empresa").toUpperCase(), textW);
+  doc.text(nomeLines, textLeft, y + 14);
+
+  // CNPJ
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  y += 22;
-  doc.text(`${empresa?.nome ?? "Empresa"}${empresa?.cnpj ? ` · CNPJ ${empresa.cnpj}` : ""}`, headerLeft, y);
-  y = Math.max(y, 40 + (logo ? 48 : 0)) + 6;
-  doc.text(`Obra: ${rdo.obras?.nome ?? "—"}   Data: ${fmtDay(rdo.data)}   Status: ${rdoStatusMeta[rdo.status as keyof typeof rdoStatusMeta]?.label ?? rdo.status}`, 40, y);
+  doc.setFontSize(9);
+  doc.setTextColor(90, 107, 128);
+  if (empresa?.cnpj) doc.text(`CNPJ: ${empresa.cnpj}`, textLeft, y + 14 + nomeLines.length * 14);
+
+  y += logoH + 10;
+  doc.setDrawColor(31, 58, 95);
+  doc.setLineWidth(1);
+  doc.line(MARGIN, y, W - MARGIN, y);
   y += 14;
-  doc.text(`Autor: ${rdo.autor?.nome ?? "—"}${rdo.aprovador?.nome ? `   Aprovador: ${rdo.aprovador.nome}` : ""}`, 40, y);
-  y += 10;
+
+  // Título centralizado (ABNT)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(15, 31, 51);
+  doc.text(`RELATÓRIO DIÁRIO DE OBRA — Nº ${rdo.numero}`, W / 2, y, { align: "center" });
+  y += 20;
+
+  // Bloco de metadados — cada campo em sua própria linha, justificado
+  const metaFont = () => { doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(30, 30, 30); };
+  const metaBold = (label: string, value: string) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(30, 30, 30);
+    doc.text(label, MARGIN, y);
+    const lw = doc.getTextWidth(label);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(value, CONTENT_W - lw - 4);
+    doc.text(lines, MARGIN + lw + 4, y);
+    y += Math.max(14, lines.length * 13);
+  };
+  metaFont();
+  metaBold("Obra: ", rdo.obras?.nome ?? "—");
+  metaBold("Endereço: ", rdo.obras?.endereco ?? "—");
+  metaBold("Data do relatório: ", fmtDay(rdo.data));
+  metaBold("Status: ", String(rdoStatusMeta[rdo.status as keyof typeof rdoStatusMeta]?.label ?? rdo.status ?? "—"));
+  metaBold("Autor: ", rdo.autor?.nome ?? "—");
+  if (rdo.aprovador?.nome) metaBold("Aprovador: ", rdo.aprovador.nome);
+
+  y += 4;
   doc.setDrawColor(200);
-  doc.line(40, y, W - 40, y);
+  doc.setLineWidth(0.5);
+  doc.line(MARGIN, y, W - MARGIN, y);
   y += 14;
+  doc.setTextColor(0);
 
   // Clima
   autoTable(doc, {
