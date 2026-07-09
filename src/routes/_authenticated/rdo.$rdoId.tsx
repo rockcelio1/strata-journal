@@ -661,13 +661,13 @@ function RdoDetailPage() {
                         type="button"
                         onClick={() => setLightbox({ items: imgList, index: imgIdx })}
                         aria-label={`Ampliar imagem ${a.nome}`}
-                        className={`block aspect-square overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white" : "bg-muted"}`}
+                        className={`block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white aspect-[3/1] flex items-center justify-center" : "aspect-square bg-muted"}`}
                       >
                         <SmartImage
                           src={a.url}
                           alt={a.nome}
                           loading={imageLoading}
-                          className={`${isAssinatura ? "object-contain p-2" : "object-cover"}`}
+                          className={`${isAssinatura ? "max-h-full max-w-full object-contain p-1" : "object-cover"}`}
                         />
 
                       </button>
@@ -960,12 +960,19 @@ function Lightbox({
         </>
       )}
 
-      <figure className="max-w-[95vw] max-h-[90dvh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-        <img
-          src={current.url}
-          alt={current.nome ?? "Imagem do RDO"}
-          className="max-w-[95vw] max-h-[80dvh] object-contain rounded-md shadow-2xl"
-        />
+      <figure className="max-w-[95vw] max-h-[90dvh] flex flex-col items-center overflow-auto" onClick={(e) => e.stopPropagation()}>
+        {(() => {
+          const isAssinatura = /assinatur/i.test(current.nome ?? "") || /assinatur/i.test(current.categoria ?? "");
+          return (
+            <img
+              src={current.url}
+              alt={current.nome ?? "Imagem do RDO"}
+              className={isAssinatura
+                ? "bg-white rounded-md shadow-2xl"
+                : "max-w-[95vw] max-h-[80dvh] object-contain rounded-md shadow-2xl"}
+            />
+          );
+        })()}
         <figcaption className="mt-2 text-xs text-white/80 text-center px-3 max-w-[95vw] truncate">
           {current.nome} · {index + 1} / {total}
         </figcaption>
