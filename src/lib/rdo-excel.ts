@@ -244,7 +244,7 @@ export async function exportRdoExcel(args: {
   const mode = args.mode ?? "save";
   const {
     rdo, atividades, avancos, mao_de_obra, equipamentos,
-    ocorrencias, clima_dias, clima_local, empresa,
+    ocorrencias, anexos, clima_dias, clima_local, empresa,
   } = args;
 
   // Paleta derivada da logo + carregamento da imagem
