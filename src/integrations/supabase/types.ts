@@ -283,6 +283,7 @@ export type Database = {
           id: string
           logo_url: string | null
           logo_wallpaper_opacity: number
+          mfa_required: boolean
           nome: string
           updated_at: string
         }
@@ -294,6 +295,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           logo_wallpaper_opacity?: number
+          mfa_required?: boolean
           nome: string
           updated_at?: string
         }
@@ -305,6 +307,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           logo_wallpaper_opacity?: number
+          mfa_required?: boolean
           nome?: string
           updated_at?: string
         }
@@ -3153,6 +3156,7 @@ export type Database = {
           last_password_change_at: string | null
           mfa_enabled: boolean
           mfa_enrolled_at: string | null
+          mfa_required: boolean
           notify_new_login: boolean
           notify_password_change: boolean
           updated_at: string
@@ -3166,6 +3170,7 @@ export type Database = {
           last_password_change_at?: string | null
           mfa_enabled?: boolean
           mfa_enrolled_at?: string | null
+          mfa_required?: boolean
           notify_new_login?: boolean
           notify_password_change?: boolean
           updated_at?: string
@@ -3179,6 +3184,7 @@ export type Database = {
           last_password_change_at?: string | null
           mfa_enabled?: boolean
           mfa_enrolled_at?: string | null
+          mfa_required?: boolean
           notify_new_login?: boolean
           notify_password_change?: boolean
           updated_at?: string
