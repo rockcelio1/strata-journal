@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { climaLabel, rdoStatusMeta } from "@/components/status";
+import { climaLabel } from "@/components/status";
 
 type AnyRec = Record<string, any>;
 
