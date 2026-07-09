@@ -661,13 +661,13 @@ function RdoDetailPage() {
                         type="button"
                         onClick={() => setLightbox({ items: imgList, index: imgIdx })}
                         aria-label={`Ampliar imagem ${a.nome}`}
-                        className={`block aspect-square overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white" : "bg-muted"}`}
+                        className={`block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isAssinatura ? "bg-white aspect-[3/1] flex items-center justify-center" : "aspect-square bg-muted"}`}
                       >
                         <SmartImage
                           src={a.url}
                           alt={a.nome}
                           loading={imageLoading}
-                          className={`${isAssinatura ? "object-contain p-2" : "object-cover"}`}
+                          className={`${isAssinatura ? "max-h-full max-w-full object-contain p-1" : "object-cover"}`}
                         />
 
                       </button>
