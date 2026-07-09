@@ -15,8 +15,8 @@ import { setAnexoTaskItem } from "@/lib/rdo.functions";
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { exportRdoPdf } from "@/lib/rdo-pdf";
-import { exportRdoExcel } from "@/lib/rdo-excel";
+// exportRdoPdf / exportRdoExcel são chamados dentro do RdoExportPreview
+
 import { Card } from "@/components/ui/card";
 import { AdminOnly } from "@/components/AdminOnly";
 import { Badge } from "@/components/ui/badge";
