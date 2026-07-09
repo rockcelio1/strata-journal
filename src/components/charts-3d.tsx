@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, memo, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, MeshReflectorMaterial, ContactShadows } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -8,6 +8,30 @@ import { useAccessibility } from "@/hooks/useAccessibility";
 import { useCameraPersistence } from "@/components/charts-3d.persistence";
 
 export type Chart3DDatum = { id: string; name: string; value: number; extra?: string };
+
+/* ---------------- Label 3D com fallback ----------------
+ * Usa <Html> do drei (alternativa ao <Text> baseado em troika, que falha ao
+ * reidratar via worker em alguns bundlers). Caso <Html> quebre em runtime,
+ * o ErrorBoundary silencia o rótulo em vez de derrubar toda a cena 3D. */
+class Label3DBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) {
+    if (typeof console !== "undefined") console.warn("[charts-3d] label fallback:", err);
+  }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+function Label3D({
+  position, distanceFactor = 8, children,
+}: { position: [number, number, number]; distanceFactor?: number; children: ReactNode }) {
+  return (
+    <Label3DBoundary>
+      <Html position={position} center distanceFactor={distanceFactor} style={{ pointerEvents: "none" }}>
+        {children}
+      </Html>
+    </Label3DBoundary>
+  );
+}
 
 // Paleta vívida (cores saturadas + espelhadas via metalness alto)
 const PALETTE = [
