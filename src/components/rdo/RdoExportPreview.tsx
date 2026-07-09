@@ -131,11 +131,6 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
             {rdo.numero && (
               <span className="ml-2 text-xs font-normal opacity-80">RDO Nº {rdo.numero}</span>
             )}
-            {rdo.status && (
-              <span className="ml-1 rounded-full bg-orange-500/90 text-white text-[10px] font-semibold uppercase px-2 py-0.5">
-                {rdoStatusMeta[rdo.status as keyof typeof rdoStatusMeta]?.label ?? rdo.status}
-              </span>
-            )}
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-2">
             {kind === "pdf" && result ? (
@@ -243,7 +238,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                       <Sheet name="Mão de obra" n={counts.mao} />
                       <Sheet name="Equipamentos" n={counts.equip} />
                       <Sheet name="Ocorrências" n={counts.ocor} />
-                      <Sheet name="Clima" n={args?.clima_dias?.length ?? 0} />
+                      
                       <Sheet name="Anexos" n={counts.anexos} />
                     </ul>
                   </div>

@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { climaLabel, rdoStatusMeta } from "@/components/status";
+import { climaLabel } from "@/components/status";
 
 type AnyRec = Record<string, any>;
 
@@ -81,9 +81,9 @@ export async function exportRdoPdf(args: {
   clima_local?: string | null;
   mode?: "save" | "blob";
 }): Promise<{ blob: Blob; url: string; filename: string } | void> {
-  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
+  const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa } = args;
   const mode = args.mode ?? "save";
-  void logs;
+  void logs; void args.clima_dias; void args.clima_local;
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -143,19 +143,6 @@ export async function exportRdoPdf(args: {
     doc.setLineWidth(2.4);
     doc.line(MARGIN, headerY + 54, MARGIN + 60, headerY + 54);
 
-    // Badge de status (canto direito abaixo do divisor)
-    const st = rdo.status as string | undefined;
-    const label = String(rdoStatusMeta[st as keyof typeof rdoStatusMeta]?.label ?? st ?? "—").toUpperCase();
-    const [r, g, b] = statusColor(st);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    const badgeW = doc.getTextWidth(label) + 16;
-    const badgeX = W - MARGIN - badgeW;
-    const badgeY = headerY + 62;
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(badgeX, badgeY, badgeW, 16, 4, 4, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.text(label, badgeX + badgeW / 2, badgeY + 11, { align: "center" });
   };
 
   const drawFooter = (pageNum: number, pageTotal: number) => {
@@ -335,22 +322,6 @@ export async function exportRdoPdf(args: {
     y += 18;
   }
 
-  // Clima detalhado
-  if (clima_dias && clima_dias.length) {
-    sectionTitle(`Evidências meteorológicas${clima_local ? ` — ${clima_local}` : ""}`);
-    const ordered = [...clima_dias].sort((a, b) => String(a.data).localeCompare(String(b.data)));
-    table(
-      ["Data", "Dia", "Origem", "Mín/Máx (°C)", "Chuva", "Condição"],
-      ordered.map((d) => [
-        fmtDayBR(d.data),
-        d.dia_semana ?? "—",
-        d.origem ?? "—",
-        `${Math.round(Number(d.t_min_c ?? 0))} / ${Math.round(Number(d.t_max_c ?? 0))}`,
-        `${d.prob_chuva_pct ?? 0}% · ${d.precipitacao_mm ?? 0} mm`,
-        d.descricao ?? "—",
-      ]),
-    );
-  }
 
   // ===== Registros fotográficos =====
   const fotos = (anexos ?? []).filter((a: AnyRec) =>
