@@ -292,7 +292,7 @@ function usePausedState(storageKey: string) {
 export function Bars3D({
   data, onSelect, storageKey = "chart3d:bars",
 }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
+  const max = useMemo(() => Math.max(1, ...data.map((d) => d.value)), [data]);
   const { effectiveReducedMotion: reducedMotion } = useAccessibility();
   const [paused, togglePaused] = usePausedState(storageKey);
   const autoRotate = !reducedMotion && !paused;
