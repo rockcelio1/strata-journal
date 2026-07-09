@@ -486,8 +486,8 @@ function UsuariosPage() {
             <SelectTrigger className="h-10"><SelectValue placeholder="Ação" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as ações</SelectItem>
-              {Object.entries(ACAO_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              {Object.entries(ACAO_FILTRO_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v as string}</SelectItem>
               ))}
             </SelectContent>
           </Select>
