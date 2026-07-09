@@ -403,14 +403,17 @@ const Slice = memo(SliceInner, (a, b) =>
 export function Pie3D({
   data, onSelect, storageKey = "chart3d:pie",
 }: { data: Chart3DDatum[]; onSelect: (d: Chart3DDatum) => void; storageKey?: string }) {
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  let acc = 0;
-  const slices = data.map((d) => {
-    const start = (acc / total) * Math.PI * 2;
-    acc += d.value;
-    const end = (acc / total) * Math.PI * 2;
-    return { d, start, end };
-  });
+  const { total, slices } = useMemo(() => {
+    const t = data.reduce((s, d) => s + d.value, 0) || 1;
+    let acc = 0;
+    const s = data.map((d) => {
+      const st = (acc / t) * Math.PI * 2;
+      acc += d.value;
+      const en = (acc / t) * Math.PI * 2;
+      return { d, start: st, end: en };
+    });
+    return { total: t, slices: s };
+  }, [data]);
   const { effectiveReducedMotion: reducedMotion } = useAccessibility();
   const [paused, togglePaused] = usePausedState(storageKey);
   const autoRotate = !reducedMotion && !paused;
