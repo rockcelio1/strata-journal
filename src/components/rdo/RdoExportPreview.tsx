@@ -32,6 +32,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ blob: Blob; url: string; filename: string } | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationKey, setGenerationKey] = useState(0);
 
   useEffect(() => {
     if (!kind || !args) return;
@@ -77,7 +78,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
       cancelled = true;
       if (currentUrl) setTimeout(() => URL.revokeObjectURL(currentUrl!), 500);
     };
-  }, [kind, args]);
+  }, [kind, args, generationKey]);
 
   const open = kind !== null;
   const rdo: any = args?.rdo ?? {};
@@ -180,6 +181,7 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
                 onOpenNewTab={openInNewTab}
                 onDownload={download}
                 onCopyUrl={copyUrl}
+                onRetry={() => setGenerationKey((key) => key + 1)}
               />
             ) : (
               <ExportPreviewFallback message={generationError} onDownload={download} canDownload={!!result} />
