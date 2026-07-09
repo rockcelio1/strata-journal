@@ -246,9 +246,10 @@ function RdoDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }),
   });
 
-  const baixarPdf = async () => {
-    if (!data) return;
-    await exportRdoPdf({
+  const [previewKind, setPreviewKind] = useState<"pdf" | "excel" | null>(null);
+  const previewArgs = useMemo(() => {
+    if (!data) return null;
+    return {
       rdo: data.rdo,
       atividades: data.atividades,
       avancos: avancosRows,
@@ -260,25 +261,12 @@ function RdoDetailPage() {
       empresa: (me as any)?.empresa,
       clima_dias: climaState.dias ?? null,
       clima_local: climaState.local ?? null,
-    });
-  };
+    };
+  }, [data, avancosRows, logs, anexos, me, climaState.dias, climaState.local]);
 
-  const baixarExcel = async () => {
-    if (!data) return;
-    await exportRdoExcel({
-      rdo: data.rdo,
-      atividades: data.atividades,
-      avancos: avancosRows,
-      mao_de_obra: data.mao_de_obra,
-      equipamentos: data.equipamentos,
-      ocorrencias: data.ocorrencias,
-      anexos: anexos as any[],
-      logs: logs as any[],
-      clima_dias: climaState.dias ?? null,
-      clima_local: climaState.local ?? null,
-      empresa: (me as any)?.empresa,
-    });
-  };
+  const baixarPdf = () => { if (data) setPreviewKind("pdf"); };
+  const baixarExcel = () => { if (data) setPreviewKind("excel"); };
+
 
   if (isError) {
     const msg = (error as any)?.message ?? "Não foi possível carregar o RDO.";
