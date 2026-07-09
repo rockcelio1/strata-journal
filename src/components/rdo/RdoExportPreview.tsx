@@ -173,16 +173,20 @@ export function RdoExportPreview({ kind, args, onClose }: Props) {
           )}
 
           {!loading && generationError && (
-            <PdfPreviewFallback
-              message={generationError}
-              result={result}
-              onOpenNewTab={openInNewTab}
-              onDownload={download}
-              onCopyUrl={copyUrl}
-            />
+            kind === "pdf" ? (
+              <PdfPreviewFallback
+                message={generationError}
+                result={result}
+                onOpenNewTab={openInNewTab}
+                onDownload={download}
+                onCopyUrl={copyUrl}
+              />
+            ) : (
+              <ExportPreviewFallback message={generationError} onDownload={download} canDownload={!!result} />
+            )
           )}
 
-          {!loading && kind === "pdf" && result && (
+          {!loading && !generationError && kind === "pdf" && result && (
             <PdfCanvasPreview
               blob={result.blob}
               url={result.url}
@@ -554,6 +558,20 @@ function PdfPreviewFallback({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ExportPreviewFallback({ message, onDownload, canDownload }: { message: string; onDownload: () => void; canDownload: boolean }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-muted-foreground">
+      <div className="rounded-full bg-destructive/10 p-3 text-destructive">
+        <AlertCircle className="h-8 w-8" />
+      </div>
+      <p className="max-w-lg text-sm font-medium text-foreground">{message}</p>
+      <Button onClick={onDownload} disabled={!canDownload}>
+        <Download className="h-4 w-4" /> Baixar Excel
+      </Button>
     </div>
   );
 }
