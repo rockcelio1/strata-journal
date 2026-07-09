@@ -34,6 +34,7 @@ import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
+import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
 import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
 import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
 import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
@@ -199,6 +200,11 @@ const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
+  id: '/api/public/lgpd-request',
+  path: '/api/public/lgpd-request',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
@@ -448,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -507,6 +514,7 @@ export interface FileRoutesByTo {
   '/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
@@ -569,6 +577,7 @@ export interface FileRoutesById {
   '/_authenticated/rdo/novo': typeof AuthenticatedRdoNovoRoute
   '/_authenticated/relatorios/$dim': typeof AuthenticatedRelatoriosDimRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -631,6 +640,7 @@ export interface FileRouteTypes {
     | '/rdo/novo'
     | '/relatorios/$dim'
     | '/api/public/health'
+    | '/api/public/lgpd-request'
     | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
@@ -690,6 +700,7 @@ export interface FileRouteTypes {
     | '/rdo/novo'
     | '/relatorios/$dim'
     | '/api/public/health'
+    | '/api/public/lgpd-request'
     | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
@@ -751,6 +762,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rdo/novo'
     | '/_authenticated/relatorios/$dim'
     | '/api/public/health'
+    | '/api/public/lgpd-request'
     | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
@@ -779,6 +791,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
 }
 
@@ -958,6 +971,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/lgpd-request': {
+      id: '/api/public/lgpd-request'
+      path: '/api/public/lgpd-request'
+      fullPath: '/api/public/lgpd-request'
+      preLoaderRoute: typeof ApiPublicLgpdRequestRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/health': {
       id: '/api/public/health'
@@ -1360,6 +1380,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
 }
 export const routeTree = rootRouteImport
