@@ -143,19 +143,6 @@ export async function exportRdoPdf(args: {
     doc.setLineWidth(2.4);
     doc.line(MARGIN, headerY + 54, MARGIN + 60, headerY + 54);
 
-    // Badge de status (canto direito abaixo do divisor)
-    const st = rdo.status as string | undefined;
-    const label = String(rdoStatusMeta[st as keyof typeof rdoStatusMeta]?.label ?? st ?? "—").toUpperCase();
-    const [r, g, b] = statusColor(st);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    const badgeW = doc.getTextWidth(label) + 16;
-    const badgeX = W - MARGIN - badgeW;
-    const badgeY = headerY + 62;
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(badgeX, badgeY, badgeW, 16, 4, 4, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.text(label, badgeX + badgeW / 2, badgeY + 11, { align: "center" });
   };
 
   const drawFooter = (pageNum: number, pageTotal: number) => {
