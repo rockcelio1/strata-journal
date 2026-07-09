@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { climaLabel, rdoStatusMeta } from "@/components/status";
 import { sanitizeExportRow } from "@/lib/security/sanitize-export";
+import { paletteFromLogo, type LogoImage, type LogoPalette, DEFAULT_PALETTE } from "@/lib/logo-palette";
 
 type AnyRec = Record<string, any>;
 
@@ -13,17 +14,22 @@ const fmtDayBR = (yyyyMmDd?: string | null) =>
     ? new Date(`${yyyyMmDd}T12:00:00-03:00`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
     : "";
 
-// ---------- Paleta corporativa ----------
-const COLOR = {
-  brand: "FF1F3A5F",       // azul petróleo (cabeçalho principal)
-  brandSoft: "FFE8EEF5",   // azul muito claro (linhas alternadas)
-  headerFill: "FF2E5E8C",  // azul médio (cabeçalho das tabelas)
-  headerText: "FFFFFFFF",
-  border: "FFB5C2D1",
-  label: "FF5A6B80",
-  title: "FF0F1F33",
-  zebra: "FFF6F8FB",
-};
+// ---------- Paleta corporativa (derivada da logo da empresa) ----------
+function buildColors(p: LogoPalette) {
+  return {
+    brand: `FF${p.brand}`,
+    brandDark: `FF${p.brandDark}`,
+    brandSoft: `FF${p.brandSoft}`,
+    headerFill: `FF${p.brandDark}`,
+    headerText: `FF${p.onBrand}`,
+    border: "FFB5C2D1",
+    label: "FF5A6B80",
+    title: "FF0F1F33",
+    zebra: "FFF6F8FB",
+  };
+}
+type ColorSet = ReturnType<typeof buildColors>;
+let COLOR: ColorSet = buildColors(DEFAULT_PALETTE);
 
 type ColDef = {
   header: string;
