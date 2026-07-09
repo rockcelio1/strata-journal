@@ -15,8 +15,8 @@ import { setAnexoTaskItem } from "@/lib/rdo.functions";
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { exportRdoPdf } from "@/lib/rdo-pdf";
-import { exportRdoExcel } from "@/lib/rdo-excel";
+// exportRdoPdf / exportRdoExcel são chamados dentro do RdoExportPreview
+
 import { Card } from "@/components/ui/card";
 import { AdminOnly } from "@/components/AdminOnly";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import { SignaturesCard } from "@/components/rdo/SignaturesCard";
 import { AdminConfirmTwiceButton } from "@/components/rdo/AdminConfirmTwiceButton";
 import { SmartImage } from "@/components/rdo/SmartImage";
 import { sanitizeExportCell } from "@/lib/security/sanitize-export";
+import { RdoExportPreview } from "@/components/rdo/RdoExportPreview";
 
 export const Route = createFileRoute("/_authenticated/rdo/$rdoId")({
   component: RdoDetailPage,
@@ -245,9 +246,10 @@ function RdoDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rdo-anexos", rdoId] }),
   });
 
-  const baixarPdf = async () => {
-    if (!data) return;
-    await exportRdoPdf({
+  const [previewKind, setPreviewKind] = useState<"pdf" | "excel" | null>(null);
+  const previewArgs = useMemo(() => {
+    if (!data) return null;
+    return {
       rdo: data.rdo,
       atividades: data.atividades,
       avancos: avancosRows,
@@ -259,25 +261,12 @@ function RdoDetailPage() {
       empresa: (me as any)?.empresa,
       clima_dias: climaState.dias ?? null,
       clima_local: climaState.local ?? null,
-    });
-  };
+    };
+  }, [data, avancosRows, logs, anexos, me, climaState.dias, climaState.local]);
 
-  const baixarExcel = async () => {
-    if (!data) return;
-    await exportRdoExcel({
-      rdo: data.rdo,
-      atividades: data.atividades,
-      avancos: avancosRows,
-      mao_de_obra: data.mao_de_obra,
-      equipamentos: data.equipamentos,
-      ocorrencias: data.ocorrencias,
-      anexos: anexos as any[],
-      logs: logs as any[],
-      clima_dias: climaState.dias ?? null,
-      clima_local: climaState.local ?? null,
-      empresa: (me as any)?.empresa,
-    });
-  };
+  const baixarPdf = () => { if (data) setPreviewKind("pdf"); };
+  const baixarExcel = () => { if (data) setPreviewKind("excel"); };
+
 
   if (isError) {
     const msg = (error as any)?.message ?? "Não foi possível carregar o RDO.";
@@ -355,8 +344,8 @@ function RdoDetailPage() {
               </div>
             );
           })()}
-          <Button variant="outline" onClick={baixarPdf}><Download className="h-4 w-4 mr-1" />PDF</Button>
-          <Button variant="outline" onClick={baixarExcel}><Download className="h-4 w-4 mr-1" />Excel</Button>
+          <Button variant="outline" onClick={baixarPdf} title="Visualizar e baixar PDF"><Download className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" onClick={baixarExcel} title="Visualizar e baixar Excel"><Download className="h-4 w-4 mr-1" />Excel</Button>
           {r.status === "rascunho" && isAuthor && (
             <Button onClick={() => submit.mutate()} className="bg-brand text-brand-foreground"><Send className="h-4 w-4 mr-1" />Enviar</Button>
           )}
@@ -912,6 +901,11 @@ function RdoDetailPage() {
         />
       )}
 
+      <RdoExportPreview
+        kind={previewKind}
+        args={previewArgs}
+        onClose={() => setPreviewKind(null)}
+      />
     </div>
   );
 }

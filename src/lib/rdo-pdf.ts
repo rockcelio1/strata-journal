@@ -41,8 +41,11 @@ export async function exportRdoPdf(args: {
   empresa?: { nome?: string; cnpj?: string | null; logo_url?: string | null } | null;
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
-}) {
+  mode?: "save" | "blob";
+}): Promise<{ blob: Blob; url: string; filename: string } | void> {
   const { rdo, atividades, avancos, mao_de_obra, equipamentos, ocorrencias, logs, anexos, empresa, clima_dias, clima_local } = args;
+  const mode = args.mode ?? "save";
+  void logs;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const MARGIN = 56; // ~2 cm (ABNT)
@@ -241,9 +244,10 @@ export async function exportRdoPdf(args: {
 
       let col = 0;
       let rowY = y + 4;
-      for (const f of g.items) {
+      // Pré-carrega todas as imagens do grupo em paralelo (acelera muito o export)
+      const loaded = await Promise.all(g.items.map((f) => urlToDataUrl(f.url as string).then((img) => ({ f, img }))));
+      for (const { f, img } of loaded) {
         if (rowY + cellH > H - 40) { doc.addPage(); rowY = 40; y = 40; col = 0; }
-        const img = await urlToDataUrl(f.url as string);
         if (!img) continue;
         const ratio = img.w / img.h;
         let w = cellW, h = cellW / ratio;
@@ -277,5 +281,11 @@ export async function exportRdoPdf(args: {
     doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")} · Página ${i}/${pageCount}`, 40, doc.internal.pageSize.getHeight() - 20);
   }
 
-  doc.save(`RDO-${rdo.numero}-${rdo.obras?.nome ?? "obra"}.pdf`);
+  const filename = `RDO-${rdo.numero}-${String(rdo.obras?.nome ?? "obra").replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+  if (mode === "blob") {
+    const blob = doc.output("blob") as Blob;
+    const url = URL.createObjectURL(blob);
+    return { blob, url, filename };
+  }
+  doc.save(filename);
 }

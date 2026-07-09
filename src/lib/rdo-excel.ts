@@ -239,7 +239,9 @@ export async function exportRdoExcel(args: {
   clima_dias?: AnyRec[] | null;
   clima_local?: string | null;
   empresa?: { nome?: string; cnpj?: string | null; logo_url?: string | null } | null;
-}) {
+  mode?: "save" | "blob";
+}): Promise<{ blob: Blob; url: string; filename: string } | void> {
+  const mode = args.mode ?? "save";
   const {
     rdo, atividades, avancos, mao_de_obra, equipamentos,
     ocorrencias, clima_dias, clima_local, empresa,
@@ -488,11 +490,12 @@ export async function exportRdoExcel(args: {
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-  const fname = `RDO-${rdo.numero}-${(rdo.obras?.nome ?? "obra").toString().replace(/[^a-z0-9-_]+/gi, "_")}.xlsx`;
-  const a = document.createElement("a");
+  const filename = `RDO-${rdo.numero}-${(rdo.obras?.nome ?? "obra").toString().replace(/[^a-z0-9-_]+/gi, "_")}.xlsx`;
   const url = URL.createObjectURL(blob);
+  if (mode === "blob") return { blob, url, filename };
+  const a = document.createElement("a");
   a.href = url;
-  a.download = fname;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
