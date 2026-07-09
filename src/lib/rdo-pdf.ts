@@ -281,5 +281,11 @@ export async function exportRdoPdf(args: {
     doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")} · Página ${i}/${pageCount}`, 40, doc.internal.pageSize.getHeight() - 20);
   }
 
-  doc.save(`RDO-${rdo.numero}-${rdo.obras?.nome ?? "obra"}.pdf`);
+  const filename = `RDO-${rdo.numero}-${String(rdo.obras?.nome ?? "obra").replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+  if (mode === "blob") {
+    const blob = doc.output("blob") as Blob;
+    const url = URL.createObjectURL(blob);
+    return { blob, url, filename };
+  }
+  doc.save(filename);
 }
