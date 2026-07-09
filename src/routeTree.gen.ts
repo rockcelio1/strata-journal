@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as StatusRouteImport } from './routes/status'
 import { Route as SolicitacaoLgpdRouteImport } from './routes/solicitacao-lgpd'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -19,6 +20,7 @@ import { Route as InstalarRouteImport } from './routes/instalar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthMfaSetupRouteImport } from './routes/auth.mfa-setup'
 import { Route as AuthenticatedTrocarSenhaRouteImport } from './routes/_authenticated/trocar-senha'
 import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticated/galeria'
 import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
@@ -40,6 +42,8 @@ import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
 import { Route as AuthenticatedConfiguracoesSkeletonRouteImport } from './routes/_authenticated/configuracoes.skeleton'
 import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
+import { Route as AuthenticatedConfiguracoesRunbookRouteImport } from './routes/_authenticated/configuracoes.runbook'
+import { Route as AuthenticatedConfiguracoesRotacaoChavesRouteImport } from './routes/_authenticated/configuracoes.rotacao-chaves'
 import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
 import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
@@ -68,6 +72,11 @@ import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_auth
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SolicitacaoLgpdRoute = SolicitacaoLgpdRouteImport.update({
@@ -113,6 +122,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthMfaSetupRoute = AuthMfaSetupRouteImport.update({
+  id: '/mfa-setup',
+  path: '/mfa-setup',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthenticatedTrocarSenhaRoute =
   AuthenticatedTrocarSenhaRouteImport.update({
@@ -229,6 +243,18 @@ const AuthenticatedConfiguracoesSistemaRoute =
   AuthenticatedConfiguracoesSistemaRouteImport.update({
     id: '/sistema',
     path: '/sistema',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesRunbookRoute =
+  AuthenticatedConfiguracoesRunbookRouteImport.update({
+    id: '/runbook',
+    path: '/runbook',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesRotacaoChavesRoute =
+  AuthenticatedConfiguracoesRotacaoChavesRouteImport.update({
+    id: '/rotacao-chaves',
+    path: '/rotacao-chaves',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
 const AuthenticatedConfiguracoesPermissoesRoute =
@@ -374,13 +400,14 @@ const AuthenticatedAjudaArtigoSlugRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/instalar': typeof InstalarRoute
   '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/status': typeof StatusRoute
   '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -390,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/trocar-senha': typeof AuthenticatedTrocarSenhaRoute
+  '/auth/mfa-setup': typeof AuthMfaSetupRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
@@ -410,6 +438,8 @@ export interface FileRoutesByFullPath {
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
+  '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
+  '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
@@ -430,13 +460,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/instalar': typeof InstalarRoute
   '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/status': typeof StatusRoute
   '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -445,6 +476,7 @@ export interface FileRoutesByTo {
   '/empresa': typeof AuthenticatedEmpresaRoute
   '/galeria': typeof AuthenticatedGaleriaRoute
   '/trocar-senha': typeof AuthenticatedTrocarSenhaRoute
+  '/auth/mfa-setup': typeof AuthMfaSetupRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
@@ -465,6 +497,8 @@ export interface FileRoutesByTo {
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
+  '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
+  '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
   '/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
@@ -487,13 +521,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/instalar': typeof InstalarRoute
   '/lgpd': typeof LgpdRoute
   '/mcp': typeof McpRoute
   '/privacidade': typeof PrivacidadeRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitacao-lgpd': typeof SolicitacaoLgpdRoute
+  '/status': typeof StatusRoute
   '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -503,6 +538,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa': typeof AuthenticatedEmpresaRoute
   '/_authenticated/galeria': typeof AuthenticatedGaleriaRoute
   '/_authenticated/trocar-senha': typeof AuthenticatedTrocarSenhaRoute
+  '/auth/mfa-setup': typeof AuthMfaSetupRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/ajuda/admin': typeof AuthenticatedAjudaAdminRoute
@@ -523,6 +559,8 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
+  '/_authenticated/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
+  '/_authenticated/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
   '/_authenticated/configuracoes/sistema': typeof AuthenticatedConfiguracoesSistemaRoute
   '/_authenticated/configuracoes/skeleton': typeof AuthenticatedConfiguracoesSkeletonRoute
   '/_authenticated/configuracoes/usuarios': typeof AuthenticatedConfiguracoesUsuariosRoute
@@ -552,6 +590,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/solicitacao-lgpd'
+    | '/status'
     | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -561,6 +600,7 @@ export interface FileRouteTypes {
     | '/empresa'
     | '/galeria'
     | '/trocar-senha'
+    | '/auth/mfa-setup'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/ajuda/admin'
@@ -581,6 +621,8 @@ export interface FileRouteTypes {
     | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
+    | '/configuracoes/rotacao-chaves'
+    | '/configuracoes/runbook'
     | '/configuracoes/sistema'
     | '/configuracoes/skeleton'
     | '/configuracoes/usuarios'
@@ -608,6 +650,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/solicitacao-lgpd'
+    | '/status'
     | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -616,6 +659,7 @@ export interface FileRouteTypes {
     | '/empresa'
     | '/galeria'
     | '/trocar-senha'
+    | '/auth/mfa-setup'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/ajuda/admin'
@@ -636,6 +680,8 @@ export interface FileRouteTypes {
     | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
     | '/configuracoes/permissoes'
+    | '/configuracoes/rotacao-chaves'
+    | '/configuracoes/runbook'
     | '/configuracoes/sistema'
     | '/configuracoes/skeleton'
     | '/configuracoes/usuarios'
@@ -664,6 +710,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/reset-password'
     | '/solicitacao-lgpd'
+    | '/status'
     | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -673,6 +720,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa'
     | '/_authenticated/galeria'
     | '/_authenticated/trocar-senha'
+    | '/auth/mfa-setup'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/ajuda/admin'
@@ -693,6 +741,8 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/lgpd'
     | '/_authenticated/configuracoes/onedrive'
     | '/_authenticated/configuracoes/permissoes'
+    | '/_authenticated/configuracoes/rotacao-chaves'
+    | '/_authenticated/configuracoes/runbook'
     | '/_authenticated/configuracoes/sistema'
     | '/_authenticated/configuracoes/skeleton'
     | '/_authenticated/configuracoes/usuarios'
@@ -715,13 +765,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   InstalarRoute: typeof InstalarRoute
   LgpdRoute: typeof LgpdRoute
   McpRoute: typeof McpRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SolicitacaoLgpdRoute: typeof SolicitacaoLgpdRoute
+  StatusRoute: typeof StatusRoute
   TermosRoute: typeof TermosRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -738,6 +789,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/solicitacao-lgpd': {
@@ -802,6 +860,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/mfa-setup': {
+      id: '/auth/mfa-setup'
+      path: '/mfa-setup'
+      fullPath: '/auth/mfa-setup'
+      preLoaderRoute: typeof AuthMfaSetupRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_authenticated/trocar-senha': {
       id: '/_authenticated/trocar-senha'
@@ -948,6 +1013,20 @@ declare module '@tanstack/react-router' {
       path: '/sistema'
       fullPath: '/configuracoes/sistema'
       preLoaderRoute: typeof AuthenticatedConfiguracoesSistemaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/runbook': {
+      id: '/_authenticated/configuracoes/runbook'
+      path: '/runbook'
+      fullPath: '/configuracoes/runbook'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRunbookRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/rotacao-chaves': {
+      id: '/_authenticated/configuracoes/rotacao-chaves'
+      path: '/rotacao-chaves'
+      fullPath: '/configuracoes/rotacao-chaves'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
     '/_authenticated/configuracoes/permissoes': {
@@ -1130,6 +1209,8 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
+  AuthenticatedConfiguracoesRotacaoChavesRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRoute
+  AuthenticatedConfiguracoesRunbookRoute: typeof AuthenticatedConfiguracoesRunbookRoute
   AuthenticatedConfiguracoesSistemaRoute: typeof AuthenticatedConfiguracoesSistemaRoute
   AuthenticatedConfiguracoesSkeletonRoute: typeof AuthenticatedConfiguracoesSkeletonRoute
   AuthenticatedConfiguracoesUsuariosRoute: typeof AuthenticatedConfiguracoesUsuariosRoute
@@ -1153,6 +1234,10 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesOnedriveRoute,
     AuthenticatedConfiguracoesPermissoesRoute:
       AuthenticatedConfiguracoesPermissoesRoute,
+    AuthenticatedConfiguracoesRotacaoChavesRoute:
+      AuthenticatedConfiguracoesRotacaoChavesRoute,
+    AuthenticatedConfiguracoesRunbookRoute:
+      AuthenticatedConfiguracoesRunbookRoute,
     AuthenticatedConfiguracoesSistemaRoute:
       AuthenticatedConfiguracoesSistemaRoute,
     AuthenticatedConfiguracoesSkeletonRoute:
@@ -1247,16 +1332,27 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthMfaSetupRoute: typeof AuthMfaSetupRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthMfaSetupRoute: AuthMfaSetupRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   InstalarRoute: InstalarRoute,
   LgpdRoute: LgpdRoute,
   McpRoute: McpRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SolicitacaoLgpdRoute: SolicitacaoLgpdRoute,
+  StatusRoute: StatusRoute,
   TermosRoute: TermosRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

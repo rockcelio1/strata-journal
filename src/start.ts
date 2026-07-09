@@ -18,7 +18,57 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+// Onda 4: headers de segurança em toda resposta HTML/JSON servida pelo runtime.
+// CSP em modo permissivo (compatível com Vite/HMR em dev e com o restore da sessão Supabase).
+// HSTS ativo apenas quando servido via HTTPS (Cloudflare cuida do TLS).
+const SECURITY_HEADERS: Record<string, string> = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy":
+    "camera=(self), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "X-DNS-Prefetch-Control": "on",
+};
+
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  // 'unsafe-inline' e 'unsafe-eval' necessários para React SSR streaming e Vite dev.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.lovable.dev https://*.lovable.app https://*.supabase.co",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "connect-src 'self' https: wss: blob:",
+  "frame-ancestors 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "worker-src 'self' blob:",
+].join("; ");
+
+const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
+  const response = await next();
+  const res = response as unknown as Response;
+  try {
+    if (res && typeof res === "object" && "headers" in res && res.headers && typeof (res.headers as any).set === "function") {
+      const ct = res.headers.get?.("content-type") ?? "";
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+        if (!res.headers.get(k)) res.headers.set(k, v);
+      }
+      // CSP apenas em respostas HTML para não impactar APIs/assets.
+      if (ct.includes("text/html") && !res.headers.get("Content-Security-Policy")) {
+        res.headers.set("Content-Security-Policy", CSP_DIRECTIVES);
+      }
+    }
+  } catch {
+    // nunca deixar a middleware quebrar a resposta
+  }
+  return response;
+});
+
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware],
+  requestMiddleware: [errorMiddleware, securityHeadersMiddleware],
 }));
