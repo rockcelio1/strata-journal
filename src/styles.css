@@ -6,6 +6,7 @@
 @import "@fontsource/instrument-serif/400.css";
 @import "@fontsource/instrument-serif/400-italic.css";
 @import "./components/button-effects/button-effects.css";
+@import "./components/loading/loading.css";
 
 @custom-variant dark (&:is(.dark *));
 
