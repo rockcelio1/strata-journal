@@ -696,7 +696,13 @@ function RdoDetailPage() {
                         <Badge variant="outline" className={`text-[9px] px-1 py-0 ${provColor}`}>{provLabel}</Badge>
                         <span className="text-[10px] text-muted-foreground tabular-nums">{fmtSize(a.tamanho_bytes)}</span>
                       </div>
-                      <div className="text-xs font-medium truncate" title={a.nome}>{a.nome}</div>
+                      {isImg ? (
+                        <div className="text-xs text-foreground min-h-[1rem]" title={a.legenda ?? ""}>
+                          {a.legenda?.trim() ? a.legenda : <span className="italic text-muted-foreground">Sem descrição</span>}
+                        </div>
+                      ) : (
+                        <div className="text-xs font-medium truncate" title={a.nome}>{a.nome}</div>
+                      )}
                       <div className="text-[10px] text-muted-foreground">
                         {new Date(a.created_at).toLocaleDateString("pt-BR")} · {a.autor?.nome ?? "—"}
                       </div>
@@ -725,16 +731,19 @@ function RdoDetailPage() {
                         >
                           <Download className="h-3 w-3" /> Baixar
                         </a>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Remover "${a.nome}" do ${provLabel}?`)) removerAnx.mutate(a.id);
-                          }}
-                          className="text-muted-foreground hover:text-destructive inline-flex items-center gap-1 text-[11px]"
-                          aria-label="Remover anexo"
-                        >
-                          <Trash2 className="h-3 w-3" /> Remover
-                        </button>
+                        {!isImg && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Remover "${a.nome}" do ${provLabel}?`)) removerAnx.mutate(a.id);
+                            }}
+                            className="text-muted-foreground hover:text-destructive inline-flex items-center gap-1 text-[11px]"
+                            aria-label="Remover anexo"
+                          >
+                            <Trash2 className="h-3 w-3" /> Remover
+                          </button>
+                        )}
                       </div>
+
                     </div>
                   </li>
                 );
