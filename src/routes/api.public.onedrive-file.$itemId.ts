@@ -90,6 +90,7 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         const sig = url.searchParams.get("sig") || "";
         const name = cleanFilename(url.searchParams.get("name"));
         const empresaId = url.searchParams.get("emp") || null;
+        const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
         const thumbRaw = url.searchParams.get("thumb");
         const thumbSize = thumbRaw === "small" || thumbRaw === "medium" || thumbRaw === "large" ? thumbRaw : null;
 
@@ -99,7 +100,10 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         }
 
         const rule = await getCacheRule(thumbSize);
-        const cacheControl = thumbSize
+        const isPdfRequest = !thumbSize && (mimeType.toLowerCase().includes("pdf") || name.toLowerCase().endsWith(".pdf"));
+        const cacheControl = isPdfRequest
+          ? "private, max-age=300"
+          : thumbSize
           ? `public, max-age=${rule.max_age_seconds}, stale-while-revalidate=${rule.swr_seconds}`
           : `private, max-age=${Math.min(rule.max_age_seconds, 3600)}, stale-while-revalidate=${Math.min(rule.swr_seconds, 86400)}`;
 
@@ -174,9 +178,11 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
         }
 
         const headers = new Headers();
-        headers.set("Content-Type", upstream.headers.get("content-type") || mimeType);
+        const upstreamContentType = upstream.headers.get("content-type") || mimeType;
+        const isPdfResponse = isPdfRequest || upstreamContentType.toLowerCase().includes("pdf");
+        headers.set("Content-Type", isPdfResponse ? "application/pdf" : upstreamContentType);
         headers.set("Cache-Control", cacheControl);
-        headers.set("Content-Disposition", `inline; filename="${asciiFilename(name)}"; filename*=UTF-8''${encodeURIComponent(name)}`);
+        headers.set("Content-Disposition", `${disposition}; filename="${asciiFilename(name)}"; filename*=UTF-8''${encodeURIComponent(name)}`);
         headers.set("X-Content-Type-Options", "nosniff");
         headers.set("X-Cache", thumbSize ? "MISS" : "BYPASS");
         if (thumbSize) headers.set("X-Cache-Size", thumbSize);
