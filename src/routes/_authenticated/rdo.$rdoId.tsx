@@ -330,7 +330,31 @@ function RdoDetailPage() {
             {r.obras?.nome} · {new Date(r.data).toLocaleDateString("pt-BR")} · por {r.autor?.nome}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          {(() => {
+            const logoUrl = (me as any)?.empresa?.logo_url as string | undefined;
+            const empresaNome = (me as any)?.empresa?.nome ?? "Empresa";
+            return (
+              <div
+                title="Pré-visualização do cabeçalho do PDF"
+                className="hidden sm:flex items-center gap-2 border border-border rounded-md bg-white px-2 py-1 shadow-sm"
+              >
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={`Logo ${empresaNome}`}
+                    className="h-8 w-auto max-w-[80px] object-contain"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                    Sem logo — cadastre em Empresa
+                  </span>
+                )}
+                <span className="text-xs font-medium text-foreground max-w-[140px] truncate">{empresaNome}</span>
+              </div>
+            );
+          })()}
           <Button variant="outline" onClick={baixarPdf}><Download className="h-4 w-4 mr-1" />PDF</Button>
           <Button variant="outline" onClick={baixarExcel}><Download className="h-4 w-4 mr-1" />Excel</Button>
           {r.status === "rascunho" && isAuthor && (
