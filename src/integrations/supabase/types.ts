@@ -1925,30 +1925,33 @@ export type Database = {
           created_at: string
           empresa_id: string | null
           id: string
+          ip_hash: string | null
           request_count: number
           route: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           window_start: string
         }
         Insert: {
           created_at?: string
           empresa_id?: string | null
           id?: string
+          ip_hash?: string | null
           request_count?: number
           route: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           window_start?: string
         }
         Update: {
           created_at?: string
           empresa_id?: string | null
           id?: string
+          ip_hash?: string | null
           request_count?: number
           route?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           window_start?: string
         }
         Relationships: [
@@ -3228,6 +3231,20 @@ export type Database = {
           limit_value: number
           remaining: number
           used: number
+        }[]
+      }
+      check_ip_rate_limit: {
+        Args: {
+          _ip_hash: string
+          _max_requests?: number
+          _route: string
+          _window_seconds?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          limit_value: number
+          reset_at: string
         }[]
       }
       check_rate_limit: {
