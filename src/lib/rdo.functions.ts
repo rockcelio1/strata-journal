@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 const climaEnum = z.enum(["ensolarado", "nublado", "chuvoso", "chuva_forte", "impraticavel"]).nullable().optional();
 
@@ -152,6 +153,8 @@ export const createRdo = createServerFn({ method: "POST" })
     return data;
   })
   .handler(async ({ context, data }) => {
+    // Rate limit: no máx. 20 criações de RDO por minuto por usuário.
+    await checkRateLimit(context.supabase, "createRdo", 20, 60);
     const sanitize: SanitizeResult<any> | undefined = (data as any).__sanitize;
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
@@ -231,6 +234,7 @@ export const submitRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await checkRateLimit(context.supabase, "submitRdo", 30, 60);
     const { error } = await context.supabase.from("rdos").update({ status: "enviado", enviado_em: new Date().toISOString() }).eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -388,6 +392,8 @@ export const registrarAnexo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    // Rate limit generoso para uploads (canteiro faz muitos anexos por RDO)
+    await checkRateLimit(context.supabase, "registrarAnexo", 120, 60);
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
     const hint = `${data.storage_path ?? ""} ${data.nome ?? ""}`.toLowerCase();
