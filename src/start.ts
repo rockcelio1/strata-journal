@@ -41,6 +41,8 @@ const CSP_DIRECTIVES = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
   "connect-src 'self' https: wss: blob:",
+  "child-src 'self' blob:",
+  "frame-src 'self' blob: https:",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
