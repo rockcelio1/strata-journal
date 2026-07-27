@@ -86,6 +86,7 @@ export const Route = createFileRoute("/api/public/bootstrap-master")({
         const empresaId = profile?.empresa_id ?? null;
 
         // 4) Garante role master (idempotente).
+        if (!empresaId) return json(500, { error: "empresa_missing_for_profile" });
         const { error: roleErr } = await supabaseAdmin
           .from("user_roles")
           .upsert(
