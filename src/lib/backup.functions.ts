@@ -288,3 +288,423 @@ export const importBackup = createServerFn({ method: "POST" })
 
     return { ok: true, report, createdUsers };
   });
+
+// ======================================================================
+// Buckets do Supabase disponíveis para inclusão no backup.
+// ======================================================================
+export const BACKUP_BUCKETS = [
+  { key: "rdo-anexos", label: "Anexos de RDO" },
+  { key: "empresa-logos", label: "Logotipos da empresa" },
+  { key: "obra-fotos", label: "Fotos de obras" },
+] as const;
+
+export type BackupBucketKey = (typeof BACKUP_BUCKETS)[number]["key"];
+
+async function listAllBucketObjects(supabaseAdmin: any, bucket: string, prefix = "") {
+  // Lista recursivamente todos os objetos de um bucket.
+  const out: { path: string; size: number; updated_at?: string }[] = [];
+  const stack: string[] = [prefix];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    let page = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { data, error } = await supabaseAdmin.storage
+        .from(bucket)
+        .list(cur, { limit: 1000, offset: page * 1000, sortBy: { column: "name", order: "asc" } });
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      for (const item of data) {
+        const full = cur ? `${cur}/${item.name}` : item.name;
+        if (item.id === null || item.metadata === null) {
+          // Pasta
+          stack.push(full);
+        } else {
+          out.push({
+            path: full,
+            size: (item.metadata?.size as number) ?? 0,
+            updated_at: item.updated_at,
+          });
+        }
+      }
+      if (data.length < 1000) break;
+      page++;
+    }
+  }
+  return out;
+}
+
+// Retorna manifest (lista de arquivos) por bucket selecionado — usado para dry-run e para
+// exibir contagem antes/depois do zip do lado cliente.
+export const listBucketsManifest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { buckets: string[] }) =>
+    z.object({ buckets: z.array(z.string()).min(1) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const result: Record<string, { count: number; total_bytes: number; files: { path: string; size: number }[] }> = {};
+    for (const b of data.buckets) {
+      try {
+        // Escopa por empresa quando o bucket segue convenção <empresa_id>/...
+        const prefix = ["rdo-anexos", "empresa-logos", "obra-fotos"].includes(b) ? empresaId : "";
+        const files = await listAllBucketObjects(supabaseAdmin, b, prefix);
+        result[b] = {
+          count: files.length,
+          total_bytes: files.reduce((s, f) => s + f.size, 0),
+          files: files.map((f) => ({ path: f.path, size: f.size })),
+        };
+      } catch (e: any) {
+        result[b] = { count: 0, total_bytes: 0, files: [] };
+        (result[b] as any).error = e.message ?? String(e);
+      }
+    }
+    return result;
+  });
+
+// Gera URLs assinadas em lote para o cliente baixar os arquivos e montar o .zip.
+export const signBucketPaths = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { bucket: string; paths: string[]; expiresIn?: number }) =>
+    z.object({
+      bucket: z.string(),
+      paths: z.array(z.string()).min(1).max(500),
+      expiresIn: z.number().int().min(60).max(3600).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from(data.bucket)
+      .createSignedUrls(data.paths, data.expiresIn ?? 600);
+    if (error) throw error;
+    return signed?.map((s: any) => ({ path: s.path, url: s.signedUrl, error: s.error })) ?? [];
+  });
+
+// ======================================================================
+// Dry-run (pré-visualização) de restauração.
+// Valida: presença dos grupos, esquema mínimo, empresa_id, dependências (FK),
+// conflitos com dados existentes e permissões (RLS) — sem tocar em nada.
+// ======================================================================
+export const dryRunRestore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: {
+      payload: { meta: any; tables: Record<string, any[]>; auth_users?: any[]; buckets?: Record<string, { count: number }> };
+      groups: string[];
+      buckets?: string[];
+      mode: "merge" | "replace";
+    }) =>
+      z.object({
+        payload: z.object({
+          meta: z.any(),
+          tables: z.record(z.string(), z.array(z.any())),
+          auth_users: z.array(z.any()).optional(),
+          buckets: z.record(z.string(), z.any()).optional(),
+        }),
+        groups: z.array(z.string()).min(1),
+        buckets: z.array(z.string()).optional(),
+        mode: z.enum(["merge", "replace"]),
+      }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const findings: { severity: "info" | "warn" | "error"; table?: string; group?: string; bucket?: string; message: string }[] = [];
+    const tableSummary: Record<string, { in_file: number; belongs_to_empresa: number; existing: number; will_insert: number; will_update: number; will_delete: number }> = {};
+
+    const selected = BACKUP_GROUPS.filter((g) => data.groups.includes(g.key));
+
+    // Grupos ausentes ou desconhecidos
+    for (const g of data.groups) {
+      if (!BACKUP_GROUPS.find((x) => x.key === g)) {
+        findings.push({ severity: "warn", group: g, message: `Grupo "${g}" desconhecido — será ignorado.` });
+      }
+    }
+
+    for (const group of selected) {
+      for (const table of group.tables) {
+        const rows: any[] = data.payload.tables?.[table] ?? [];
+        const inFile = rows.length;
+        const belongs = rows.filter((r) => (table === "empresas" ? r.id === empresaId : r.empresa_id === empresaId)).length;
+        const mismatched = inFile - belongs;
+        if (mismatched > 0) {
+          findings.push({
+            severity: "warn",
+            table,
+            message: `${mismatched} linha(s) de "${table}" pertencem a outra empresa — serão ignoradas.`,
+          });
+        }
+
+        // Contagem atual da tabela na empresa
+        let existing = 0;
+        try {
+          const q: any = (supabaseAdmin as any).from(table).select("id", { count: "exact", head: true });
+          const { count, error } = table === "empresas" ? await q.eq("id", empresaId) : await q.eq("empresa_id", empresaId);
+          if (error) throw error;
+          existing = count ?? 0;
+        } catch (e: any) {
+          findings.push({ severity: "error", table, message: `Não foi possível ler a tabela: ${e.message ?? e}` });
+        }
+
+        // Conflitos por id
+        const ids = rows.filter((r) => r.id).map((r) => r.id);
+        let conflicts = 0;
+        if (ids.length > 0) {
+          const CHUNK = 200;
+          for (let i = 0; i < ids.length; i += CHUNK) {
+            const slice = ids.slice(i, i + CHUNK);
+            const { data: existRows } = await (supabaseAdmin as any)
+              .from(table)
+              .select("id")
+              .in("id", slice);
+            conflicts += existRows?.length ?? 0;
+          }
+        }
+
+        const willDelete = data.mode === "replace" && table !== "empresas" ? existing : 0;
+        const willInsert = data.mode === "replace" ? belongs : Math.max(0, belongs - conflicts);
+        const willUpdate = data.mode === "replace" ? 0 : conflicts;
+
+        tableSummary[table] = {
+          in_file: inFile,
+          belongs_to_empresa: belongs,
+          existing,
+          will_insert: willInsert,
+          will_update: willUpdate,
+          will_delete: willDelete,
+        };
+      }
+    }
+
+    // Dependências entre grupos: se marcou RDOs mas não marcou "obras", avisa
+    if (data.groups.includes("rdos") && !data.groups.includes("obras")) {
+      findings.push({
+        severity: "warn",
+        message: "RDOs referenciam 'obras'. Sem incluir o grupo Obras, algumas linhas podem falhar por FK.",
+      });
+    }
+    if (data.groups.includes("usuarios") && !data.groups.includes("empresa")) {
+      findings.push({
+        severity: "info",
+        message: "Perfis referenciam 'empresa'. Marque Empresa para restaurar cabeçalho antes dos usuários.",
+      });
+    }
+
+    // RLS check simples: tenta um SELECT em cada tabela com o próprio usuário
+    for (const group of selected) {
+      for (const table of group.tables) {
+        const { error } = await (context.supabase as any).from(table).select("id").limit(1);
+        if (error && /permission|policy|rls/i.test(error.message ?? "")) {
+          findings.push({ severity: "error", table, message: `RLS bloqueia acesso a "${table}" para o usuário atual.` });
+        }
+      }
+    }
+
+    // Buckets (contagem só)
+    const bucketSummary: Record<string, { in_file: number; existing: number }> = {};
+    if (data.buckets?.length) {
+      for (const b of data.buckets) {
+        const inFile = (data.payload.buckets?.[b]?.count as number) ?? 0;
+        let existing = 0;
+        try {
+          const prefix = ["rdo-anexos", "empresa-logos", "obra-fotos"].includes(b) ? empresaId : "";
+          const files = await listAllBucketObjects(supabaseAdmin, b, prefix);
+          existing = files.length;
+        } catch (e: any) {
+          findings.push({ severity: "error", bucket: b, message: `Bucket "${b}" indisponível: ${e.message ?? e}` });
+        }
+        bucketSummary[b] = { in_file: inFile, existing };
+      }
+    }
+
+    const errorCount = findings.filter((f) => f.severity === "error").length;
+    const warnCount = findings.filter((f) => f.severity === "warn").length;
+    return {
+      ok: errorCount === 0,
+      empresa_id: empresaId,
+      mode: data.mode,
+      table_summary: tableSummary,
+      bucket_summary: bucketSummary,
+      findings,
+      counts: { errors: errorCount, warnings: warnCount, groups: selected.length },
+    };
+  });
+
+// ======================================================================
+// Histórico / auditoria
+// ======================================================================
+export const logBackupHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    operacao: "backup" | "restore" | "dry_run";
+    origem?: "manual" | "agendado";
+    schedule_id?: string;
+    grupos: string[];
+    buckets?: string[];
+    modo_restore?: "merge" | "replace";
+    criptografado?: boolean;
+    contagens: Record<string, unknown>;
+    validacoes?: Record<string, unknown>;
+    resultado: "sucesso" | "erro" | "parcial" | "pendente";
+    mensagem?: string;
+    arquivo_path?: string;
+    arquivo_tamanho_bytes?: number;
+    duracao_ms?: number;
+  }) => z.object({
+    operacao: z.enum(["backup","restore","dry_run"]),
+    origem: z.enum(["manual","agendado"]).optional(),
+    schedule_id: z.string().uuid().optional(),
+    grupos: z.array(z.string()),
+    buckets: z.array(z.string()).optional(),
+    modo_restore: z.enum(["merge","replace"]).optional(),
+    criptografado: z.boolean().optional(),
+    contagens: z.record(z.string(), z.any()),
+    validacoes: z.record(z.string(), z.any()).optional(),
+    resultado: z.enum(["sucesso","erro","parcial","pendente"]),
+    mensagem: z.string().optional(),
+    arquivo_path: z.string().optional(),
+    arquivo_tamanho_bytes: z.number().int().optional(),
+    duracao_ms: z.number().int().optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { data: prof } = await context.supabase.from("profiles").select("email").eq("id", context.userId).maybeSingle();
+    const { data: row, error } = await context.supabase.from("backup_history").insert({
+      empresa_id: empresaId,
+      autor_id: context.userId,
+      autor_email: prof?.email ?? null,
+      operacao: data.operacao,
+      origem: data.origem ?? "manual",
+      schedule_id: data.schedule_id ?? null,
+      grupos_selecionados: data.grupos,
+      buckets_selecionados: data.buckets ?? [],
+      modo_restore: data.modo_restore ?? null,
+      criptografado: !!data.criptografado,
+      contagens: data.contagens,
+      validacoes: data.validacoes ?? null,
+      resultado: data.resultado,
+      mensagem: data.mensagem ?? null,
+      arquivo_path: data.arquivo_path ?? null,
+      arquivo_tamanho_bytes: data.arquivo_tamanho_bytes ?? null,
+      duracao_ms: data.duracao_ms ?? null,
+    }).select("id").maybeSingle();
+    if (error) throw error;
+    return { id: row?.id };
+  });
+
+export const listBackupHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("backup_history")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return data ?? [];
+  });
+
+// ======================================================================
+// Agendamentos
+// ======================================================================
+export const listBackupSchedules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase.from("backup_schedules").select("*").order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  });
+
+export const upsertBackupSchedule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: {
+    id?: string;
+    nome: string;
+    frequencia: "diario" | "semanal" | "mensal";
+    hora_utc: number;
+    dia_semana?: number | null;
+    dia_mes?: number | null;
+    grupos: string[];
+    buckets: string[];
+    retencao_dias: number;
+    ativo: boolean;
+  }) => z.object({
+    id: z.string().uuid().optional(),
+    nome: z.string().trim().min(1).max(120),
+    frequencia: z.enum(["diario","semanal","mensal"]),
+    hora_utc: z.number().int().min(0).max(23),
+    dia_semana: z.number().int().min(0).max(6).nullable().optional(),
+    dia_mes: z.number().int().min(1).max(28).nullable().optional(),
+    grupos: z.array(z.string()).min(1),
+    buckets: z.array(z.string()),
+    retencao_dias: z.number().int().min(1).max(365),
+    ativo: z.boolean(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const row = {
+      empresa_id: empresaId,
+      nome: data.nome,
+      frequencia: data.frequencia,
+      hora_utc: data.hora_utc,
+      dia_semana: data.dia_semana ?? null,
+      dia_mes: data.dia_mes ?? null,
+      grupos: data.grupos,
+      buckets: data.buckets,
+      retencao_dias: data.retencao_dias,
+      ativo: data.ativo,
+      created_by: context.userId,
+    };
+    if (data.id) {
+      const { error } = await context.supabase.from("backup_schedules").update(row).eq("id", data.id);
+      if (error) throw error;
+      return { id: data.id };
+    }
+    const { data: ins, error } = await context.supabase.from("backup_schedules").insert(row).select("id").maybeSingle();
+    if (error) throw error;
+    return { id: ins?.id };
+  });
+
+export const deleteBackupSchedule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("backup_schedules").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+// Upload de arquivo de backup no bucket system-backups (usado no botão "Salvar no servidor").
+export const uploadBackupArtifact = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { fileNameBase: string; sizeBytes: number; contentType?: string }) =>
+    z.object({
+      fileNameBase: z.string().min(1).max(120),
+      sizeBytes: z.number().int().min(1),
+      contentType: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const path = `${empresaId}/${new Date().toISOString().slice(0, 10)}/${Date.now()}-${data.fileNameBase}`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("system-backups")
+      .createSignedUploadUrl(path);
+    if (error) throw error;
+    return { path, uploadUrl: signed.signedUrl, token: signed.token };
+  });
+

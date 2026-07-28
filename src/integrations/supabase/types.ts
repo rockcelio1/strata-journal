@@ -96,6 +96,80 @@ export type Database = {
           },
         ]
       }
+      backup_history: {
+        Row: {
+          arquivo_path: string | null
+          arquivo_tamanho_bytes: number | null
+          autor_email: string | null
+          autor_id: string | null
+          buckets_selecionados: string[]
+          contagens: Json
+          created_at: string
+          criptografado: boolean
+          duracao_ms: number | null
+          empresa_id: string
+          grupos_selecionados: string[]
+          id: string
+          mensagem: string | null
+          modo_restore: string | null
+          operacao: string
+          origem: string
+          resultado: string
+          schedule_id: string | null
+          validacoes: Json | null
+        }
+        Insert: {
+          arquivo_path?: string | null
+          arquivo_tamanho_bytes?: number | null
+          autor_email?: string | null
+          autor_id?: string | null
+          buckets_selecionados?: string[]
+          contagens?: Json
+          created_at?: string
+          criptografado?: boolean
+          duracao_ms?: number | null
+          empresa_id: string
+          grupos_selecionados?: string[]
+          id?: string
+          mensagem?: string | null
+          modo_restore?: string | null
+          operacao: string
+          origem?: string
+          resultado: string
+          schedule_id?: string | null
+          validacoes?: Json | null
+        }
+        Update: {
+          arquivo_path?: string | null
+          arquivo_tamanho_bytes?: number | null
+          autor_email?: string | null
+          autor_id?: string | null
+          buckets_selecionados?: string[]
+          contagens?: Json
+          created_at?: string
+          criptografado?: boolean
+          duracao_ms?: number | null
+          empresa_id?: string
+          grupos_selecionados?: string[]
+          id?: string
+          mensagem?: string | null
+          modo_restore?: string | null
+          operacao?: string
+          origem?: string
+          resultado?: string
+          schedule_id?: string | null
+          validacoes?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_history_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backup_restore_tests: {
         Row: {
           created_at: string
@@ -136,6 +210,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "backup_restore_tests_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_schedules: {
+        Row: {
+          ativo: boolean
+          buckets: string[]
+          created_at: string
+          created_by: string | null
+          dia_mes: number | null
+          dia_semana: number | null
+          empresa_id: string
+          frequencia: string
+          grupos: string[]
+          hora_utc: number
+          id: string
+          nome: string
+          proxima_execucao: string | null
+          retencao_dias: number
+          ultima_execucao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          buckets?: string[]
+          created_at?: string
+          created_by?: string | null
+          dia_mes?: number | null
+          dia_semana?: number | null
+          empresa_id: string
+          frequencia: string
+          grupos?: string[]
+          hora_utc?: number
+          id?: string
+          nome: string
+          proxima_execucao?: string | null
+          retencao_dias?: number
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          buckets?: string[]
+          created_at?: string
+          created_by?: string | null
+          dia_mes?: number | null
+          dia_semana?: number | null
+          empresa_id?: string
+          frequencia?: string
+          grupos?: string[]
+          hora_utc?: number
+          id?: string
+          nome?: string
+          proxima_execucao?: string | null
+          retencao_dias?: number
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_schedules_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -3266,6 +3405,7 @@ export type Database = {
           reset_at: string
         }[]
       }
+      cleanup_old_backups: { Args: never; Returns: number }
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: {
