@@ -768,7 +768,7 @@ export const estimateBackup = createServerFn({ method: "POST" })
     let totalTableBytes = 0;
     let totalTableRows = 0;
     if (tables.length > 0) {
-      const { data: est, error } = await (supabaseAdmin as any).rpc("backup_estimate", {
+      const { data: est, error } = await (supabaseAdmin as any).rpc("backup_estimate_admin", {
         _empresa: empresaId, _tables: tables, _since: since,
       });
       if (error) throw error;
