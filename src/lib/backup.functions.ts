@@ -260,7 +260,7 @@ export const importBackup = createServerFn({ method: "POST" })
         try {
           let deleted = 0;
           if (data.mode === "replace" && table !== "empresas") {
-            const { count, error } = await supabaseAdmin
+            const { count, error } = await (supabaseAdmin as any)
               .from(table)
               .delete({ count: "exact" })
               .eq("empresa_id", empresaId);
@@ -274,7 +274,7 @@ export const importBackup = createServerFn({ method: "POST" })
             const chunkSize = 500;
             for (let i = 0; i < rows.length; i += chunkSize) {
               const chunk = rows.slice(i, i + chunkSize);
-              const { error } = await supabaseAdmin.from(table).upsert(chunk, { onConflict: "id" });
+              const { error } = await (supabaseAdmin as any).from(table).upsert(chunk, { onConflict: "id" });
               if (error) throw error;
               inserted += chunk.length;
             }
