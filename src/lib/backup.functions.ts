@@ -723,3 +723,139 @@ export const uploadBackupArtifact = createServerFn({ method: "POST" })
     return { path, uploadUrl: signed.signedUrl, token: signed.token };
   });
 
+// ======================================================================
+// Estimativa de tamanho por grupo/bucket + delta desde o último backup
+// ======================================================================
+export const estimateBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { groups: string[]; buckets?: string[]; tipo?: "full" | "incremental" }) =>
+    z.object({
+      groups: z.array(z.string()),
+      buckets: z.array(z.string()).optional(),
+      tipo: z.enum(["full", "incremental"]).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: last } = await (supabaseAdmin as any)
+      .from("backup_history")
+      .select("id, created_at, arquivo_tamanho_bytes, tipo_backup, contagens")
+      .eq("empresa_id", empresaId)
+      .eq("operacao", "backup")
+      .eq("resultado", "sucesso")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const tipo = data.tipo ?? "full";
+    const since = tipo === "incremental" ? (last?.created_at ?? null) : null;
+
+    const selectedGroups = BACKUP_GROUPS.filter((g) => data.groups.includes(g.key));
+    const tables = selectedGroups.flatMap((g) => g.tables);
+
+    const groupSummary: Record<string, { rows: number; bytes: number; tables: Record<string, { rows: number; bytes: number }> }> = {};
+    for (const g of selectedGroups) groupSummary[g.key] = { rows: 0, bytes: 0, tables: {} };
+
+    let totalTableBytes = 0;
+    let totalTableRows = 0;
+    if (tables.length > 0) {
+      const { data: est, error } = await (supabaseAdmin as any).rpc("backup_estimate", {
+        _empresa: empresaId, _tables: tables, _since: since,
+      });
+      if (error) throw error;
+      const map: Record<string, { rows: number; bytes: number }> = {};
+      for (const row of est ?? []) {
+        map[row.table_name] = { rows: Number(row.row_count ?? 0), bytes: Number(row.bytes ?? 0) };
+        totalTableRows += Number(row.row_count ?? 0);
+        totalTableBytes += Number(row.bytes ?? 0);
+      }
+      for (const g of selectedGroups) {
+        for (const t of g.tables) {
+          const e = map[t] ?? { rows: 0, bytes: 0 };
+          groupSummary[g.key].tables[t] = e;
+          groupSummary[g.key].rows += e.rows;
+          groupSummary[g.key].bytes += e.bytes;
+        }
+      }
+    }
+
+    const bucketSummary: Record<string, { files: number; bytes: number }> = {};
+    let totalBucketFiles = 0;
+    let totalBucketBytes = 0;
+    for (const b of data.buckets ?? []) {
+      try {
+        const prefix = ["rdo-anexos", "empresa-logos", "obra-fotos"].includes(b) ? empresaId : "";
+        const files = await listAllBucketObjects(supabaseAdmin, b, prefix);
+        const filtered = since ? files.filter((f) => (f.updated_at ?? "") >= since) : files;
+        const bytes = filtered.reduce((s, f) => s + f.size, 0);
+        bucketSummary[b] = { files: filtered.length, bytes };
+        totalBucketFiles += filtered.length;
+        totalBucketBytes += bytes;
+      } catch { bucketSummary[b] = { files: 0, bytes: 0 }; }
+    }
+
+    const totalBytes = totalTableBytes + totalBucketBytes;
+    const lastBytes = Number(last?.arquivo_tamanho_bytes ?? 0);
+
+    return {
+      tipo, since,
+      last_backup: last ? { created_at: last.created_at, size_bytes: lastBytes, tipo_backup: last.tipo_backup } : null,
+      groups: groupSummary,
+      buckets: bucketSummary,
+      totals: {
+        rows: totalTableRows,
+        table_bytes: totalTableBytes,
+        bucket_files: totalBucketFiles,
+        bucket_bytes: totalBucketBytes,
+        total_bytes: totalBytes,
+      },
+      delta_bytes: totalBytes - lastBytes,
+      alerta_100mb: totalBytes >= 100 * 1024 * 1024,
+    };
+  });
+
+// ======================================================================
+// Backups armazenados no servidor (bucket system-backups)
+// ======================================================================
+export const listServerBackups = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const files = await listAllBucketObjects(supabaseAdmin, "system-backups", empresaId);
+    files.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    return files.slice(0, 200);
+  });
+
+export const downloadServerBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    if (!data.path.startsWith(`${empresaId}/`)) throw new Error("Acesso negado.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("system-backups").createSignedUrl(data.path, 600);
+    if (error) throw error;
+    return { url: signed.signedUrl };
+  });
+
+export const deleteServerBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    if (!data.path.startsWith(`${empresaId}/`)) throw new Error("Acesso negado.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.storage.from("system-backups").remove([data.path]);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
