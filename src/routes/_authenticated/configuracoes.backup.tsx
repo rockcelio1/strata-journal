@@ -55,14 +55,16 @@ function BackupPage() {
       </div>
 
       <Tabs defaultValue="exportar" className="w-full">
-        <TabsList className="grid grid-cols-4 max-w-2xl">
+        <TabsList className="grid grid-cols-5 max-w-3xl">
           <TabsTrigger value="exportar"><Download className="h-4 w-4 mr-1" />Gerar</TabsTrigger>
           <TabsTrigger value="restaurar"><Upload className="h-4 w-4 mr-1" />Restaurar</TabsTrigger>
+          <TabsTrigger value="servidor"><Server className="h-4 w-4 mr-1" />No servidor</TabsTrigger>
           <TabsTrigger value="agendar"><CalendarClock className="h-4 w-4 mr-1" />Agendar</TabsTrigger>
           <TabsTrigger value="historico"><History className="h-4 w-4 mr-1" />Histórico</TabsTrigger>
         </TabsList>
         <TabsContent value="exportar" className="mt-4"><ExportSection /></TabsContent>
         <TabsContent value="restaurar" className="mt-4"><RestoreSection /></TabsContent>
+        <TabsContent value="servidor" className="mt-4"><ServerSection /></TabsContent>
         <TabsContent value="agendar" className="mt-4"><ScheduleSection /></TabsContent>
         <TabsContent value="historico" className="mt-4"><HistorySection /></TabsContent>
       </Tabs>
