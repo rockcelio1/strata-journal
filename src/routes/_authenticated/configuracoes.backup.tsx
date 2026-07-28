@@ -81,19 +81,38 @@ function ExportSection() {
   const manifestFn = useServerFn(listBucketsManifest);
   const signFn = useServerFn(signBucketPaths);
   const logFn = useServerFn(logBackupHistory);
+  const estimateFn = useServerFn(estimateBackup);
+  const uploadFn = useServerFn(uploadBackupArtifact);
   const { data: groups = [] } = useQuery({ queryKey: ["backup-groups"], queryFn: () => listFn() });
 
   const [groupSel, setGroupSel] = useState<Record<string, boolean>>({});
   const [bucketSel, setBucketSel] = useState<Record<string, boolean>>({});
+  const [tipo, setTipo] = useState<"full" | "incremental">("full");
   const [includeAuthUsers, setIncludeAuthUsers] = useState(true);
   const [encrypt, setEncrypt] = useState(true);
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [saveToServer, setSaveToServer] = useState(true);
   const [progress, setProgress] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const selectedGroups = Object.keys(groupSel).filter((k) => groupSel[k]);
   const selectedBuckets = Object.keys(bucketSel).filter((k) => bucketSel[k]);
+
+  const estimate = useQuery({
+    queryKey: ["backup-estimate", selectedGroups.sort().join(","), selectedBuckets.sort().join(","), tipo],
+    queryFn: () => estimateFn({ data: { groups: selectedGroups, buckets: selectedBuckets, tipo } }),
+    enabled: selectedGroups.length > 0 || selectedBuckets.length > 0,
+    staleTime: 30_000,
+  });
+
+  const est: any = estimate.data;
+  const groupBytes = (key: string) => est?.groups?.[key]?.bytes ?? 0;
+  const groupRows = (key: string) => est?.groups?.[key]?.rows ?? 0;
+  const bucketBytes = (key: string) => est?.buckets?.[key]?.bytes ?? 0;
+  const bucketFiles = (key: string) => est?.buckets?.[key]?.files ?? 0;
+  const totalBytes = est?.totals?.total_bytes ?? 0;
+  const delta = est?.delta_bytes ?? 0;
 
   async function handleGenerate() {
     if (!selectedGroups.length) { notify.error("Selecione ao menos um grupo."); return; }
@@ -104,8 +123,8 @@ function ExportSection() {
     setBusy(true);
     const started = Date.now();
     try {
-      setProgress("Exportando dados das tabelas...");
-      const result: any = await exportFn({ data: { groups: selectedGroups, includeAuthUsers } });
+      setProgress("Exportando dados...");
+      const result: any = await exportFn({ data: { groups: selectedGroups, includeAuthUsers, tipo, since: est?.since ?? null } });
 
       const zip = new JSZip();
       zip.file("backup.json", JSON.stringify(result, null, 2));
@@ -114,23 +133,22 @@ function ExportSection() {
       for (const bucket of selectedBuckets) {
         setProgress(`Listando bucket "${bucket}"...`);
         const manifest: any = await manifestFn({ data: { buckets: [bucket] } });
-        const files: { path: string; size: number }[] = manifest?.[bucket]?.files ?? [];
+        const filesAll: { path: string; size: number; updated_at?: string }[] = manifest?.[bucket]?.files ?? [];
+        const files = tipo === "incremental" && est?.since
+          ? filesAll.filter((f) => !f.updated_at || f.updated_at >= est.since)
+          : filesAll;
         const bZip = new JSZip();
         let bytes = 0;
         for (let i = 0; i < files.length; i += 100) {
           const chunk = files.slice(i, i + 100);
           setProgress(`Baixando ${bucket} (${i}/${files.length})...`);
           const signed: any = await signFn({ data: { bucket, paths: chunk.map((f) => f.path), expiresIn: 600 } });
-          await Promise.all(
-            signed.map(async (s: any) => {
-              if (!s.url) return;
-              const r = await fetch(s.url);
-              if (!r.ok) return;
-              const buf = await r.arrayBuffer();
-              bytes += buf.byteLength;
-              bZip.file(s.path, buf);
-            }),
-          );
+          await Promise.all(signed.map(async (s: any) => {
+            if (!s.url) return;
+            const r = await fetch(s.url); if (!r.ok) return;
+            const buf = await r.arrayBuffer(); bytes += buf.byteLength;
+            bZip.file(s.path, buf);
+          }));
         }
         setProgress(`Compactando ${bucket}...`);
         const bBlob = await bZip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 6 } });
@@ -138,7 +156,7 @@ function ExportSection() {
         bucketReport[bucket] = { files: files.length, bytes };
       }
 
-      setProgress("Empacotando arquivo final...");
+      setProgress("Empacotando...");
       const masterBlob = await zip.generateAsync({ type: "blob" });
       let outBlob = masterBlob;
       let ext = "zip";
@@ -149,52 +167,95 @@ function ExportSection() {
       }
 
       const ts = new Date().toISOString().replace(/[:.]/g, "-");
-      const fname = `backup-${ts}.${ext}`;
+      const fname = `backup-${tipo}-${ts}.${ext}`;
       const url = URL.createObjectURL(outBlob);
-      const a = document.createElement("a");
-      a.href = url; a.download = fname; a.click();
+      const a = document.createElement("a"); a.href = url; a.download = fname; a.click();
       URL.revokeObjectURL(url);
+
+      let serverPath: string | undefined;
+      if (saveToServer) {
+        try {
+          setProgress("Salvando no servidor...");
+          const up: any = await uploadFn({ data: { fileNameBase: fname, sizeBytes: outBlob.size, contentType: outBlob.type } });
+          await fetch(up.uploadUrl, { method: "PUT", headers: { "Content-Type": outBlob.type || "application/octet-stream" }, body: outBlob });
+          serverPath = up.path;
+        } catch (e: any) { notify.error("Baixou local, mas falhou ao salvar no servidor: " + (e.message ?? e)); }
+      }
 
       await logFn({
         data: {
-          operacao: "backup",
-          origem: "manual",
-          grupos: selectedGroups,
-          buckets: selectedBuckets,
-          criptografado: encrypt,
-          contagens: { tables: result?.meta?.totals, buckets: bucketReport },
-          resultado: "sucesso",
-          mensagem: `Backup baixado: ${fname}`,
-          arquivo_tamanho_bytes: outBlob.size,
-          duracao_ms: Date.now() - started,
+          operacao: "backup", origem: "manual", grupos: selectedGroups, buckets: selectedBuckets,
+          criptografado: encrypt, tipo_backup: tipo, since_iso: est?.since ?? undefined,
+          contagens: { tables: result?.meta?.totals, buckets: bucketReport, total_bytes: outBlob.size },
+          resultado: "sucesso", mensagem: `Backup ${tipo} baixado${serverPath ? " e salvo no servidor" : ""}`,
+          arquivo_path: serverPath, arquivo_tamanho_bytes: outBlob.size, duracao_ms: Date.now() - started,
         },
-      });
+      } as any);
       notify.success("Backup gerado com sucesso.");
+      estimate.refetch();
     } catch (e: any) {
       notify.error(e.message ?? "Falha ao gerar backup.");
       await logFn({
         data: {
-          operacao: "backup", origem: "manual",
-          grupos: selectedGroups, buckets: selectedBuckets, criptografado: encrypt,
-          contagens: {}, resultado: "erro", mensagem: e.message ?? String(e),
-          duracao_ms: Date.now() - started,
+          operacao: "backup", origem: "manual", grupos: selectedGroups, buckets: selectedBuckets,
+          criptografado: encrypt, tipo_backup: tipo,
+          contagens: {}, resultado: "erro", mensagem: e.message ?? String(e), duracao_ms: Date.now() - started,
         },
-      }).catch(() => {});
-    } finally {
-      setBusy(false); setProgress(null);
-    }
+      } as any).catch(() => {});
+    } finally { setBusy(false); setProgress(null); }
   }
+
+  const DeltaIcon = delta > 1024 ? ArrowUpRight : delta < -1024 ? ArrowDownRight : Minus;
+  const deltaColor = delta > 1024 ? "text-emerald-600" : delta < -1024 ? "text-amber-600" : "text-muted-foreground";
 
   return (
     <div className="border border-border rounded-lg bg-card p-5 space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-medium">Gerar backup</h3>
-          <p className="text-xs text-muted-foreground">Escolha o conteúdo, criptografe com senha e baixe.</p>
+          <p className="text-xs text-muted-foreground">Escolha o conteúdo, tipo e criptografia. Tamanhos exibidos em tempo real.</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => setGroupSel(Object.fromEntries((groups as any[]).map((g) => [g.key, true])))}>Marcar tudo</Button>
           <Button size="sm" variant="ghost" onClick={() => setGroupSel({})}>Limpar</Button>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="border border-border rounded-md p-3 bg-muted/30 space-y-2">
+          <Label className="text-xs">Tipo de backup</Label>
+          <RadioGroup value={tipo} onValueChange={(v: any) => setTipo(v)} className="grid grid-cols-2 gap-2">
+            <label className="flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer bg-card">
+              <RadioGroupItem value="full" />
+              <div><div className="text-sm font-medium">Total (full)</div><div className="text-[11px] text-muted-foreground">Todos os dados.</div></div>
+            </label>
+            <label className="flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer bg-card">
+              <RadioGroupItem value="incremental" />
+              <div><div className="text-sm font-medium">Incremental</div><div className="text-[11px] text-muted-foreground">Apenas alterações desde o último backup.</div></div>
+            </label>
+          </RadioGroup>
+          {tipo === "incremental" && est?.since && (
+            <div className="text-[11px] text-muted-foreground">Desde: {new Date(est.since).toLocaleString()}</div>
+          )}
+          {tipo === "incremental" && !est?.since && (
+            <div className="text-[11px] text-amber-600">Nenhum backup anterior — usará todos os dados.</div>
+          )}
+        </div>
+
+        <div className="border border-border rounded-md p-3 bg-muted/30 space-y-1">
+          <div className="text-xs text-muted-foreground">Tamanho estimado</div>
+          <div className="text-2xl font-semibold">{formatBytes(totalBytes)}</div>
+          <div className="text-[11px] flex items-center gap-1">
+            <DeltaIcon className={`h-3 w-3 ${deltaColor}`} />
+            <span className={deltaColor}>
+              {delta === 0 ? "sem mudança" : `${delta > 0 ? "+" : ""}${formatBytes(Math.abs(delta))}`} vs último backup
+            </span>
+          </div>
+          {est?.alerta_100mb && (
+            <div className="text-[11px] flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-3 w-3" /> Ultrapassou 100 MB — recomendado backup agora.
+            </div>
+          )}
         </div>
       </div>
 
@@ -204,8 +265,15 @@ function ExportSection() {
           {(groups as any[]).map((g) => (
             <label key={g.key} className="flex items-start gap-2 border border-border rounded-md p-3 hover:bg-accent cursor-pointer">
               <Checkbox checked={!!groupSel[g.key]} onCheckedChange={() => setGroupSel((p) => ({ ...p, [g.key]: !p[g.key] }))} />
-              <div className="min-w-0">
-                <div className="text-sm font-medium">{g.label}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium truncate">{g.label}</div>
+                  {groupSel[g.key] && (
+                    <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      {groupRows(g.key)} lin · {formatBytes(groupBytes(g.key))}
+                    </div>
+                  )}
+                </div>
                 <div className="text-[11px] text-muted-foreground truncate">{g.tables.join(", ")}</div>
               </div>
             </label>
@@ -214,14 +282,16 @@ function ExportSection() {
       </div>
 
       <div>
-        <Label className="text-sm mb-2 block flex items-center gap-1"><HardDrive className="h-4 w-4" /> Arquivos (buckets do Storage)</Label>
+        <Label className="text-sm mb-2 block flex items-center gap-1"><HardDrive className="h-4 w-4" /> Arquivos (buckets)</Label>
         <div className="grid sm:grid-cols-3 gap-2">
           {BACKUP_BUCKETS.map((b) => (
             <label key={b.key} className="flex items-start gap-2 border border-border rounded-md p-3 hover:bg-accent cursor-pointer">
               <Checkbox checked={!!bucketSel[b.key]} onCheckedChange={() => setBucketSel((p) => ({ ...p, [b.key]: !p[b.key] }))} />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium">{b.label}</div>
-                <div className="text-[11px] text-muted-foreground">{b.key} · .zip separado</div>
+                {bucketSel[b.key] && (
+                  <div className="text-[11px] text-muted-foreground">{bucketFiles(b.key)} arquivos · {formatBytes(bucketBytes(b.key))}</div>
+                )}
               </div>
             </label>
           ))}
@@ -231,6 +301,11 @@ function ExportSection() {
       <label className="flex items-center gap-2 text-sm">
         <Checkbox checked={includeAuthUsers} onCheckedChange={(v) => setIncludeAuthUsers(!!v)} />
         Incluir dados de autenticação dos usuários (sem senhas)
+      </label>
+
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox checked={saveToServer} onCheckedChange={(v) => setSaveToServer(!!v)} />
+        <Server className="h-3 w-3" /> Salvar cópia no servidor (aba "No servidor")
       </label>
 
       <div className="border border-border rounded-md p-3 space-y-3 bg-muted/30">
@@ -243,18 +318,12 @@ function ExportSection() {
         {encrypt && (
           <>
             <div className="grid sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Senha (mín. 8 caracteres)</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-              </div>
-              <div>
-                <Label className="text-xs">Confirmar senha</Label>
-                <Input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" />
-              </div>
+              <div><Label className="text-xs">Senha (mín. 8 caracteres)</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" /></div>
+              <div><Label className="text-xs">Confirmar senha</Label><Input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" /></div>
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1">
               <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-              Se você perder esta senha o arquivo será irrecuperável — guarde em local seguro.
+              Guarde a senha em local seguro — sem ela o arquivo é irrecuperável.
             </p>
           </>
         )}
@@ -264,11 +333,85 @@ function ExportSection() {
 
       <Button onClick={handleGenerate} disabled={busy}>
         {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-        Gerar e baixar backup
+        Gerar backup {tipo === "incremental" ? "incremental" : "total"} ({formatBytes(totalBytes)})
       </Button>
     </div>
   );
 }
+
+// =============================================================
+// SERVIDOR — backups armazenados
+// =============================================================
+function ServerSection() {
+  const listFn = useServerFn(listServerBackups);
+  const dlFn = useServerFn(downloadServerBackup);
+  const delFn = useServerFn(deleteServerBackup);
+  const { data: files = [], isLoading, refetch } = useQuery({ queryKey: ["server-backups"], queryFn: () => listFn() });
+
+  async function download(path: string) {
+    try {
+      const r: any = await dlFn({ data: { path } });
+      window.open(r.url, "_blank");
+    } catch (e: any) { notify.error(e.message ?? "Falha ao gerar link."); }
+  }
+  async function remove(path: string) {
+    try { await delFn({ data: { path } }); refetch(); notify.success("Removido."); }
+    catch (e: any) { notify.error(e.message ?? "Falha."); }
+  }
+
+  const totalBytes = (files as any[]).reduce((s, f) => s + (f.size || 0), 0);
+
+  return (
+    <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-medium">Backups no servidor</h3>
+          <p className="text-xs text-muted-foreground">
+            Arquivos guardados no bucket privado <code>system-backups</code>. Total: {formatBytes(totalBytes)} em {(files as any[]).length} arquivo(s).
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-1" />Atualizar
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />Carregando...</div>
+      ) : (files as any[]).length === 0 ? (
+        <div className="text-center text-sm text-muted-foreground p-6 border border-dashed rounded-md">
+          Nenhum backup armazenado. Gere um backup marcando "Salvar cópia no servidor" ou crie um agendamento.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left border-b">
+                <th className="p-2">Arquivo</th><th className="p-2">Tamanho</th><th className="p-2">Data</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {(files as any[]).map((f: any) => (
+                <tr key={f.path} className="border-b hover:bg-accent/30">
+                  <td className="p-2 max-w-[420px]">
+                    <div className="font-mono text-[11px] truncate" title={f.path}>{f.path.split("/").pop()}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">{f.path}</div>
+                  </td>
+                  <td className="p-2 whitespace-nowrap">{formatBytes(f.size || 0)}</td>
+                  <td className="p-2 whitespace-nowrap">{f.updated_at ? new Date(f.updated_at).toLocaleString() : "—"}</td>
+                  <td className="p-2 text-right whitespace-nowrap">
+                    <Button size="sm" variant="ghost" onClick={() => download(f.path)}><Download className="h-3 w-3" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(f.path)}><Trash2 className="h-3 w-3" /></Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // =============================================================
 // RESTAURAR (com dry-run)
