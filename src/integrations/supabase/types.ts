@@ -116,6 +116,8 @@ export type Database = {
           origem: string
           resultado: string
           schedule_id: string | null
+          since_iso: string | null
+          tipo_backup: string | null
           validacoes: Json | null
         }
         Insert: {
@@ -137,6 +139,8 @@ export type Database = {
           origem?: string
           resultado: string
           schedule_id?: string | null
+          since_iso?: string | null
+          tipo_backup?: string | null
           validacoes?: Json | null
         }
         Update: {
@@ -158,6 +162,8 @@ export type Database = {
           origem?: string
           resultado?: string
           schedule_id?: string | null
+          since_iso?: string | null
+          tipo_backup?: string | null
           validacoes?: Json | null
         }
         Relationships: [
@@ -219,6 +225,7 @@ export type Database = {
       }
       backup_schedules: {
         Row: {
+          alerta_100mb: boolean
           ativo: boolean
           buckets: string[]
           created_at: string
@@ -233,10 +240,12 @@ export type Database = {
           nome: string
           proxima_execucao: string | null
           retencao_dias: number
+          tipo_backup: string
           ultima_execucao: string | null
           updated_at: string
         }
         Insert: {
+          alerta_100mb?: boolean
           ativo?: boolean
           buckets?: string[]
           created_at?: string
@@ -251,10 +260,12 @@ export type Database = {
           nome: string
           proxima_execucao?: string | null
           retencao_dias?: number
+          tipo_backup?: string
           ultima_execucao?: string | null
           updated_at?: string
         }
         Update: {
+          alerta_100mb?: boolean
           ativo?: boolean
           buckets?: string[]
           created_at?: string
@@ -269,6 +280,7 @@ export type Database = {
           nome?: string
           proxima_execucao?: string | null
           retencao_dias?: number
+          tipo_backup?: string
           ultima_execucao?: string | null
           updated_at?: string
         }
@@ -415,6 +427,7 @@ export type Database = {
       }
       empresas: {
         Row: {
+          alerta_backup_ultimo_envio: string | null
           app_android_url: string | null
           app_ios_url: string | null
           cnpj: string | null
@@ -427,6 +440,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alerta_backup_ultimo_envio?: string | null
           app_android_url?: string | null
           app_ios_url?: string | null
           cnpj?: string | null
@@ -439,6 +453,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alerta_backup_ultimo_envio?: string | null
           app_android_url?: string | null
           app_ios_url?: string | null
           cnpj?: string | null
@@ -3360,6 +3375,30 @@ export type Database = {
           _rdo_id: string
         }
         Returns: undefined
+      }
+      backup_estimate: {
+        Args: { _empresa: string; _since?: string; _tables: string[] }
+        Returns: {
+          bytes: number
+          row_count: number
+          table_name: string
+        }[]
+      }
+      backup_estimate_admin: {
+        Args: { _empresa: string; _since?: string; _tables: string[] }
+        Returns: {
+          bytes: number
+          row_count: number
+          table_name: string
+        }[]
+      }
+      backup_size_alert: {
+        Args: { _threshold_bytes?: number }
+        Returns: {
+          delta_bytes: number
+          empresa_id: string
+          notified: boolean
+        }[]
       }
       can_access_rdo: {
         Args: {

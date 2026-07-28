@@ -113,11 +113,13 @@ export const listBackupGroups = createServerFn({ method: "GET" })
 
 export const exportBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { groups: string[]; includeAuthUsers?: boolean }) =>
+  .inputValidator((d: { groups: string[]; includeAuthUsers?: boolean; tipo?: "full" | "incremental"; since?: string | null }) =>
     z
       .object({
         groups: z.array(z.string()).min(1),
         includeAuthUsers: z.boolean().optional(),
+        tipo: z.enum(["full", "incremental"]).optional(),
+        since: z.string().datetime().nullable().optional(),
       })
       .parse(d),
   )
@@ -126,6 +128,21 @@ export const exportBackup = createServerFn({ method: "POST" })
     const empresaId = await getEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const tipo = data.tipo ?? "full";
+    let since: string | null = data.since ?? null;
+    if (tipo === "incremental" && !since) {
+      const { data: last } = await (supabaseAdmin as any)
+        .from("backup_history")
+        .select("created_at")
+        .eq("empresa_id", empresaId)
+        .eq("operacao", "backup")
+        .eq("resultado", "sucesso")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      since = last?.created_at ?? null;
+    }
+
     const selected = BACKUP_GROUPS.filter((g) => data.groups.includes(g.key));
     const payload: Record<string, any[]> = {};
     const errors: Record<string, string> = {};
@@ -133,16 +150,21 @@ export const exportBackup = createServerFn({ method: "POST" })
     for (const group of selected) {
       for (const table of group.tables) {
         try {
-          let query: any = (supabaseAdmin as any).from(table).select("*");
-          if (table === "empresas") {
-            query = query.eq("id", empresaId);
+          const base = (): any => {
+            let q: any = (supabaseAdmin as any).from(table).select("*");
+            q = table === "empresas" ? q.eq("id", empresaId) : q.eq("empresa_id", empresaId);
+            return q;
+          };
+          if (tipo === "incremental" && since) {
+            let r = await base().gte("updated_at", since);
+            if (r.error) r = await base().gte("created_at", since);
+            if (r.error) throw r.error;
+            payload[table] = r.data ?? [];
           } else {
-            // Todas as tabelas de domínio possuem empresa_id
-            query = query.eq("empresa_id", empresaId);
+            const { data: rows, error } = await base();
+            if (error) throw error;
+            payload[table] = rows ?? [];
           }
-          const { data: rows, error } = await query;
-          if (error) throw error;
-          payload[table] = rows ?? [];
         } catch (e: any) {
           errors[table] = e.message ?? String(e);
           payload[table] = [];
@@ -150,7 +172,6 @@ export const exportBackup = createServerFn({ method: "POST" })
       }
     }
 
-    // Usuários da autenticação (email, metadata, timestamps) — sem senhas.
     let authUsers: any[] = [];
     if (data.includeAuthUsers && data.groups.includes("usuarios")) {
       try {
@@ -162,34 +183,28 @@ export const exportBackup = createServerFn({ method: "POST" })
           for (const u of users) {
             if (profileIds.has(u.id)) {
               authUsers.push({
-                id: u.id,
-                email: u.email,
-                phone: u.phone,
+                id: u.id, email: u.email, phone: u.phone,
                 email_confirmed_at: u.email_confirmed_at,
-                user_metadata: u.user_metadata,
-                created_at: u.created_at,
+                user_metadata: u.user_metadata, created_at: u.created_at,
               });
             }
           }
           if (users.length < 200) break;
         }
-      } catch (e: any) {
-        errors["auth.users"] = e.message ?? String(e);
-      }
+      } catch (e: any) { errors["auth.users"] = e.message ?? String(e); }
     }
 
     const totals = Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, v.length]));
 
     return {
       meta: {
-        version: 1,
-        empresa_id: empresaId,
+        version: 2, empresa_id: empresaId,
         generated_at: new Date().toISOString(),
         generated_by: context.userId,
         groups: data.groups,
         includeAuthUsers: !!data.includeAuthUsers,
-        totals,
-        errors,
+        tipo, since,
+        totals, errors,
       },
       tables: payload,
       auth_users: authUsers,
@@ -550,6 +565,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
     buckets?: string[];
     modo_restore?: "merge" | "replace";
     criptografado?: boolean;
+    tipo_backup?: "full" | "incremental";
+    since_iso?: string;
     contagens: Record<string, unknown>;
     validacoes?: Record<string, unknown>;
     resultado: "sucesso" | "erro" | "parcial" | "pendente";
@@ -565,6 +582,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
     buckets: z.array(z.string()).optional(),
     modo_restore: z.enum(["merge","replace"]).optional(),
     criptografado: z.boolean().optional(),
+    tipo_backup: z.enum(["full","incremental"]).optional(),
+    since_iso: z.string().optional(),
     contagens: z.record(z.string(), z.any()),
     validacoes: z.record(z.string(), z.any()).optional(),
     resultado: z.enum(["sucesso","erro","parcial","pendente"]),
@@ -588,6 +607,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
       buckets_selecionados: data.buckets ?? [],
       modo_restore: data.modo_restore ?? null,
       criptografado: !!data.criptografado,
+      tipo_backup: data.tipo_backup ?? null,
+      since_iso: data.since_iso ?? null,
       contagens: data.contagens,
       validacoes: data.validacoes ?? null,
       resultado: data.resultado,
@@ -707,4 +728,140 @@ export const uploadBackupArtifact = createServerFn({ method: "POST" })
     if (error) throw error;
     return { path, uploadUrl: signed.signedUrl, token: signed.token };
   });
+
+// ======================================================================
+// Estimativa de tamanho por grupo/bucket + delta desde o último backup
+// ======================================================================
+export const estimateBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { groups: string[]; buckets?: string[]; tipo?: "full" | "incremental" }) =>
+    z.object({
+      groups: z.array(z.string()),
+      buckets: z.array(z.string()).optional(),
+      tipo: z.enum(["full", "incremental"]).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: last } = await (supabaseAdmin as any)
+      .from("backup_history")
+      .select("id, created_at, arquivo_tamanho_bytes, tipo_backup, contagens")
+      .eq("empresa_id", empresaId)
+      .eq("operacao", "backup")
+      .eq("resultado", "sucesso")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const tipo = data.tipo ?? "full";
+    const since = tipo === "incremental" ? (last?.created_at ?? null) : null;
+
+    const selectedGroups = BACKUP_GROUPS.filter((g) => data.groups.includes(g.key));
+    const tables = selectedGroups.flatMap((g) => g.tables);
+
+    const groupSummary: Record<string, { rows: number; bytes: number; tables: Record<string, { rows: number; bytes: number }> }> = {};
+    for (const g of selectedGroups) groupSummary[g.key] = { rows: 0, bytes: 0, tables: {} };
+
+    let totalTableBytes = 0;
+    let totalTableRows = 0;
+    if (tables.length > 0) {
+      const { data: est, error } = await (supabaseAdmin as any).rpc("backup_estimate", {
+        _empresa: empresaId, _tables: tables, _since: since,
+      });
+      if (error) throw error;
+      const map: Record<string, { rows: number; bytes: number }> = {};
+      for (const row of est ?? []) {
+        map[row.table_name] = { rows: Number(row.row_count ?? 0), bytes: Number(row.bytes ?? 0) };
+        totalTableRows += Number(row.row_count ?? 0);
+        totalTableBytes += Number(row.bytes ?? 0);
+      }
+      for (const g of selectedGroups) {
+        for (const t of g.tables) {
+          const e = map[t] ?? { rows: 0, bytes: 0 };
+          groupSummary[g.key].tables[t] = e;
+          groupSummary[g.key].rows += e.rows;
+          groupSummary[g.key].bytes += e.bytes;
+        }
+      }
+    }
+
+    const bucketSummary: Record<string, { files: number; bytes: number }> = {};
+    let totalBucketFiles = 0;
+    let totalBucketBytes = 0;
+    for (const b of data.buckets ?? []) {
+      try {
+        const prefix = ["rdo-anexos", "empresa-logos", "obra-fotos"].includes(b) ? empresaId : "";
+        const files = await listAllBucketObjects(supabaseAdmin, b, prefix);
+        const filtered = since ? files.filter((f) => (f.updated_at ?? "") >= since) : files;
+        const bytes = filtered.reduce((s, f) => s + f.size, 0);
+        bucketSummary[b] = { files: filtered.length, bytes };
+        totalBucketFiles += filtered.length;
+        totalBucketBytes += bytes;
+      } catch { bucketSummary[b] = { files: 0, bytes: 0 }; }
+    }
+
+    const totalBytes = totalTableBytes + totalBucketBytes;
+    const lastBytes = Number(last?.arquivo_tamanho_bytes ?? 0);
+
+    return {
+      tipo, since,
+      last_backup: last ? { created_at: last.created_at, size_bytes: lastBytes, tipo_backup: last.tipo_backup } : null,
+      groups: groupSummary,
+      buckets: bucketSummary,
+      totals: {
+        rows: totalTableRows,
+        table_bytes: totalTableBytes,
+        bucket_files: totalBucketFiles,
+        bucket_bytes: totalBucketBytes,
+        total_bytes: totalBytes,
+      },
+      delta_bytes: totalBytes - lastBytes,
+      alerta_100mb: totalBytes >= 100 * 1024 * 1024,
+    };
+  });
+
+// ======================================================================
+// Backups armazenados no servidor (bucket system-backups)
+// ======================================================================
+export const listServerBackups = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const files = await listAllBucketObjects(supabaseAdmin, "system-backups", empresaId);
+    files.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    return files.slice(0, 200);
+  });
+
+export const downloadServerBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    if (!data.path.startsWith(`${empresaId}/`)) throw new Error("Acesso negado.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("system-backups").createSignedUrl(data.path, 600);
+    if (error) throw error;
+    return { url: signed.signedUrl };
+  });
+
+export const deleteServerBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { path: string }) => z.object({ path: z.string() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureMasterOrAdmin(context.supabase, context.userId);
+    const empresaId = await getEmpresaId(context.supabase, context.userId);
+    if (!data.path.startsWith(`${empresaId}/`)) throw new Error("Acesso negado.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.storage.from("system-backups").remove([data.path]);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 
