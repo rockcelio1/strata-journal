@@ -51,6 +51,7 @@ import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes
 import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
 import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
 import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
+import { Route as AuthenticatedConfiguracoesBackupRouteImport } from './routes/_authenticated/configuracoes.backup'
 import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
 import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
@@ -300,6 +301,12 @@ const AuthenticatedConfiguracoesBotoesEfeitosRoute =
     path: '/botoes-efeitos',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesBackupRoute =
+  AuthenticatedConfiguracoesBackupRouteImport.update({
+    id: '/backup',
+    path: '/backup',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesAuditoriaMidiaRoute =
   AuthenticatedConfiguracoesAuditoriaMidiaRouteImport.update({
     id: '/auditoria-midia',
@@ -446,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
+  '/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
@@ -507,6 +515,7 @@ export interface FileRoutesByTo {
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
+  '/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
@@ -571,6 +580,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/_authenticated/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/_authenticated/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
+  '/_authenticated/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
@@ -635,6 +645,7 @@ export interface FileRouteTypes {
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/auditoria-midia'
+    | '/configuracoes/backup'
     | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
     | '/configuracoes/lgpd'
@@ -696,6 +707,7 @@ export interface FileRouteTypes {
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/auditoria-midia'
+    | '/configuracoes/backup'
     | '/configuracoes/botoes-efeitos'
     | '/configuracoes/grupos'
     | '/configuracoes/lgpd'
@@ -759,6 +771,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/aplicativo'
     | '/_authenticated/configuracoes/auditoria'
     | '/_authenticated/configuracoes/auditoria-midia'
+    | '/_authenticated/configuracoes/backup'
     | '/_authenticated/configuracoes/botoes-efeitos'
     | '/_authenticated/configuracoes/grupos'
     | '/_authenticated/configuracoes/lgpd'
@@ -1105,6 +1118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/backup': {
+      id: '/_authenticated/configuracoes/backup'
+      path: '/backup'
+      fullPath: '/configuracoes/backup'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesBackupRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/auditoria-midia': {
       id: '/_authenticated/configuracoes/auditoria-midia'
       path: '/auditoria-midia'
@@ -1245,6 +1265,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
   AuthenticatedConfiguracoesAuditoriaRoute: typeof AuthenticatedConfiguracoesAuditoriaRoute
   AuthenticatedConfiguracoesAuditoriaMidiaRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
+  AuthenticatedConfiguracoesBackupRoute: typeof AuthenticatedConfiguracoesBackupRoute
   AuthenticatedConfiguracoesBotoesEfeitosRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
@@ -1266,6 +1287,8 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesAuditoriaRoute,
     AuthenticatedConfiguracoesAuditoriaMidiaRoute:
       AuthenticatedConfiguracoesAuditoriaMidiaRoute,
+    AuthenticatedConfiguracoesBackupRoute:
+      AuthenticatedConfiguracoesBackupRoute,
     AuthenticatedConfiguracoesBotoesEfeitosRoute:
       AuthenticatedConfiguracoesBotoesEfeitosRoute,
     AuthenticatedConfiguracoesGruposRoute:
