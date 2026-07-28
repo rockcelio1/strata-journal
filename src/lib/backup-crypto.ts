@@ -4,7 +4,7 @@
 const MAGIC = new TextEncoder().encode("FCB1");
 const ITER = 200_000;
 
-async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: BufferSource): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey(
     "raw",
