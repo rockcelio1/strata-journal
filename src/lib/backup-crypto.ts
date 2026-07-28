@@ -3,14 +3,6 @@
 
 const ITER = 200_000;
 
-function u8(...parts: Uint8Array[]): Uint8Array {
-  const total = parts.reduce((n, p) => n + p.byteLength, 0);
-  const out = new Uint8Array(total);
-  let off = 0;
-  for (const p of parts) { out.set(p, off); off += p.byteLength; }
-  return out;
-}
-
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const baseKey = await crypto.subtle.importKey(
     "raw",
@@ -20,7 +12,7 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
     ["deriveKey"],
   );
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: salt as BufferSource, iterations: ITER, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as unknown as BufferSource, iterations: ITER, hash: "SHA-256" },
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
@@ -33,10 +25,13 @@ export async function encryptBlob(plain: ArrayBuffer, password: string): Promise
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
   const cipher = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, plain),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, key, plain),
   );
   const magic = new TextEncoder().encode("FCB1");
-  return new Blob([u8(magic, salt, iv, cipher)], { type: "application/octet-stream" });
+  const total = new Uint8Array(magic.byteLength + salt.byteLength + iv.byteLength + cipher.byteLength);
+  let off = 0;
+  for (const p of [magic, salt, iv, cipher]) { total.set(p, off); off += p.byteLength; }
+  return new Blob([total.buffer as ArrayBuffer], { type: "application/octet-stream" });
 }
 
 export function isEncryptedBuffer(buf: ArrayBuffer): boolean {
@@ -50,11 +45,9 @@ export async function decryptBuffer(buf: ArrayBuffer, password: string): Promise
   const salt = new Uint8Array(buf.slice(4, 20));
   const iv = new Uint8Array(buf.slice(20, 32));
   const ct = buf.slice(32);
-  const key = await deriveKey(salt.constructor === Uint8Array ? "" : "", salt); // placeholder replaced below
-  const realKey = await deriveKey(password, salt);
-  void key;
+  const key = await deriveKey(password, salt);
   try {
-    return await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as BufferSource }, realKey, ct);
+    return await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, key, ct);
   } catch {
     throw new Error("Senha incorreta ou arquivo corrompido.");
   }
