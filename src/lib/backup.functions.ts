@@ -565,6 +565,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
     buckets?: string[];
     modo_restore?: "merge" | "replace";
     criptografado?: boolean;
+    tipo_backup?: "full" | "incremental";
+    since_iso?: string;
     contagens: Record<string, unknown>;
     validacoes?: Record<string, unknown>;
     resultado: "sucesso" | "erro" | "parcial" | "pendente";
@@ -580,6 +582,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
     buckets: z.array(z.string()).optional(),
     modo_restore: z.enum(["merge","replace"]).optional(),
     criptografado: z.boolean().optional(),
+    tipo_backup: z.enum(["full","incremental"]).optional(),
+    since_iso: z.string().optional(),
     contagens: z.record(z.string(), z.any()),
     validacoes: z.record(z.string(), z.any()).optional(),
     resultado: z.enum(["sucesso","erro","parcial","pendente"]),
@@ -603,6 +607,8 @@ export const logBackupHistory = createServerFn({ method: "POST" })
       buckets_selecionados: data.buckets ?? [],
       modo_restore: data.modo_restore ?? null,
       criptografado: !!data.criptografado,
+      tipo_backup: data.tipo_backup ?? null,
+      since_iso: data.since_iso ?? null,
       contagens: data.contagens,
       validacoes: data.validacoes ?? null,
       resultado: data.resultado,
