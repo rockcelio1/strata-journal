@@ -133,7 +133,7 @@ export const exportBackup = createServerFn({ method: "POST" })
     for (const group of selected) {
       for (const table of group.tables) {
         try {
-          let query = supabaseAdmin.from(table).select("*");
+          let query: any = (supabaseAdmin as any).from(table).select("*");
           if (table === "empresas") {
             query = query.eq("id", empresaId);
           } else {
