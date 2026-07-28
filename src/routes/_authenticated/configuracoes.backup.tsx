@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Download, Upload, DatabaseBackup, Loader2, AlertTriangle,
   ShieldCheck, CalendarClock, History, Eye, Trash2, Plus, Lock, HardDrive,
+  Server, RefreshCw, ArrowUpRight, ArrowDownRight, Minus,
 } from "lucide-react";
 import { notify } from "@/lib/toast";
 import {
@@ -21,12 +22,21 @@ import {
   BACKUP_BUCKETS, listBucketsManifest, signBucketPaths,
   dryRunRestore, logBackupHistory, listBackupHistory,
   listBackupSchedules, upsertBackupSchedule, deleteBackupSchedule,
+  estimateBackup, listServerBackups, downloadServerBackup, deleteServerBackup,
+  uploadBackupArtifact,
 } from "@/lib/backup.functions";
 import { encryptBlob, decryptBuffer, isEncryptedBuffer } from "@/lib/backup-crypto";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+function formatBytes(n: number) {
+  if (!n || n < 0) return "0 B";
+  const u = ["B","KB","MB","GB","TB"];
+  const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+  return `${(n / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+}
 
 export const Route = createFileRoute("/_authenticated/configuracoes/backup")({
   component: BackupPage,
