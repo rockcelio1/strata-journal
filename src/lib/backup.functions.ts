@@ -113,11 +113,13 @@ export const listBackupGroups = createServerFn({ method: "GET" })
 
 export const exportBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { groups: string[]; includeAuthUsers?: boolean }) =>
+  .inputValidator((d: { groups: string[]; includeAuthUsers?: boolean; tipo?: "full" | "incremental"; since?: string | null }) =>
     z
       .object({
         groups: z.array(z.string()).min(1),
         includeAuthUsers: z.boolean().optional(),
+        tipo: z.enum(["full", "incremental"]).optional(),
+        since: z.string().datetime().nullable().optional(),
       })
       .parse(d),
   )
@@ -126,6 +128,21 @@ export const exportBackup = createServerFn({ method: "POST" })
     const empresaId = await getEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const tipo = data.tipo ?? "full";
+    let since: string | null = data.since ?? null;
+    if (tipo === "incremental" && !since) {
+      const { data: last } = await (supabaseAdmin as any)
+        .from("backup_history")
+        .select("created_at")
+        .eq("empresa_id", empresaId)
+        .eq("operacao", "backup")
+        .eq("resultado", "sucesso")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      since = last?.created_at ?? null;
+    }
+
     const selected = BACKUP_GROUPS.filter((g) => data.groups.includes(g.key));
     const payload: Record<string, any[]> = {};
     const errors: Record<string, string> = {};
@@ -133,16 +150,21 @@ export const exportBackup = createServerFn({ method: "POST" })
     for (const group of selected) {
       for (const table of group.tables) {
         try {
-          let query: any = (supabaseAdmin as any).from(table).select("*");
-          if (table === "empresas") {
-            query = query.eq("id", empresaId);
+          const base = (): any => {
+            let q: any = (supabaseAdmin as any).from(table).select("*");
+            q = table === "empresas" ? q.eq("id", empresaId) : q.eq("empresa_id", empresaId);
+            return q;
+          };
+          if (tipo === "incremental" && since) {
+            let r = await base().gte("updated_at", since);
+            if (r.error) r = await base().gte("created_at", since);
+            if (r.error) throw r.error;
+            payload[table] = r.data ?? [];
           } else {
-            // Todas as tabelas de domínio possuem empresa_id
-            query = query.eq("empresa_id", empresaId);
+            const { data: rows, error } = await base();
+            if (error) throw error;
+            payload[table] = rows ?? [];
           }
-          const { data: rows, error } = await query;
-          if (error) throw error;
-          payload[table] = rows ?? [];
         } catch (e: any) {
           errors[table] = e.message ?? String(e);
           payload[table] = [];
@@ -150,7 +172,6 @@ export const exportBackup = createServerFn({ method: "POST" })
       }
     }
 
-    // Usuários da autenticação (email, metadata, timestamps) — sem senhas.
     let authUsers: any[] = [];
     if (data.includeAuthUsers && data.groups.includes("usuarios")) {
       try {
@@ -162,34 +183,28 @@ export const exportBackup = createServerFn({ method: "POST" })
           for (const u of users) {
             if (profileIds.has(u.id)) {
               authUsers.push({
-                id: u.id,
-                email: u.email,
-                phone: u.phone,
+                id: u.id, email: u.email, phone: u.phone,
                 email_confirmed_at: u.email_confirmed_at,
-                user_metadata: u.user_metadata,
-                created_at: u.created_at,
+                user_metadata: u.user_metadata, created_at: u.created_at,
               });
             }
           }
           if (users.length < 200) break;
         }
-      } catch (e: any) {
-        errors["auth.users"] = e.message ?? String(e);
-      }
+      } catch (e: any) { errors["auth.users"] = e.message ?? String(e); }
     }
 
     const totals = Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, v.length]));
 
     return {
       meta: {
-        version: 1,
-        empresa_id: empresaId,
+        version: 2, empresa_id: empresaId,
         generated_at: new Date().toISOString(),
         generated_by: context.userId,
         groups: data.groups,
         includeAuthUsers: !!data.includeAuthUsers,
-        totals,
-        errors,
+        tipo, since,
+        totals, errors,
       },
       tables: payload,
       auth_users: authUsers,
