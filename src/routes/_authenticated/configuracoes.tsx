@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles, MousePointerClick, Image as ImageIcon, FileText, BookOpen, KeyRound } from "lucide-react";
+import { Settings, Smartphone, Users, Sliders, ShieldCheck, Users2, Cloud, ScrollText, Sparkles, MousePointerClick, Image as ImageIcon, FileText, BookOpen, KeyRound, DatabaseBackup } from "lucide-react";
 import { getMe } from "@/lib/core.functions";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ const subNav = [
   { to: "/configuracoes/lgpd", label: "Solicitações LGPD", icon: FileText, desc: "Pedidos DSAR e prazos" },
   { to: "/configuracoes/runbook", label: "Runbook", icon: BookOpen, desc: "Procedimentos de incidente e operação" },
   { to: "/configuracoes/rotacao-chaves", label: "Rotação de chaves", icon: KeyRound, desc: "Política e checklist de segredos" },
+  { to: "/configuracoes/backup", label: "Backup do sistema", icon: DatabaseBackup, desc: "Exportar e restaurar dados seletivamente" },
 ];
 
 function ConfiguracoesLayout() {
