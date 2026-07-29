@@ -627,6 +627,43 @@ export const criarConvite = createServerFn({ method: "POST" })
     }).select().single();
     if (error) throw error;
     await logAudit(context.supabase, { empresa_id, acao: "convite_criado", alvo_email: emailLower, detalhes: { role: data.role } });
+    // Envio do e-mail de convite (não bloqueia a criação em caso de falha)
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { montarMensagem, enfileirar } = await import("@/lib/email/admin.server");
+      const { processarFila, registrarLog } = await import("@/lib/email.server");
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const origin = new URL(getRequest().url).origin;
+      const emp = await supabaseAdmin.from("empresas").select("nome").eq("id", empresa_id).maybeSingle();
+      const msg = await montarMensagem(supabaseAdmin, empresa_id, "convite", {
+        nome: emailLower,
+        empresa: emp.data?.nome ?? "sua empresa",
+        role: data.role,
+        link: `${origin}/auth`,
+      });
+      if (msg.ativo) {
+        const qid = await enfileirar(supabaseAdmin, {
+          empresa_id,
+          template_chave: "convite",
+          destinatario: emailLower,
+          assunto: msg.assunto,
+          corpo_html: msg.html,
+          corpo_texto: msg.texto,
+          idempotency_key: `convite-${created.id}`,
+          created_by: context.userId,
+        });
+        await registrarLog(supabaseAdmin, {
+          empresa_id,
+          queue_id: qid ?? null,
+          evento: "enfileirado",
+          destinatario: emailLower,
+          detalhes: { chave: "convite" },
+        });
+        await processarFila(supabaseAdmin, empresa_id, 5);
+      }
+    } catch {
+      // silencioso: o convite continua válido mesmo sem e-mail configurado
+    }
     return created;
   });
 
