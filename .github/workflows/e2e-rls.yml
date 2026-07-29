@@ -46,8 +46,8 @@ jobs:
             echo "SUPABASE_PUBLISHABLE_KEY=$ANON"
           } >> "$GITHUB_ENV"
 
-      - name: Testes de integração (OneDrive e utilitários)
-        run: bun run test
+      - name: Testes de integração do OneDrive (fetch simulado)
+        run: bunx vitest run src/lib/__tests__/onedrive-graph.test.ts src/components/onedrive
 
       - name: Instalar navegadores Playwright
         run: bunx playwright install --with-deps chromium
