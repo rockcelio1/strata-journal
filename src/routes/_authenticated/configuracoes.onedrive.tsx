@@ -9,6 +9,7 @@ import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
 import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
+import { OneDriveConnectPanel, classificarEstadoConexao } from "@/components/onedrive/ConnectPanel";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
@@ -123,7 +124,7 @@ function OneDriveSettings() {
           ok,
           erro: (verify.error as Error | null)?.message ?? verify.data?.error ?? null,
         })}
-        conta={acc?.mail ?? acc?.userPrincipalName ?? ONEDRIVE_ACCOUNT}
+        conta={acc?.email ?? acc?.displayName ?? ONEDRIVE_ACCOUNT}
         erro={(verify.error as Error | null)?.message ?? verify.data?.error ?? null}
         verificando={verify.isFetching}
         onVerificar={() => verify.refetch()}
