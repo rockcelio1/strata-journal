@@ -46,6 +46,9 @@ jobs:
             echo "SUPABASE_PUBLISHABLE_KEY=$ANON"
           } >> "$GITHUB_ENV"
 
+      - name: Testes de integração (OneDrive e utilitários)
+        run: bun run test
+
       - name: Instalar navegadores Playwright
         run: bunx playwright install --with-deps chromium
 
@@ -58,6 +61,8 @@ jobs:
             e2e/rls-cross-empresa.spec.ts \
             e2e/rls-crud-isolamento.spec.ts \
             e2e/rdo-aprovacao.spec.ts \
+            e2e/rdo-fluxo-status.spec.ts \
+            e2e/onedrive-conexao.spec.ts \
             --project=chromium-desktop
 
       - name: Publicar relatório
@@ -67,6 +72,20 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      # Evidências de falha: screenshots, vídeos e traces (abrir com
+      # `bunx playwright show-trace trace.zip`).
+      - name: Publicar evidências de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidencias-${{ github.run_attempt }}
+          path: |
+            test-results/**/*.png
+            test-results/**/*.webm
+            test-results/**/*.zip
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Derrubar ambiente Supabase
         if: always()

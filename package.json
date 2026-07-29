@@ -12,7 +12,11 @@
     "format": "prettier --write .",
     "db:reset": "bash scripts/ci/reset-supabase.sh",
     "test:e2e": "playwright test",
-    "test:e2e:rls": "playwright test e2e/rls-cross-empresa.spec.ts e2e/rls-crud-isolamento.spec.ts e2e/rdo-aprovacao.spec.ts --project=chromium-desktop"
+    "test:e2e:rls": "playwright test e2e/rls-cross-empresa.spec.ts e2e/rls-crud-isolamento.spec.ts e2e/rdo-aprovacao.spec.ts e2e/rdo-fluxo-status.spec.ts --project=chromium-desktop",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e:rdo": "playwright test e2e/rdo-aprovacao.spec.ts e2e/rdo-fluxo-status.spec.ts --project=chromium-desktop",
+    "test:e2e:onedrive": "playwright test e2e/onedrive-conexao.spec.ts --project=chromium-desktop"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
