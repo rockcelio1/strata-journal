@@ -9,6 +9,7 @@ import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
 import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
+import { OneDriveConnectPanel, classificarEstadoConexao } from "@/components/onedrive/ConnectPanel";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
@@ -116,6 +117,21 @@ function OneDriveSettings() {
           <p className="text-xs text-muted-foreground mt-1">Conta conectada, pasta de destino e validação</p>
         </div>
       </header>
+
+      <OneDriveConnectPanel
+        estado={classificarEstadoConexao({
+          carregando: verify.isLoading,
+          ok,
+          erro: (verify.error as Error | null)?.message ?? verify.data?.error ?? null,
+        })}
+        conta={acc?.email ?? acc?.displayName ?? ONEDRIVE_ACCOUNT}
+        erro={(verify.error as Error | null)?.message ?? verify.data?.error ?? null}
+        verificando={verify.isFetching}
+        onVerificar={() => verify.refetch()}
+        onTrocarConta={() => setAccountModal("switch")}
+        onDesconectar={() => setAccountModal("disconnect")}
+      />
+
 
       <section className="border border-border rounded-lg p-4 bg-card space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
