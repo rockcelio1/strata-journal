@@ -300,7 +300,10 @@ function OneDriveSettings() {
         </section>
       )}
 
+      {ok && <OneDriveFileExplorer initialPath={rootFolder} />}
+
       {ok && (
+
         <section className="border border-border rounded-lg p-4 bg-card">
           <div className="flex items-center justify-between gap-2 mb-2">
             <h3 className="font-medium text-sm">Teste de permissões</h3>
