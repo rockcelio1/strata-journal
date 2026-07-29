@@ -72,16 +72,10 @@ export const registerUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await registerUserCore(supabaseAdmin, data);
-    // Dispara o e-mail de confirmação (Supabase envia ao gerar o link de signup)
-    try {
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "signup",
-        email: data.email.toLowerCase(),
-        password: data.password,
-      });
-    } catch { /* envio best-effort */ }
     return { ok: true };
   });
+
+
 
 // Reenviar e-mail de verificação
 export const resendVerification = createServerFn({ method: "POST" })
