@@ -228,6 +228,16 @@ function AuthPage() {
                     <Label htmlFor="password">Senha</Label>
                     <Input id="password" name="password" type="password" required autoComplete="current-password" />
                   </div>
+                  {signinError && (
+                    <div
+                      role="alert"
+                      data-testid="signin-error"
+                      className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive"
+                    >
+                      <strong className="block">{signinError.message}</strong>
+                      <span className="text-destructive/80">{signinError.action}</span>
+                    </div>
+                  )}
                   <Button type="submit" className="w-full bg-brand text-brand-foreground hover:bg-brand/90" disabled={loading}>
                     Entrar
                   </Button>
@@ -245,10 +255,24 @@ function AuthPage() {
                     <Label htmlFor="nome">Seu nome</Label>
                     <Input id="nome" name="nome" required />
                   </div>
-                  <div>
-                    <Label htmlFor="empresa">Nome da empresa</Label>
-                    <Input id="empresa" name="empresa" required placeholder="Ex.: Construtora Aurora" />
-                  </div>
+                  {convite ? (
+                    <div
+                      data-testid="convite-empresa"
+                      className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2 text-xs text-emerald-700"
+                    >
+                      Você foi convidado para a empresa <strong>{convite.empresa_nome}</strong> como {convite.role}.
+                      Sua conta entrará automaticamente nesse espaço.
+                    </div>
+                  ) : (
+                    <div>
+                      <Label htmlFor="empresa">Nome da empresa</Label>
+                      <Input id="empresa" name="empresa" required placeholder="Ex.: Construtora Aurora" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        A empresa será criada agora e você será o administrador dela.
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="email2">Email</Label>
                     <Input
