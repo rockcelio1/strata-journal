@@ -117,6 +117,21 @@ function OneDriveSettings() {
         </div>
       </header>
 
+      <OneDriveConnectPanel
+        estado={classificarEstadoConexao({
+          carregando: verify.isLoading,
+          ok,
+          erro: (verify.error as Error | null)?.message ?? verify.data?.error ?? null,
+        })}
+        conta={acc?.mail ?? acc?.userPrincipalName ?? ONEDRIVE_ACCOUNT}
+        erro={(verify.error as Error | null)?.message ?? verify.data?.error ?? null}
+        verificando={verify.isFetching}
+        onVerificar={() => verify.refetch()}
+        onTrocarConta={() => setAccountModal("switch")}
+        onDesconectar={() => setAccountModal("disconnect")}
+      />
+
+
       <section className="border border-border rounded-lg p-4 bg-card space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
