@@ -84,13 +84,13 @@ export const saveEmailCredentials = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = {
+    const patch = {
       empresa_id: empresaId,
       provider: data.provider,
       updated_by: context.userId,
+      ...(data.api_key ? { api_key: data.api_key } : {}),
+      ...(data.api_secret ? { api_secret: data.api_secret } : {}),
     };
-    if (data.api_key) patch.api_key = data.api_key;
-    if (data.api_secret) patch.api_secret = data.api_secret;
     const { error } = await supabaseAdmin
       .from("email_credentials")
       .upsert(patch, { onConflict: "empresa_id" });
