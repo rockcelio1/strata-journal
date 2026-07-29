@@ -39,9 +39,10 @@ export async function registerUserCore(
 ) {
   const email = input.email.toLowerCase();
   if (await emailExistsIn(admin, email)) throw new Error("EMAIL_TAKEN");
-  // Exige confirmação por e-mail: NÃO marcar email_confirm
+  // Conta já nasce confirmada: o acesso é liberado imediatamente após o cadastro
+  // (a aprovação por admin continua valendo via profiles.aprovado).
   const { error } = await admin.auth.admin.createUser({
-    email, password: input.password, email_confirm: false,
+    email, password: input.password, email_confirm: true,
     user_metadata: { nome: input.nome, empresa_nome: input.empresa_nome },
   });
   if (error) {
