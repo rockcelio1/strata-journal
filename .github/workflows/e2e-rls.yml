@@ -1,0 +1,73 @@
+name: E2E — RLS e trilha de aprovação do RDO
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-rls-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-rls:
+    name: RLS + RDO (Supabase isolado por build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependências
+        run: bun install --frozen-lockfile
+
+      # Ambiente Supabase dedicado a esta execução de build.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Provisionar e resetar banco isolado
+        run: bash scripts/ci/reset-supabase.sh
+
+      - name: Exportar credenciais do ambiente efêmero
+        run: |
+          supabase status -o env | sed 's/^/SUPABASE_/' > /dev/null
+          API_URL=$(supabase status -o json | python3 -c 'import json,sys;print(json.load(sys.stdin)["API_URL"])')
+          ANON=$(supabase status -o json | python3 -c 'import json,sys;print(json.load(sys.stdin)["ANON_KEY"])')
+          {
+            echo "VITE_SUPABASE_URL=$API_URL"
+            echo "VITE_SUPABASE_PUBLISHABLE_KEY=$ANON"
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_PUBLISHABLE_KEY=$ANON"
+          } >> "$GITHUB_ENV"
+
+      - name: Instalar navegadores Playwright
+        run: bunx playwright install --with-deps chromium
+
+      - name: Testes E2E de RLS e aprovação de RDO
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost:8080
+        run: |
+          bunx playwright test \
+            e2e/rls-cross-empresa.spec.ts \
+            e2e/rls-crud-isolamento.spec.ts \
+            e2e/rdo-aprovacao.spec.ts \
+            --project=chromium-desktop
+
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Derrubar ambiente Supabase
+        if: always()
+        run: supabase stop --no-backup || true
