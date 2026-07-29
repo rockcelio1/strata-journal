@@ -2,7 +2,7 @@
 // Cole em: Cloud > Edge Functions > migrate-helper > View code
 // Após a migração, remova esta função.
 
-const ACCESS_KEY = "8bf5d74241255e5edfd1cc3b8ccd7dcc293724c8095f9e59";
+const ACCESS_KEY = "8a652b82961cdd8423e9992b88962fd77a290960cd1a4048";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-access-key",
