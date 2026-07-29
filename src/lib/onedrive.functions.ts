@@ -8,7 +8,6 @@ import {
   uploadContent,
   OneDriveError,
   type Fetcher,
-  type OneDriveItem,
 } from "@/lib/onedrive-graph";
 
 
