@@ -59,11 +59,13 @@ test.describe("OneDrive conectado — listar, enviar e baixar", () => {
 
     // 4) Download do mesmo arquivo
     const linha = explorador.locator("li", { hasText: ARQUIVO }).first();
-    const [download] = await Promise.all([
-      page.waitForEvent("download", { timeout: 60_000 }),
+    // O download usa um link temporário do Graph, aberto em nova aba.
+    const [popup] = await Promise.all([
+      page.context().waitForEvent("page", { timeout: 60_000 }),
       linha.getByRole("button", { name: /Baixar/i }).click(),
     ]);
-    expect(download.suggestedFilename()).toContain("e2e-onedrive");
+    expect(popup.url()).toMatch(/^https?:\/\//);
+    await popup.close();
   });
 
   test("tela de vínculo lista conexões e reflete o status sem recarregar", async ({ page }) => {

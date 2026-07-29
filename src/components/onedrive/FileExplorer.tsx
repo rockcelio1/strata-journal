@@ -92,7 +92,7 @@ export function OneDriveFileExplorer({ initialPath = "" }: { initialPath?: strin
   const items = listing.data?.items ?? [];
 
   return (
-    <section className="border border-border rounded-lg p-4 bg-card">
+    <section className="border border-border rounded-lg p-4 bg-card" data-testid="onedrive-explorer">
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <h3 className="font-medium text-sm">Arquivos no OneDrive</h3>
         <div className="flex items-center gap-2">
@@ -114,6 +114,7 @@ export function OneDriveFileExplorer({ initialPath = "" }: { initialPath?: strin
           </button>
           <input
             ref={inputRef}
+            data-testid="onedrive-upload-input"
             type="file"
             className="hidden"
             onChange={(e) => {
@@ -144,7 +145,7 @@ export function OneDriveFileExplorer({ initialPath = "" }: { initialPath?: strin
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Esta pasta está vazia.</p>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-border" data-testid="onedrive-lista">
           {items.map((it) => (
             <li key={it.id} className="flex items-center justify-between gap-2 py-2">
               {it.isFolder ? (
