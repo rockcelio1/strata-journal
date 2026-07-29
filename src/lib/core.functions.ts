@@ -392,9 +392,61 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
     await assertAdminOrMaster(context.supabase, context.userId);
     const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email);
-    if (error) throw error;
-    await logAudit(context.supabase, { empresa_id, acao: "senha_reset_enviado", alvo_email: data.email });
+    const emailLower = data.email.trim().toLowerCase();
+
+    // Se o sistema de e-mail próprio estiver ativo, usa template + fila.
+    let enviadoPeloSistema = false;
+    try {
+      const { carregarConfig, processarFila, registrarLog } = await import("@/lib/email.server");
+      const { montarMensagem, enfileirar } = await import("@/lib/email/admin.server");
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const { cfg } = await carregarConfig(supabaseAdmin, empresa_id);
+      if (cfg?.ativo) {
+        const origin = new URL(getRequest().url).origin;
+        const link = await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email: emailLower,
+          options: { redirectTo: `${origin}/reset-password` },
+        });
+        const actionLink = link.data?.properties?.action_link;
+        if (actionLink) {
+          const perfil = await supabaseAdmin.from("profiles").select("nome").eq("email", emailLower).maybeSingle();
+          const msg = await montarMensagem(supabaseAdmin, empresa_id, "recuperacao_senha", {
+            nome: perfil.data?.nome ?? emailLower,
+            link: actionLink,
+          });
+          if (msg.ativo) {
+            const qid = await enfileirar(supabaseAdmin, {
+              empresa_id,
+              template_chave: "recuperacao_senha",
+              destinatario: emailLower,
+              assunto: msg.assunto,
+              corpo_html: msg.html,
+              corpo_texto: msg.texto,
+              idempotency_key: `recovery-${emailLower}-${Date.now()}`,
+              created_by: context.userId,
+            });
+            await registrarLog(supabaseAdmin, {
+              empresa_id,
+              queue_id: qid ?? null,
+              evento: "enfileirado",
+              destinatario: emailLower,
+              detalhes: { chave: "recuperacao_senha" },
+            });
+            await processarFila(supabaseAdmin, empresa_id, 5);
+            enviadoPeloSistema = true;
+          }
+        }
+      }
+    } catch {
+      enviadoPeloSistema = false;
+    }
+
+    if (!enviadoPeloSistema) {
+      const { error } = await supabaseAdmin.auth.resetPasswordForEmail(emailLower);
+      if (error) throw error;
+    }
+    await logAudit(context.supabase, { empresa_id, acao: "senha_reset_enviado", alvo_email: emailLower });
     return { ok: true };
   });
 
@@ -627,6 +679,43 @@ export const criarConvite = createServerFn({ method: "POST" })
     }).select().single();
     if (error) throw error;
     await logAudit(context.supabase, { empresa_id, acao: "convite_criado", alvo_email: emailLower, detalhes: { role: data.role } });
+    // Envio do e-mail de convite (não bloqueia a criação em caso de falha)
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { montarMensagem, enfileirar } = await import("@/lib/email/admin.server");
+      const { processarFila, registrarLog } = await import("@/lib/email.server");
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const origin = new URL(getRequest().url).origin;
+      const emp = await supabaseAdmin.from("empresas").select("nome").eq("id", empresa_id).maybeSingle();
+      const msg = await montarMensagem(supabaseAdmin, empresa_id, "convite", {
+        nome: emailLower,
+        empresa: emp.data?.nome ?? "sua empresa",
+        role: data.role,
+        link: `${origin}/auth`,
+      });
+      if (msg.ativo) {
+        const qid = await enfileirar(supabaseAdmin, {
+          empresa_id,
+          template_chave: "convite",
+          destinatario: emailLower,
+          assunto: msg.assunto,
+          corpo_html: msg.html,
+          corpo_texto: msg.texto,
+          idempotency_key: `convite-${created.id}`,
+          created_by: context.userId,
+        });
+        await registrarLog(supabaseAdmin, {
+          empresa_id,
+          queue_id: qid ?? null,
+          evento: "enfileirado",
+          destinatario: emailLower,
+          detalhes: { chave: "convite" },
+        });
+        await processarFila(supabaseAdmin, empresa_id, 5);
+      }
+    } catch {
+      // silencioso: o convite continua válido mesmo sem e-mail configurado
+    }
     return created;
   });
 

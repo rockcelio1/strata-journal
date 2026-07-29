@@ -371,6 +371,275 @@ export type Database = {
           },
         ]
       }
+      email_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          edge_function_name: string | null
+          empresa_id: string
+          from_email: string | null
+          from_name: string
+          mailgun_domain: string | null
+          max_tentativas: number
+          modo: string
+          provider: string
+          reply_to: string | null
+          ses_region: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          edge_function_name?: string | null
+          empresa_id: string
+          from_email?: string | null
+          from_name?: string
+          mailgun_domain?: string | null
+          max_tentativas?: number
+          modo?: string
+          provider?: string
+          reply_to?: string | null
+          ses_region?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          edge_function_name?: string | null
+          empresa_id?: string
+          from_email?: string | null
+          from_name?: string
+          mailgun_domain?: string | null
+          max_tentativas?: number
+          modo?: string
+          provider?: string
+          reply_to?: string | null
+          ses_region?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_config_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_credentials: {
+        Row: {
+          api_key: string | null
+          api_secret: string | null
+          created_at: string
+          empresa_id: string
+          extra: Json
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          api_secret?: string | null
+          created_at?: string
+          empresa_id: string
+          extra?: Json
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          api_secret?: string | null
+          created_at?: string
+          empresa_id?: string
+          extra?: Json
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_credentials_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_logs: {
+        Row: {
+          created_at: string
+          destinatario: string | null
+          detalhes: Json
+          empresa_id: string
+          evento: string
+          id: string
+          provider: string | null
+          queue_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          destinatario?: string | null
+          detalhes?: Json
+          empresa_id: string
+          evento: string
+          id?: string
+          provider?: string | null
+          queue_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          destinatario?: string | null
+          detalhes?: Json
+          empresa_id?: string
+          evento?: string
+          id?: string
+          provider?: string | null
+          queue_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "email_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_queue: {
+        Row: {
+          assunto: string
+          corpo_html: string
+          corpo_texto: string | null
+          created_at: string
+          created_by: string | null
+          destinatario: string
+          empresa_id: string
+          enviado_em: string | null
+          id: string
+          idempotency_key: string | null
+          max_tentativas: number
+          provider: string | null
+          provider_message_id: string | null
+          proxima_tentativa_em: string
+          status: string
+          template_chave: string | null
+          tentativas: number
+          ultimo_erro: string | null
+          updated_at: string
+        }
+        Insert: {
+          assunto: string
+          corpo_html: string
+          corpo_texto?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinatario: string
+          empresa_id: string
+          enviado_em?: string | null
+          id?: string
+          idempotency_key?: string | null
+          max_tentativas?: number
+          provider?: string | null
+          provider_message_id?: string | null
+          proxima_tentativa_em?: string
+          status?: string
+          template_chave?: string | null
+          tentativas?: number
+          ultimo_erro?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          corpo_html?: string
+          corpo_texto?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinatario?: string
+          empresa_id?: string
+          enviado_em?: string | null
+          id?: string
+          idempotency_key?: string | null
+          max_tentativas?: number
+          provider?: string | null
+          provider_message_id?: string | null
+          proxima_tentativa_em?: string
+          status?: string
+          template_chave?: string | null
+          tentativas?: number
+          ultimo_erro?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          assunto: string
+          ativo: boolean
+          chave: string
+          corpo_html: string
+          corpo_texto: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          assunto: string
+          ativo?: boolean
+          chave: string
+          corpo_html: string
+          corpo_texto?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          ativo?: boolean
+          chave?: string
+          corpo_html?: string
+          corpo_texto?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresa_logo_versions: {
         Row: {
           autor_id: string | null

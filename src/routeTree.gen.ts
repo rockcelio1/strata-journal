@@ -50,6 +50,7 @@ import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './rout
 import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
 import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
 import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
+import { Route as AuthenticatedConfiguracoesEmailRouteImport } from './routes/_authenticated/configuracoes.email'
 import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
 import { Route as AuthenticatedConfiguracoesBackupRouteImport } from './routes/_authenticated/configuracoes.backup'
 import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
@@ -297,6 +298,12 @@ const AuthenticatedConfiguracoesGruposRoute =
     path: '/grupos',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesEmailRoute =
+  AuthenticatedConfiguracoesEmailRouteImport.update({
+    id: '/email',
+    path: '/email',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedConfiguracoesBotoesEfeitosRoute =
   AuthenticatedConfiguracoesBotoesEfeitosRouteImport.update({
     id: '/botoes-efeitos',
@@ -468,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
+  '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
@@ -532,6 +540,7 @@ export interface FileRoutesByTo {
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
+  '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
@@ -599,6 +608,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   '/_authenticated/configuracoes/backup': typeof AuthenticatedConfiguracoesBackupRoute
   '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
+  '/_authenticated/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
   '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
@@ -666,6 +676,7 @@ export interface FileRouteTypes {
     | '/configuracoes/auditoria-midia'
     | '/configuracoes/backup'
     | '/configuracoes/botoes-efeitos'
+    | '/configuracoes/email'
     | '/configuracoes/grupos'
     | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
@@ -730,6 +741,7 @@ export interface FileRouteTypes {
     | '/configuracoes/auditoria-midia'
     | '/configuracoes/backup'
     | '/configuracoes/botoes-efeitos'
+    | '/configuracoes/email'
     | '/configuracoes/grupos'
     | '/configuracoes/lgpd'
     | '/configuracoes/onedrive'
@@ -796,6 +808,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/auditoria-midia'
     | '/_authenticated/configuracoes/backup'
     | '/_authenticated/configuracoes/botoes-efeitos'
+    | '/_authenticated/configuracoes/email'
     | '/_authenticated/configuracoes/grupos'
     | '/_authenticated/configuracoes/lgpd'
     | '/_authenticated/configuracoes/onedrive'
@@ -1137,6 +1150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesGruposRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/email': {
+      id: '/_authenticated/configuracoes/email'
+      path: '/email'
+      fullPath: '/configuracoes/email'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesEmailRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/configuracoes/botoes-efeitos': {
       id: '/_authenticated/configuracoes/botoes-efeitos'
       path: '/botoes-efeitos'
@@ -1322,6 +1342,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAuditoriaMidiaRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
   AuthenticatedConfiguracoesBackupRoute: typeof AuthenticatedConfiguracoesBackupRoute
   AuthenticatedConfiguracoesBotoesEfeitosRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
+  AuthenticatedConfiguracoesEmailRoute: typeof AuthenticatedConfiguracoesEmailRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
   AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
@@ -1346,6 +1367,7 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesBackupRoute,
     AuthenticatedConfiguracoesBotoesEfeitosRoute:
       AuthenticatedConfiguracoesBotoesEfeitosRoute,
+    AuthenticatedConfiguracoesEmailRoute: AuthenticatedConfiguracoesEmailRoute,
     AuthenticatedConfiguracoesGruposRoute:
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesLgpdRoute: AuthenticatedConfiguracoesLgpdRoute,
