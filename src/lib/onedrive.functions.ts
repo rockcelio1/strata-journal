@@ -9,6 +9,11 @@ import {
   OneDriveError,
   type Fetcher,
 } from "@/lib/onedrive-graph";
+import {
+  conexaoPermitida,
+  detectarConexoes,
+  montarDiagnosticoVinculo,
+} from "@/lib/onedrive-conexoes";
 
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
@@ -53,9 +58,13 @@ function encodePath(path: string): string {
 
 const MESES_PT = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
+/** Conexão escolhida na tela de vínculo (padrão: a primeira do projeto). */
+let conexaoAtiva: string | null = null;
+
 function getKeys() {
   const apiKey = process.env.LOVABLE_API_KEY;
-  const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
+  const connKey =
+    (conexaoAtiva ? process.env[conexaoAtiva] : undefined) ?? process.env.MICROSOFT_ONEDRIVE_API_KEY;
   if (!apiKey || !connKey) {
     throw naoConectado("credenciais");
   }
@@ -527,5 +536,105 @@ export const getOneDriveDownloadUrl = createServerFn({ method: "POST" })
         return { ok: false as const, error: `${e.detalhe.message} ${e.detalhe.action}`, kind: e.detalhe.kind };
       }
       return { ok: false as const, error: (e as Error)?.message ?? "Falha no OneDrive.", kind: "desconhecido" as const };
+    }
+  });
+
+/* ------------------------------------------------------------------ *
+ * Vínculo da conexão OneDrive do workspace com este projeto
+ * ------------------------------------------------------------------ */
+
+/** Lista as conexões OneDrive disponíveis para o projeto (sem expor chaves). */
+export const listOneDriveConexoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => ({
+    gatewayUrl: GATEWAY_URL,
+    temLovableApiKey: Boolean(process.env.LOVABLE_API_KEY),
+    conexoes: detectarConexoes(process.env as Record<string, string | undefined>),
+  }));
+
+/**
+ * Testa uma conexão específica e, se responder, a marca como conexão ativa
+ * do projeto — mudando o status de "Desconectado" para "Conectado" sem reload.
+ * Em caso de falha devolve o diagnóstico completo (conexão, conta, request-id
+ * e checklist de ajuste em Conectores → OneDrive).
+ */
+export const vincularOneDriveConexao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { envName: string } | undefined) =>
+    z.object({ envName: z.string().min(1).max(120) }).parse(d ?? { envName: "" }),
+  )
+  .handler(async ({ data, context }) => {
+    const env = process.env as Record<string, string | undefined>;
+    const conexoes = detectarConexoes(env);
+    const alvo = conexoes.find((c) => c.envName === data.envName);
+
+    if (!alvo || !conexaoPermitida(env, data.envName)) {
+      return {
+        ok: false as const,
+        diagnostico: montarDiagnosticoVinculo({
+          erro: "A conexão informada não está disponível para este projeto.",
+          usuario: context.userId,
+        }),
+        erro: "Conexão indisponível: vincule a conexão OneDrive do workspace a este projeto.",
+      };
+    }
+
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) {
+      return {
+        ok: false as const,
+        diagnostico: montarDiagnosticoVinculo({
+          conexaoId: alvo.id,
+          erro: "LOVABLE_API_KEY ausente no runtime do servidor.",
+          usuario: context.userId,
+        }),
+        erro: "Credencial do gateway ausente no servidor.",
+      };
+    }
+
+    try {
+      const res = await fetch(`${GATEWAY_URL}/me`, {
+        signal: AbortSignal.timeout(15000),
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "X-Connection-Api-Key": env[alvo.envName]!,
+        },
+      });
+      const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
+      const body = await res.text().catch(() => "");
+      pushDiag({
+        ts: new Date().toISOString(), method: "GET", url: `${GATEWAY_URL}/me`,
+        status: res.status, ok: res.ok, requestId, step: `vincular:${alvo.envName}`,
+      });
+
+      if (!res.ok) {
+        const erro = parseGraphError(res.status, body, "vincular", `${GATEWAY_URL}/me`, requestId);
+        return {
+          ok: false as const,
+          erro,
+          diagnostico: montarDiagnosticoVinculo({
+            conexaoId: alvo.id,
+            requestId,
+            status: res.status,
+            erro,
+            usuario: context.userId,
+          }),
+        };
+      }
+
+      const me = JSON.parse(body || "{}") as { displayName?: string; userPrincipalName?: string; mail?: string };
+      const conta = me.userPrincipalName ?? me.mail ?? me.displayName ?? null;
+      conexaoAtiva = alvo.envName;
+      return {
+        ok: true as const,
+        conexao: { ...alvo, conta, organizacao: me.displayName ?? null },
+      };
+    } catch (e: any) {
+      const erro = e?.message ?? "Falha de rede ao falar com o gateway.";
+      return {
+        ok: false as const,
+        erro,
+        diagnostico: montarDiagnosticoVinculo({ conexaoId: alvo.id, erro, usuario: context.userId }),
+      };
     }
   });
