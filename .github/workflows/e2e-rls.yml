@@ -47,7 +47,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Testes de integração do OneDrive (fetch simulado)
-        run: bunx vitest run src/lib/__tests__/onedrive-graph.test.ts src/components/onedrive
+        run: bunx vitest run src/lib/__tests__/onedrive-graph.test.ts src/lib/__tests__/onedrive-conexoes.test.ts src/components/onedrive
 
       - name: Instalar navegadores Playwright
         run: bunx playwright install --with-deps chromium
@@ -63,6 +63,7 @@ jobs:
             e2e/rdo-aprovacao.spec.ts \
             e2e/rdo-fluxo-status.spec.ts \
             e2e/onedrive-conexao.spec.ts \
+            e2e/onedrive-fluxo-completo.spec.ts \
             --project=chromium-desktop
 
       - name: Publicar relatório

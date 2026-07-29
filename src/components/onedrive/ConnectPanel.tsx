@@ -1,4 +1,7 @@
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2, LogOut, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { montarPedidoLiberacao, montarDiagnosticoVinculo, ESCOPOS_ONEDRIVE } from "@/lib/onedrive-conexoes";
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2, LogOut, RefreshCw, ShieldCheck, UserCog, ClipboardCopy, Link2 } from "lucide-react";
 
 export type ConexaoEstado = "verificando" | "conectado" | "sem_acesso" | "desconectado";
 
@@ -36,6 +39,7 @@ export function OneDriveConnectPanel({
   onVerificar,
   onTrocarConta,
   onDesconectar,
+  contexto,
 }: {
   estado: ConexaoEstado;
   conta?: string | null;
@@ -44,7 +48,32 @@ export function OneDriveConnectPanel({
   onVerificar: () => void;
   onTrocarConta: () => void;
   onDesconectar: () => void;
+  /** Contexto usado no pedido ao admin e no diagnóstico. */
+  contexto?: {
+    conexaoId?: string | null;
+    organizacao?: string | null;
+    requestId?: string | null;
+    status?: number | null;
+    projeto?: string | null;
+    usuario?: string | null;
+  };
 }) {
+  const [pedidoCopiado, setPedidoCopiado] = useState(false);
+  const diagnostico = montarDiagnosticoVinculo({
+    ...(contexto ?? {}),
+    conta,
+    erro,
+  });
+
+  async function copiarPedido() {
+    const texto = montarPedidoLiberacao({ ...(contexto ?? {}), conta, erro });
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      // Navegadores sem permissão de clipboard: mostramos o texto para copiar à mão.
+    }
+    setPedidoCopiado(true);
+  }
   const visual = {
     verificando: {
       Icon: Loader2,
@@ -74,6 +103,7 @@ export function OneDriveConnectPanel({
   }[estado];
 
   const { Icon } = visual;
+  const textoPedido = montarPedidoLiberacao({ ...(contexto ?? {}), conta, erro });
 
   return (
     <section
@@ -123,6 +153,21 @@ export function OneDriveConnectPanel({
         >
           <LogOut className="h-3 w-3" /> Sair / desconectar
         </button>
+        <Link
+          to="/configuracoes/onedrive/vincular"
+          className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent"
+        >
+          <Link2 className="h-3 w-3" /> Vincular conexão do workspace
+        </Link>
+        {estado !== "conectado" && (
+          <button
+            onClick={copiarPedido}
+            data-testid="onedrive-pedido-admin"
+            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
+          >
+            <ClipboardCopy className="h-3 w-3" /> Solicitar liberação ao admin
+          </button>
+        )}
         <a
           href="https://portal.office.com/account#installs"
           target="_blank"
@@ -132,6 +177,50 @@ export function OneDriveConnectPanel({
           <ExternalLink className="h-3 w-3" /> Sessões da conta Microsoft
         </a>
       </div>
+
+      {pedidoCopiado && estado !== "conectado" && (
+        <div className="space-y-1" data-testid="onedrive-pedido-texto">
+          <p className="text-[11px] text-muted-foreground">
+            Texto copiado para a área de transferência — envie ao responsável pelo workspace:
+          </p>
+          <textarea
+            readOnly
+            value={textoPedido}
+            rows={8}
+            className="w-full text-[11px] font-mono rounded border border-border bg-muted/40 p-2"
+          />
+        </div>
+      )}
+
+      {estado !== "conectado" && (
+        <div className="rounded border border-border/70 bg-muted/30 p-3 space-y-2" data-testid="onedrive-diagnostico">
+          <p className="text-xs font-medium">Diagnóstico da vinculação</p>
+          <dl className="text-[11px] grid gap-1 sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">ID da conexão</dt>
+              <dd className="font-mono break-all">{diagnostico.conexaoId}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Organização / conta detectada</dt>
+              <dd className="break-all">{diagnostico.organizacao}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">request-id</dt>
+              <dd className="font-mono break-all">{diagnostico.requestId}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Status HTTP</dt>
+              <dd className="font-mono">{diagnostico.status}</dd>
+            </div>
+          </dl>
+          <ul className="text-[11px] list-disc pl-5 space-y-1 text-muted-foreground">
+            {diagnostico.checklist.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-muted-foreground">Escopos esperados: {ESCOPOS_ONEDRIVE.join(", ")}.</p>
+        </div>
+      )}
 
       <p className="text-[11px] text-muted-foreground">
         Falhou? Confira o bloco de diagnóstico no fim desta página: ele traz status HTTP e request-id de cada

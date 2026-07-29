@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle, ExternalLink, HardDrive } from "lucide-react";
 import { notify } from "@/lib/toast";
-import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
+import { listOneDriveConexoes, verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
@@ -46,10 +46,23 @@ function OneDriveSettings() {
     typeof window !== "undefined" ? localStorage.getItem(ROOT_KEY) ?? "DiarioDeObra" : "DiarioDeObra",
   );
 
+  // Reconexão automática: enquanto estiver desconectado, a tela reconsulta o
+  // gateway a cada 10s (e ao voltar o foco). Assim que o workspace liberar a
+  // conexão, o status vira "Conectado" sem recarregar a página.
   const verify = useQuery({
     queryKey: ["onedrive", "verify"],
     queryFn: () => verifyFn({ data: undefined as any }),
     retry: 1,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: (q) => (q.state.data?.ok === true ? false : 10_000),
+  });
+
+  const conexoesFn = useServerFn(listOneDriveConexoes);
+  const conexoes = useQuery({
+    queryKey: ["onedrive", "conexoes"],
+    queryFn: () => conexoesFn({ data: undefined as any }),
+    retry: 0,
   });
 
   const folders = useQuery({
@@ -127,6 +140,13 @@ function OneDriveSettings() {
         conta={acc?.email ?? acc?.displayName ?? ONEDRIVE_ACCOUNT}
         erro={(verify.error as Error | null)?.message ?? verify.data?.error ?? null}
         verificando={verify.isFetching}
+        contexto={{
+          conexaoId: conexoes.data?.conexoes?.[0]?.id ?? null,
+          organizacao: acc?.displayName ?? null,
+          requestId: diag.data?.entries?.find((e) => !e.ok)?.requestId ?? null,
+          status: (verify.data as any)?.status ?? null,
+          projeto: "Diário de Obra FACOM",
+        }}
         onVerificar={() => verify.refetch()}
         onTrocarConta={() => setAccountModal("switch")}
         onDesconectar={() => setAccountModal("disconnect")}

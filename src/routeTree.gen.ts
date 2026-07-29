@@ -69,6 +69,7 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
+import { Route as AuthenticatedConfiguracoesOnedriveVincularRouteImport } from './routes/_authenticated/configuracoes.onedrive.vincular'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
@@ -405,6 +406,12 @@ const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
   path: '/api/public/hooks/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedConfiguracoesOnedriveVincularRoute =
+  AuthenticatedConfiguracoesOnedriveVincularRouteImport.update({
+    id: '/vincular',
+    path: '/vincular',
+    getParentRoute: () => AuthenticatedConfiguracoesOnedriveRoute,
+  } as any)
 const AuthenticatedCadastrosTemplatesTarefasIdRoute =
   AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
     id: '/$id',
@@ -463,7 +470,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -485,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -526,7 +534,7 @@ export interface FileRoutesByTo {
   '/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -548,6 +556,7 @@ export interface FileRoutesByTo {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -592,7 +601,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/botoes-efeitos': typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
+  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/_authenticated/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -614,6 +623,7 @@ export interface FileRoutesById {
   '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
+  '/_authenticated/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -680,6 +690,7 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
+    | '/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -743,6 +754,7 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
+    | '/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   id:
@@ -808,6 +820,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ajuda/artigo/$slug'
     | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
+    | '/_authenticated/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
@@ -1257,6 +1270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/configuracoes/onedrive/vincular': {
+      id: '/_authenticated/configuracoes/onedrive/vincular'
+      path: '/vincular'
+      fullPath: '/configuracoes/onedrive/vincular'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
+    }
     '/_authenticated/cadastros/templates-tarefas/$id': {
       id: '/_authenticated/cadastros/templates-tarefas/$id'
       path: '/$id'
@@ -1281,6 +1301,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedConfiguracoesOnedriveRouteChildren {
+  AuthenticatedConfiguracoesOnedriveVincularRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRoute
+}
+
+const AuthenticatedConfiguracoesOnedriveRouteChildren: AuthenticatedConfiguracoesOnedriveRouteChildren =
+  {
+    AuthenticatedConfiguracoesOnedriveVincularRoute:
+      AuthenticatedConfiguracoesOnedriveVincularRoute,
+  }
+
+const AuthenticatedConfiguracoesOnedriveRouteWithChildren =
+  AuthenticatedConfiguracoesOnedriveRoute._addFileChildren(
+    AuthenticatedConfiguracoesOnedriveRouteChildren,
+  )
+
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
   AuthenticatedConfiguracoesAuditoriaRoute: typeof AuthenticatedConfiguracoesAuditoriaRoute
@@ -1289,7 +1324,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesBotoesEfeitosRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
-  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
+  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesRotacaoChavesRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   AuthenticatedConfiguracoesRunbookRoute: typeof AuthenticatedConfiguracoesRunbookRoute
@@ -1315,7 +1350,7 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesLgpdRoute: AuthenticatedConfiguracoesLgpdRoute,
     AuthenticatedConfiguracoesOnedriveRoute:
-      AuthenticatedConfiguracoesOnedriveRoute,
+      AuthenticatedConfiguracoesOnedriveRouteWithChildren,
     AuthenticatedConfiguracoesPermissoesRoute:
       AuthenticatedConfiguracoesPermissoesRoute,
     AuthenticatedConfiguracoesRotacaoChavesRoute:
