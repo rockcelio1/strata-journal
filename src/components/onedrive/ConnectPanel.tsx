@@ -39,6 +39,7 @@ export function OneDriveConnectPanel({
   onVerificar,
   onTrocarConta,
   onDesconectar,
+  contexto,
 }: {
   estado: ConexaoEstado;
   conta?: string | null;
