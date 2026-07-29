@@ -35,27 +35,45 @@ function AuthPage() {
   const passwordOk = signupPassword.length > 0 && passwordErrors.length === 0;
   const [resendLoading, setResendLoading] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
+  const [signinError, setSigninError] = useState<{ message: string; action: string } | null>(null);
+  const [convite, setConvite] = useState<{ empresa_nome: string; role: string } | null>(null);
 
   useEffect(() => {
     const value = signupEmail.trim().toLowerCase();
+    setConvite(null);
     if (!value) { setEmailStatus("idle"); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { setEmailStatus("invalid"); return; }
     setEmailStatus("checking");
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const res = await checkEmailRegistered({ data: { email: value }, signal: ctrl.signal } as any);
+        const res = await getSignupContext({ data: { email: value }, signal: ctrl.signal } as any);
         setEmailStatus(res.exists ? "taken" : "available");
+        setConvite(res.convite ?? null);
       } catch { /* ignore */ }
     }, 500);
     return () => { clearTimeout(t); ctrl.abort(); };
   }, [signupEmail]);
+
+  async function afterAuth() {
+    // Garante o vínculo com uma empresa antes de entrar: o isolamento por
+    // empresa (RLS) passa a valer já na primeira sessão.
+    try {
+      await ensureEmpresaVinculo({ data: {} });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[auth] vínculo de empresa", err);
+    }
+    if (next) window.location.assign(next);
+    else navigate({ to: "/dashboard" });
+  }
 
   async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email")).trim().toLowerCase();
     setLoading(true);
+    setSigninError(null);
     const t0 = performance.now();
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -63,16 +81,15 @@ function AuthPage() {
     });
     // eslint-disable-next-line no-console
     console.info("[perf] login", `${Math.round(performance.now() - t0)}ms`);
-    setLoading(false);
     if (error) {
-      if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
-        setResendEmail(email);
-        return toast.error("Confirme seu e-mail antes de entrar. Use o botão para reenviar a verificação.");
-      }
-      return toast.error(error.message);
+      setLoading(false);
+      const f = friendlyAuthError(error);
+      if (f.code === "EMAIL_NOT_CONFIRMED") setResendEmail(email);
+      setSigninError({ message: f.message, action: f.action });
+      return toast.error(f.message, { description: f.action });
     }
-    if (next) window.location.assign(next);
-    else navigate({ to: "/dashboard" });
+    await afterAuth();
+    setLoading(false);
   }
 
   async function handleResend() {
@@ -86,8 +103,8 @@ function AuthPage() {
       if (res.alreadyConfirmed) toast.success("Este e-mail já está confirmado. Faça login.");
       else toast.success("E-mail de verificação reenviado. Confira sua caixa de entrada.");
     } catch (err: any) {
-      if (err?.message === "EMAIL_NOT_FOUND") toast.error("E-mail não cadastrado.");
-      else toast.error(err?.message ?? "Não foi possível reenviar agora.");
+      const f = friendlyAuthError(err);
+      toast.error(f.message, { description: f.action });
     } finally {
       setResendLoading(false);
     }
@@ -99,32 +116,45 @@ function AuthPage() {
     const email = String(fd.get("email")).trim().toLowerCase();
     const password = String(fd.get("password"));
     const nome = String(fd.get("nome"));
-    const empresa_nome = String(fd.get("empresa"));
+    // Com convite pendente, a empresa é a que convidou (seleção automática).
+    const empresa_nome = convite ? convite.empresa_nome : String(fd.get("empresa") ?? "");
 
     // Anti race-condition: bloqueia envio enquanto a verificação está pendente/inválida
     if (emailStatus === "checking") { toast.error("Aguarde a verificação do e-mail."); return; }
     if (emailStatus === "invalid") { toast.error("E-mail inválido."); return; }
-    if (emailStatus === "taken") { toast.error("Este e-mail já está cadastrado."); return; }
+    if (emailStatus === "taken") {
+      const f = friendlyAuthError("EMAIL_TAKEN");
+      toast.error(f.message, { description: f.action });
+      return;
+    }
+    if (!convite && !empresa_nome.trim()) {
+      toast.error("Informe o nome da empresa.", { description: "Ela será criada e você será o administrador." });
+      return;
+    }
     const pwCheck = validatePasswordStrength(password);
-    if (!pwCheck.ok) { toast.error(pwCheck.errors[0] ?? "Senha fraca."); return; }
+    if (!pwCheck.ok) {
+      toast.error("Senha fraca.", { description: pwCheck.errors[0] ?? "Escolha uma senha mais forte." });
+      return;
+    }
 
     setLoading(true);
     try {
       await registerUser({ data: { email, password, nome, empresa_nome } });
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.success("Conta criada! Faça login para continuar.");
-      } else {
-        toast.success("Conta criada com sucesso!");
-        navigate({ to: "/dashboard" });
+        const f = friendlyAuthError(error);
+        toast.success("Conta criada!", { description: `${f.message} ${f.action}` });
+        setLoading(false);
+        return;
       }
+      toast.success(
+        convite ? `Conta criada! Você entrou na empresa ${convite.empresa_nome}.` : "Conta e empresa criadas com sucesso!",
+      );
+      await afterAuth();
     } catch (err: any) {
-      if (err?.message === "EMAIL_TAKEN") {
-        setEmailStatus("taken");
-        toast.error("Este e-mail já está cadastrado. Faça login ou recupere sua senha.");
-      } else {
-        toast.error(err?.message ?? "Falha ao criar conta");
-      }
+      const f = friendlyAuthError(err);
+      if (f.code === "EMAIL_TAKEN") setEmailStatus("taken");
+      toast.error(f.message, { description: f.action });
     } finally {
       setLoading(false);
     }
@@ -136,12 +166,16 @@ function AuthPage() {
       ? `${window.location.origin}${next}`
       : window.location.origin;
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri });
-    setLoading(false);
-    if (result.error) return toast.error(String(result.error));
+    if (result.error) {
+      setLoading(false);
+      const f = friendlyAuthError(result.error);
+      return toast.error(f.message, { description: f.action });
+    }
     if (result.redirected) return;
-    if (next) window.location.assign(next);
-    else navigate({ to: "/dashboard" });
+    await afterAuth();
+    setLoading(false);
   }
+
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
