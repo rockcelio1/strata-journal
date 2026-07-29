@@ -8,6 +8,7 @@ import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOne
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
+import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
