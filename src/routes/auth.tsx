@@ -109,8 +109,13 @@ function AuthPage() {
     setLoading(true);
     try {
       await registerUser({ data: { email, password, nome, empresa_nome } });
-      setResendEmail(email);
-      toast.success("Conta criada! Verifique seu e-mail para confirmar antes de entrar.");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.success("Conta criada! Faça login para continuar.");
+      } else {
+        toast.success("Conta criada com sucesso!");
+        navigate({ to: "/dashboard" });
+      }
     } catch (err: any) {
       if (err?.message === "EMAIL_TAKEN") {
         setEmailStatus("taken");

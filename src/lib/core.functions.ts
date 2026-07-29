@@ -39,9 +39,10 @@ export async function registerUserCore(
 ) {
   const email = input.email.toLowerCase();
   if (await emailExistsIn(admin, email)) throw new Error("EMAIL_TAKEN");
-  // Exige confirmação por e-mail: NÃO marcar email_confirm
+  // Conta já nasce confirmada: o acesso é liberado imediatamente após o cadastro
+  // (a aprovação por admin continua valendo via profiles.aprovado).
   const { error } = await admin.auth.admin.createUser({
-    email, password: input.password, email_confirm: false,
+    email, password: input.password, email_confirm: true,
     user_metadata: { nome: input.nome, empresa_nome: input.empresa_nome },
   });
   if (error) {
@@ -71,16 +72,10 @@ export const registerUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await registerUserCore(supabaseAdmin, data);
-    // Dispara o e-mail de confirmação (Supabase envia ao gerar o link de signup)
-    try {
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "signup",
-        email: data.email.toLowerCase(),
-        password: data.password,
-      });
-    } catch { /* envio best-effort */ }
     return { ok: true };
   });
+
+
 
 // Reenviar e-mail de verificação
 export const resendVerification = createServerFn({ method: "POST" })
