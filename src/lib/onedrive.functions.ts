@@ -1,6 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  getDownloadUrl,
+  listChildren,
+  naoConectado,
+  uploadContent,
+  OneDriveError,
+  type Fetcher,
+  type OneDriveItem,
+} from "@/lib/onedrive-graph";
+
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
 
@@ -48,7 +58,7 @@ function getKeys() {
   const apiKey = process.env.LOVABLE_API_KEY;
   const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
   if (!apiKey || !connKey) {
-    throw new Error("OneDrive não está conectado. Conecte o conector OneDrive nas configurações.");
+    throw naoConectado("credenciais");
   }
   return { apiKey, connKey };
 }
@@ -434,21 +444,28 @@ export async function refreshOnedriveDownloadUrl(itemId: string): Promise<string
 
 /* ------------------------------------------------------------------ *
  * Explorador de arquivos (Configurações → OneDrive)
- * Listagem, upload e download direto na conta corporativa conectada.
+ * Listagem, upload e download apoiados no núcleo puro `onedrive-graph`,
+ * que é coberto por testes de integração com fetch simulado.
  * ------------------------------------------------------------------ */
 
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // PUT simples do Graph suporta até ~250MB; limitamos por custo/memória
+const fetcherGateway: Fetcher = (path, init, step) => gatewayFetch(path, init, 2, step ?? "graph");
 
-export type OneDriveItem = {
-  id: string;
-  name: string;
-  isFolder: boolean;
-  size: number;
-  childCount: number;
-  modifiedAt: string | null;
-  webUrl: string | null;
-  mimeType: string | null;
-};
+function falhaOneDrive(e: unknown): never {
+  if (e instanceof OneDriveError) {
+    pushDiag({
+      ts: new Date().toISOString(),
+      method: "GET",
+      url: e.detalhe.url ?? GATEWAY_URL,
+      status: e.detalhe.status,
+      ok: false,
+      requestId: e.detalhe.requestId ?? null,
+      step: e.detalhe.step,
+      error: `${e.detalhe.kind}: ${e.detalhe.message}`,
+    });
+    throw new Error(`${e.detalhe.message} ${e.detalhe.action}`);
+  }
+  throw e instanceof Error ? e : new Error("Falha inesperada no OneDrive.");
+}
 
 /** Lista pastas E arquivos de um caminho, com paginação por cursor (skipToken). */
 export const listOneDriveItems = createServerFn({ method: "POST" })
@@ -462,42 +479,11 @@ export const listOneDriveItems = createServerFn({ method: "POST" })
       .parse(d ?? {}),
   )
   .handler(async ({ data }) => {
-    const path = (data.path ?? "").replace(/^\/+|\/+$/g, "");
-    const select = "$select=id,name,size,folder,file,webUrl,lastModifiedDateTime&$top=100&$orderby=name";
-    const base = path
-      ? `/me/drive/root:/${encodePath(path)}:/children?${select}`
-      : `/me/drive/root/children?${select}`;
-    const url = data.cursor ? `${base}&$skiptoken=${encodeURIComponent(data.cursor)}` : base;
-
-    const res = await gatewayFetch(url, undefined, 2, "listItems");
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(
-        parseGraphError(res.status, body, "listItems", `${GATEWAY_URL}${url}`, res.headers.get("request-id")),
-      );
+    try {
+      return await listChildren(fetcherGateway, { path: data.path, cursor: data.cursor });
+    } catch (e) {
+      return falhaOneDrive(e);
     }
-    const json = (await res.json()) as {
-      value: Array<any>;
-      "@odata.nextLink"?: string;
-    };
-
-    const items: OneDriveItem[] = (json.value ?? []).map((it) => ({
-      id: it.id,
-      name: it.name,
-      isFolder: Boolean(it.folder),
-      size: Number(it.size ?? 0),
-      childCount: Number(it.folder?.childCount ?? 0),
-      modifiedAt: it.lastModifiedDateTime ?? null,
-      webUrl: it.webUrl ?? null,
-      mimeType: it.file?.mimeType ?? null,
-    }));
-    // pastas primeiro, depois arquivos — ordenação estável para a UI
-    items.sort((a, b) => Number(b.isFolder) - Number(a.isFolder) || a.name.localeCompare(b.name, "pt-BR"));
-
-    const next = json["@odata.nextLink"];
-    const cursor = next ? new URL(next).searchParams.get("$skiptoken") : null;
-
-    return { path, items, cursor };
   });
 
 /** Sobe um arquivo para o caminho informado (PUT simples do Graph). */
@@ -514,42 +500,19 @@ export const uploadOneDriveFile = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    getKeys();
-    const folder = (data.path ?? "").replace(/^\/+|\/+$/g, "");
     const ext = data.nome.match(/\.[^.]+$/)?.[0] ?? "";
     const nome = slugSegment(data.nome.replace(/\.[^.]+$/, "")) + ext;
-    const fullPath = folder ? `${folder}/${nome}` : nome;
-
-    const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
-    if (binary.byteLength > MAX_UPLOAD_BYTES) {
-      throw new Error(`Arquivo maior que o limite de ${Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} MB.`);
+    const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
+    try {
+      return await uploadContent(fetcherGateway, {
+        path: data.path,
+        nome,
+        mimeType: data.mime_type,
+        bytes,
+      });
+    } catch (e) {
+      return falhaOneDrive(e);
     }
-
-    const url = `/me/drive/root:/${encodePath(fullPath)}:/content?@microsoft.graph.conflictBehavior=rename`;
-    const res = await gatewayFetch(
-      url,
-      {
-        method: "PUT",
-        headers: { "Content-Type": data.mime_type || "application/octet-stream" },
-        body: binary,
-      },
-      1,
-      "uploadFile",
-    );
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(
-        parseGraphError(res.status, body, "uploadFile", `${GATEWAY_URL}${url}`, res.headers.get("request-id")),
-      );
-    }
-    const item = (await res.json()) as { id: string; name: string; size?: number; webUrl?: string };
-    return {
-      id: item.id,
-      name: item.name,
-      size: Number(item.size ?? binary.byteLength),
-      webUrl: item.webUrl ?? null,
-      path: fullPath,
-    };
   });
 
 /** Devolve uma URL temporária de download (validade ~1h) para um item. */
@@ -557,17 +520,13 @@ export const getOneDriveDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { itemId: string }) => z.object({ itemId: z.string().min(1).max(300) }).parse(d))
   .handler(async ({ data }) => {
-    const url = `/me/drive/items/${encodeURIComponent(data.itemId)}?$select=id,name,size,webUrl,@microsoft.graph.downloadUrl`;
-    const res = await gatewayFetch(url, undefined, 1, "downloadUrl");
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return {
-        ok: false as const,
-        error: parseGraphError(res.status, body, "downloadUrl", `${GATEWAY_URL}${url}`, res.headers.get("request-id")),
-      };
+    try {
+      const r = await getDownloadUrl(fetcherGateway, data.itemId);
+      return { ok: true as const, ...r };
+    } catch (e) {
+      if (e instanceof OneDriveError) {
+        return { ok: false as const, error: `${e.detalhe.message} ${e.detalhe.action}`, kind: e.detalhe.kind };
+      }
+      return { ok: false as const, error: (e as Error)?.message ?? "Falha no OneDrive.", kind: "desconhecido" as const };
     }
-    const j = (await res.json()) as any;
-    const link = j?.["@microsoft.graph.downloadUrl"] ?? j?.webUrl ?? null;
-    if (!link) return { ok: false as const, error: "O OneDrive não retornou link de download para este item." };
-    return { ok: true as const, url: link as string, name: (j?.name as string) ?? "arquivo", size: Number(j?.size ?? 0) };
   });
