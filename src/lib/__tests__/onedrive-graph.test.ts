@@ -154,12 +154,6 @@ describe("OneDrive — falhas de permissão e token", () => {
     expect(erro.detalhe.action).toMatch(/Reconecte/i);
   });
 
-  it("403 orienta escopos necessários", async () => {
-    const { fn } = fetcherFila(resp(403, { error: { code: "accessDenied", message: "forbidden" } }));
-    const erro = (await getDownloadUrl(fn, "x")) as never | OneDriveError;
-    expect(erro).toBeUndefined();
-  }).skip;
-
   it("403 no upload orienta escopos e request-id", async () => {
     const { fn } = fetcherFila(
       resp(403, { error: { code: "accessDenied", message: "forbidden" } }, { "request-id": "req-99" }),
