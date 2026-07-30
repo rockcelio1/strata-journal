@@ -30,6 +30,46 @@ export const ESCOPOS_MICROSOFT = [
   "Files.ReadWrite",
 ];
 
+/** Escopos sem os quais o RDO não funciona (tela de verificação pós-OAuth). */
+export const ESCOPOS_OBRIGATORIOS = ["Files.ReadWrite", "User.Read", "offline_access"];
+
+export type VerificacaoEscopos = {
+  ok: boolean;
+  concedidos: string[];
+  faltando: string[];
+  obrigatorios: string[];
+};
+
+/**
+ * Compara o que a Microsoft devolveu com o que o RDO precisa.
+ * `offline_access` não volta na lista de escopos do token; consideramos
+ * concedido quando veio um refresh_token.
+ */
+export function verificarEscopos(scope: string | undefined, temRefresh: boolean): VerificacaoEscopos {
+  const brutos = (scope ?? "")
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const concedidos = new Set(brutos.map((s) => s.replace(/^https:\/\/graph\.microsoft\.com\//i, "")));
+  if (temRefresh) concedidos.add("offline_access");
+
+  const temEscopo = (alvo: string) => {
+    const alvoBaixo = alvo.toLowerCase();
+    for (const c of concedidos) {
+      const cb = c.toLowerCase();
+      if (cb === alvoBaixo) return true;
+      // Files.ReadWrite.All também satisfaz Files.ReadWrite
+      if (alvoBaixo.startsWith("files.readwrite") && cb.startsWith("files.readwrite")) return true;
+    }
+    return false;
+  };
+
+  const lista = [...concedidos];
+  const faltando = ESCOPOS_OBRIGATORIOS.filter((e) => !temEscopo(e));
+  return { ok: faltando.length === 0, concedidos: lista, faltando, obrigatorios: ESCOPOS_OBRIGATORIOS };
+}
+
+
 type Credenciais = { clientId: string; clientSecret: string; tenant: string };
 
 export function credenciais(): Credenciais | null {
@@ -157,7 +197,7 @@ async function graph(userId: string, path: string, init?: RequestInit) {
 
 // ---------------------------------------------------------------- login
 
-export async function iniciarLogin(userId: string, origin: string) {
+export async function iniciarLogin(userId: string, origin: string, opcoes?: { loginHint?: string | null; forcarConsentimento?: boolean }) {
   const { clientId, tenant } = exigirCredenciais();
   const url = new URL(`${authBase(tenant)}/authorize`);
   url.searchParams.set("client_id", clientId);
@@ -166,7 +206,9 @@ export async function iniciarLogin(userId: string, origin: string) {
   url.searchParams.set("redirect_uri", redirectUri(origin));
   url.searchParams.set("scope", ESCOPOS_MICROSOFT.join(" "));
   url.searchParams.set("state", criarState(userId));
-  url.searchParams.set("prompt", "select_account");
+  // Reautorização força a tela de consentimento para renovar permissões/refresh token.
+  url.searchParams.set("prompt", opcoes?.forcarConsentimento ? "consent" : "select_account");
+  if (opcoes?.loginHint) url.searchParams.set("login_hint", opcoes.loginHint);
   return { authorizationUrl: url.toString() };
 }
 
@@ -174,6 +216,7 @@ export async function concluirLogin(userId: string, code: string, state: string,
   if (!validarState(state, userId)) {
     throw new Error("A autorização não pôde ser validada (state inválido ou expirado). Tente entrar novamente.");
   }
+  const anterior = await lerTokens(userId);
   const tokens = await pedirToken({
     grant_type: "authorization_code",
     code,
@@ -183,7 +226,18 @@ export async function concluirLogin(userId: string, code: string, state: string,
   await gravarTokens(userId, tokens);
   const perfil = await buscarPerfil(userId).catch(() => null);
   if (perfil?.conta) await atualizarConta(userId, CONNECTOR_ID, perfil.conta);
-  return { ok: true as const, conta: perfil?.conta ?? null };
+
+  const verificacao = verificarEscopos(tokens.scope, !!tokens.refresh_token);
+  const { registrarAuditoria } = await import("@/lib/onedrive-auditoria.server");
+  await registrarAuditoria({
+    userId,
+    acao: anterior ? "reautorizacao" : "login",
+    conta: perfil?.conta ?? null,
+    escopos: verificacao.concedidos,
+    detalhe: verificacao.ok ? null : `Permissões faltando: ${verificacao.faltando.join(", ")}`,
+  });
+
+  return { ok: true as const, conta: perfil?.conta ?? null, verificacao };
 }
 
 async function buscarPerfil(userId: string) {
@@ -204,6 +258,9 @@ export type StatusPessoal = {
   desde: string | null;
   erro: string | null;
   escopos: string[];
+  verificacao: VerificacaoEscopos | null;
+  precisaReautorizar: boolean;
+  expiraEm: string | null;
 };
 
 export async function statusPessoal(userId: string): Promise<StatusPessoal> {
@@ -215,11 +272,15 @@ export async function statusPessoal(userId: string): Promise<StatusPessoal> {
     desde: null,
     erro: null,
     escopos: ESCOPOS_MICROSOFT,
+    verificacao: null,
+    precisaReautorizar: false,
+    expiraEm: null,
   };
   if (!base.configurado) return base;
   const tokens = await lerTokens(userId);
   if (!tokens) return base;
   const linha = await getConnectionRowForUser(userId, CONNECTOR_ID).catch(() => null);
+  const verificacao = verificarEscopos(tokens.scope, !!tokens.refresh_token);
   try {
     const perfil = await buscarPerfil(userId);
     return {
@@ -228,14 +289,28 @@ export async function statusPessoal(userId: string): Promise<StatusPessoal> {
       conta: perfil.conta ?? linha?.conta ?? null,
       nome: perfil.nome,
       desde: linha?.created_at ?? null,
+      verificacao,
+      precisaReautorizar: !verificacao.ok,
+      expiraEm: new Date(tokens.expires_at).toISOString(),
     };
   } catch (e) {
-    return { ...base, conta: linha?.conta ?? null, erro: (e as Error).message };
+    return {
+      ...base,
+      conta: linha?.conta ?? null,
+      erro: (e as Error).message,
+      verificacao,
+      // token inválido/expirado sem renovação possível → precisa reautorizar
+      precisaReautorizar: true,
+      expiraEm: new Date(tokens.expires_at).toISOString(),
+    };
   }
 }
 
 export async function desconectar(userId: string) {
+  const linha = await getConnectionRowForUser(userId, CONNECTOR_ID).catch(() => null);
   await deleteConnectionForUser(userId, CONNECTOR_ID);
+  const { registrarAuditoria } = await import("@/lib/onedrive-auditoria.server");
+  await registrarAuditoria({ userId, acao: "desconexao", conta: linha?.conta ?? null });
   return { ok: true as const };
 }
 

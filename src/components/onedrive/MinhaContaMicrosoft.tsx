@@ -23,38 +23,9 @@ import {
   onedriveListarPessoal,
   onedriveStatusPessoal,
 } from "@/lib/onedrive-appuser.functions";
+import { rodarLoginMicrosoft } from "@/components/onedrive/oauth-popup";
+import { EscoposVerificacao } from "@/components/onedrive/EscoposVerificacao";
 
-const CONNECTOR_ID = "microsoft_onedrive";
-
-function esperarConclusao(popup: Window) {
-  return new Promise<void>((resolve, reject) => {
-    let poll: number | undefined;
-    const limpar = () => {
-      window.removeEventListener("message", onMessage);
-      if (poll !== undefined) window.clearInterval(poll);
-    };
-    const onMessage = (event: MessageEvent) => {
-      const type = event.data?.type;
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        event.data?.connectorId !== CONNECTOR_ID ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
-      )
-        return;
-      limpar();
-      if (type === "appUserConnectorOAuthComplete") return resolve();
-      popup.close();
-      reject(new Error(event.data?.erro ?? "A autorização da Microsoft falhou."));
-    };
-    window.addEventListener("message", onMessage);
-    poll = window.setInterval(() => {
-      if (!popup.closed) return;
-      limpar();
-      reject(new Error("A janela de login foi fechada antes de concluir."));
-    }, 500);
-  });
-}
 
 function fmt(bytes: number) {
   if (!bytes) return "—";
@@ -97,19 +68,8 @@ export function MinhaContaMicrosoft() {
   });
 
   const login = useMutation({
-    mutationFn: async () => {
-      const popup = window.open("", "onedrive-oauth", "width=620,height=740");
-      if (!popup) throw new Error("O navegador bloqueou a janela. Libere pop-ups e tente de novo.");
-      try {
-        const { authorizationUrl } = await iniciarFn({ data: undefined as never });
-        const conclusao = esperarConclusao(popup);
-        popup.location.href = authorizationUrl;
-        await conclusao;
-      } catch (e) {
-        popup.close();
-        throw e;
-      }
-    },
+    mutationFn: () => rodarLoginMicrosoft(() => iniciarFn({ data: {} })),
+
     onSuccess: async () => {
       notify.success("Conta Microsoft conectada");
       await qc.invalidateQueries({ queryKey: ["onedrive", "pessoal"] });
@@ -221,11 +181,12 @@ export function MinhaContaMicrosoft() {
           </p>
         </div>
       )}
-
+      {status.data?.verificacao && <EscoposVerificacao verificacao={status.data.verificacao} />}
 
       {status.data?.erro && (
         <p className="text-xs text-destructive">Diagnóstico: {status.data.erro}</p>
       )}
+
 
       {conectado && (
         <div className="border-t border-border pt-3 space-y-2">

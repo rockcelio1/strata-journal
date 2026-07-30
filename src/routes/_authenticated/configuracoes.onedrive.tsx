@@ -11,6 +11,9 @@ import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection
 import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
 import { OneDriveConnectPanel, classificarEstadoConexao } from "@/components/onedrive/ConnectPanel";
 import { MinhaContaMicrosoft } from "@/components/onedrive/MinhaContaMicrosoft";
+import { ReautorizarOneDrive } from "@/components/onedrive/ReautorizarOneDrive";
+import { OneDrivePermissoes } from "@/components/onedrive/OneDrivePermissoes";
+import { OneDriveAuditoria } from "@/components/onedrive/OneDriveAuditoria";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
@@ -153,7 +156,15 @@ function OneDriveSettings() {
         onDesconectar={() => setAccountModal("disconnect")}
       />
 
+      <ReautorizarOneDrive />
+
       <MinhaContaMicrosoft />
+
+      <OneDrivePermissoes />
+
+      <OneDriveAuditoria />
+
+
 
 
 

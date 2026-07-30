@@ -2374,6 +2374,36 @@ export type Database = {
           },
         ]
       }
+      onedrive_auditoria: {
+        Row: {
+          acao: string
+          conta: string | null
+          criado_em: string
+          detalhe: string | null
+          escopos: string[]
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          conta?: string | null
+          criado_em?: string
+          detalhe?: string | null
+          escopos?: string[]
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          conta?: string | null
+          criado_em?: string
+          detalhe?: string | null
+          escopos?: string[]
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       onedrive_cache_settings: {
         Row: {
           created_at: string
@@ -2414,6 +2444,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      onedrive_permissoes: {
+        Row: {
+          concedido_por: string | null
+          created_at: string
+          pode_escrever: boolean
+          pode_ler: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          concedido_por?: string | null
+          created_at?: string
+          pode_escrever?: boolean
+          pode_ler?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          concedido_por?: string | null
+          created_at?: string
+          pode_escrever?: boolean
+          pode_ler?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       perm_role_grants: {
         Row: {

@@ -13,6 +13,7 @@ import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
 import { setAnexoTaskItem } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
+import { ReautorizarOneDrive } from "@/components/onedrive/ReautorizarOneDrive";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 // exportRdoPdf / exportRdoExcel são chamados dentro do RdoExportPreview
@@ -576,6 +577,11 @@ function RdoDetailPage() {
         myUserId={me?.profile?.id}
         canManage={!!me?.profile?.id && (me.profile.id === data.rdo.autor_id)}
       />
+
+      {/* Aviso e botão de reautorização do OneDrive (só aparece quando necessário) */}
+      <div className="mb-4">
+        <ReautorizarOneDrive />
+      </div>
 
       {/* Anexos unificados (OneDrive + Supabase) */}
       <Card className="p-4 mb-4">

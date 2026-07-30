@@ -333,7 +333,10 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    const { exigirEscrita } = await import("@/lib/onedrive-permissoes.server");
+    await exigirEscrita(context.supabase, context.userId);
     getKeys();
+
 
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data?.empresa_id) throw new Error("Sem empresa");
@@ -466,13 +469,16 @@ export const listOneDriveItems = createServerFn({ method: "POST" })
       })
       .parse(d ?? {}),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { exigirLeitura } = await import("@/lib/onedrive-permissoes.server");
+    await exigirLeitura(context.supabase, context.userId);
     try {
       return await listChildren(fetcherGateway, { path: data.path, cursor: data.cursor });
     } catch (e) {
       return falhaOneDrive(e);
     }
   });
+
 
 /** Sobe um arquivo para o caminho informado (PUT simples do Graph). */
 export const uploadOneDriveFile = createServerFn({ method: "POST" })
@@ -487,10 +493,13 @@ export const uploadOneDriveFile = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { exigirEscrita } = await import("@/lib/onedrive-permissoes.server");
+    await exigirEscrita(context.supabase, context.userId);
     const ext = data.nome.match(/\.[^.]+$/)?.[0] ?? "";
     const nome = slugSegment(data.nome.replace(/\.[^.]+$/, "")) + ext;
     const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
+
     try {
       return await uploadContent(fetcherGateway, {
         path: data.path,
@@ -542,6 +551,10 @@ export const listOneDriveConexoes = createServerFn({ method: "GET" })
 export const vincularOneDriveConexao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
+    if (!(await ehAdmin(context.supabase, context.userId))) {
+      return { ok: false as const, erro: "Apenas administradores podem definir a conta do sistema.", diagnostico: null };
+    }
     const { definirContaOrganizacao } = await import("@/lib/onedrive-org.server");
     try {
       const r = await definirContaOrganizacao(context.userId);
@@ -549,4 +562,17 @@ export const vincularOneDriveConexao = createServerFn({ method: "POST" })
     } catch (e) {
       return { ok: false as const, erro: (e as Error).message, diagnostico: null };
     }
+  });
+
+/** Remove a conta do sistema deste projeto (assistente de conexão). */
+export const desvincularOneDriveConexao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
+    if (!(await ehAdmin(context.supabase, context.userId))) {
+      return { ok: false as const, erro: "Apenas administradores podem alterar a conta do sistema." };
+    }
+    const { limparContaOrganizacao } = await import("@/lib/onedrive-org.server");
+    await limparContaOrganizacao(context.userId);
+    return { ok: true as const };
   });
