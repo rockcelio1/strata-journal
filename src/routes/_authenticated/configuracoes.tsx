@@ -19,6 +19,7 @@ const subNav = [
   { to: "/configuracoes/aplicativo", label: "Aplicativo", icon: Smartphone, desc: "Preferências do app" },
   { to: "/configuracoes/usuarios", label: "Usuários e permissões", icon: Users, desc: "Pessoas e papéis" },
   { to: "/configuracoes/permissoes", label: "Permissões detalhadas", icon: ShieldCheck, desc: "Matriz por papel e por usuário" },
+  { to: "/configuracoes/acessos", label: "Controle de acessos", icon: ShieldCheck, desc: "Quem vê o quê, em cada módulo do ERP" },
   { to: "/configuracoes/grupos", label: "Grupos & equipes", icon: Users2, desc: "Grupos globais e equipes por obra" },
   { to: "/configuracoes/onedrive", label: "OneDrive", icon: Cloud, desc: "Conta, pasta de destino e validação" },
   { to: "/configuracoes/email", label: "E-mail", icon: Mail, desc: "Provedor, templates, fila e logs" },

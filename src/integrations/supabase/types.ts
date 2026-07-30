@@ -55,6 +55,95 @@ export type Database = {
           },
         ]
       }
+      app_modulos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          icone: string | null
+          id: string
+          key: string
+          nome: string
+          ordem: number
+          rota: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          key: string
+          nome: string
+          ordem?: number
+          rota?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          key?: string
+          nome?: string
+          ordem?: number
+          rota?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      app_recursos: {
+        Row: {
+          acoes: string[]
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          key: string
+          modulo_key: string
+          nome: string
+          ordem: number
+          rota: string | null
+          updated_at: string
+        }
+        Insert: {
+          acoes?: string[]
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          key: string
+          modulo_key: string
+          nome: string
+          ordem?: number
+          rota?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acoes?: string[]
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          key?: string
+          modulo_key?: string
+          nome?: string
+          ordem?: number
+          rota?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_recursos_modulo_key_fkey"
+            columns: ["modulo_key"]
+            isOneToOne: false
+            referencedRelation: "app_modulos"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       audit_logs_usuarios: {
         Row: {
           acao: string
@@ -2296,6 +2385,141 @@ export type Database = {
           },
         ]
       }
+      perm_role_grants: {
+        Row: {
+          acao: string
+          allowed: boolean
+          created_at: string
+          empresa_id: string
+          id: string
+          recurso_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope: Database["public"]["Enums"]["perm_scope"]
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          allowed?: boolean
+          created_at?: string
+          empresa_id: string
+          id?: string
+          recurso_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope?: Database["public"]["Enums"]["perm_scope"]
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          allowed?: boolean
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          recurso_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          scope?: Database["public"]["Enums"]["perm_scope"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perm_role_grants_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perm_user_grants: {
+        Row: {
+          acao: string
+          allowed: boolean
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          id: string
+          motivo: string | null
+          recurso_key: string
+          scope: Database["public"]["Enums"]["perm_scope"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acao: string
+          allowed: boolean
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          id?: string
+          motivo?: string | null
+          recurso_key: string
+          scope?: Database["public"]["Enums"]["perm_scope"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          allowed?: boolean
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          id?: string
+          motivo?: string | null
+          recurso_key?: string
+          scope?: Database["public"]["Enums"]["perm_scope"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perm_user_grants_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perm_user_scopes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          escopo_id: string | null
+          escopo_key: string | null
+          escopo_tipo: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          escopo_id?: string | null
+          escopo_key?: string | null
+          escopo_tipo: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          escopo_id?: string | null
+          escopo_key?: string | null
+          escopo_tipo?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perm_user_scopes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           aprovado: boolean
@@ -3714,6 +3938,10 @@ export type Database = {
         }[]
       }
       cleanup_old_backups: { Args: never; Returns: number }
+      escopo_de: {
+        Args: { _acao: string; _recurso: string; _user: string }
+        Returns: Database["public"]["Enums"]["perm_scope"]
+      }
       has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: {
@@ -3728,6 +3956,18 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      meus_acessos: {
+        Args: never
+        Returns: {
+          acao: string
+          recurso_key: string
+          scope: Database["public"]["Enums"]["perm_scope"]
+        }[]
+      }
+      pode: {
+        Args: { _acao: string; _recurso: string; _user: string }
         Returns: boolean
       }
       rdo_signatarios_pendentes: {
@@ -3814,6 +4054,7 @@ export type Database = {
         | "anonimizacao"
         | "revogacao"
       obra_status: "planejamento" | "em_andamento" | "pausada" | "concluida"
+      perm_scope: "proprio" | "equipe" | "empresa" | "global"
       rdo_acesso_nivel: "ver" | "editar" | "aprovar"
       rdo_acesso_sujeito: "user" | "grupo"
       rdo_status:
@@ -4048,6 +4289,7 @@ export const Constants = {
         "revogacao",
       ],
       obra_status: ["planejamento", "em_andamento", "pausada", "concluida"],
+      perm_scope: ["proprio", "equipe", "empresa", "global"],
       rdo_acesso_nivel: ["ver", "editar", "aprovar"],
       rdo_acesso_sujeito: ["user", "grupo"],
       rdo_status: [
