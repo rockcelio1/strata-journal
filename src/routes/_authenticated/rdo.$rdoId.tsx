@@ -577,6 +577,11 @@ function RdoDetailPage() {
         canManage={!!me?.profile?.id && (me.profile.id === data.rdo.autor_id)}
       />
 
+      {/* Aviso e botão de reautorização do OneDrive (só aparece quando necessário) */}
+      <div className="mb-4">
+        <ReautorizarOneDrive />
+      </div>
+
       {/* Anexos unificados (OneDrive + Supabase) */}
       <Card className="p-4 mb-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
