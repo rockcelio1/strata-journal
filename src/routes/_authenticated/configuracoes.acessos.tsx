@@ -24,7 +24,6 @@ import {
   limparGrantsUsuario,
   listarCatalogoAcessos,
   listarMatrizAcessos,
-  meusAcessos,
   salvarEscoposUsuario,
   salvarGrantUsuario,
   salvarGrantsPapel,
