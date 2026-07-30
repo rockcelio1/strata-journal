@@ -153,7 +153,15 @@ function OneDriveSettings() {
         onDesconectar={() => setAccountModal("disconnect")}
       />
 
+      <ReautorizarOneDrive />
+
       <MinhaContaMicrosoft />
+
+      <OneDrivePermissoes />
+
+      <OneDriveAuditoria />
+
+
 
 
 
