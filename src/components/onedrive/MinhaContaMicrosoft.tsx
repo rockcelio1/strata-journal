@@ -23,38 +23,9 @@ import {
   onedriveListarPessoal,
   onedriveStatusPessoal,
 } from "@/lib/onedrive-appuser.functions";
+import { rodarLoginMicrosoft } from "@/components/onedrive/oauth-popup";
+import { EscoposVerificacao } from "@/components/onedrive/EscoposVerificacao";
 
-const CONNECTOR_ID = "microsoft_onedrive";
-
-function esperarConclusao(popup: Window) {
-  return new Promise<void>((resolve, reject) => {
-    let poll: number | undefined;
-    const limpar = () => {
-      window.removeEventListener("message", onMessage);
-      if (poll !== undefined) window.clearInterval(poll);
-    };
-    const onMessage = (event: MessageEvent) => {
-      const type = event.data?.type;
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        event.data?.connectorId !== CONNECTOR_ID ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
-      )
-        return;
-      limpar();
-      if (type === "appUserConnectorOAuthComplete") return resolve();
-      popup.close();
-      reject(new Error(event.data?.erro ?? "A autorização da Microsoft falhou."));
-    };
-    window.addEventListener("message", onMessage);
-    poll = window.setInterval(() => {
-      if (!popup.closed) return;
-      limpar();
-      reject(new Error("A janela de login foi fechada antes de concluir."));
-    }, 500);
-  });
-}
 
 function fmt(bytes: number) {
   if (!bytes) return "—";
