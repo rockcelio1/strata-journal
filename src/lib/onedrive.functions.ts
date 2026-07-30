@@ -92,21 +92,17 @@ function parseGraphError(status: number, body: string, step: string, url: string
 }
 
 async function gatewayFetch(path: string, init?: RequestInit, retries = 2, step = "graph"): Promise<Response> {
-  const { apiKey, connKey } = getKeys();
+  const { graphOrganizacao } = await import("@/lib/onedrive-org.server");
   const url = `${GATEWAY_URL}${path}`;
   const method = init?.method ?? "GET";
   let lastErr: any;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, {
+      const res = await graphOrganizacao(path, {
         ...init,
         signal: init?.signal ?? AbortSignal.timeout(15000),
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "X-Connection-Api-Key": connKey,
-          ...(init?.headers ?? {}),
-        },
       });
+
       const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
       if (res.status >= 500 || res.status === 429) {
         if (attempt < retries) {
