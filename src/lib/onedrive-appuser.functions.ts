@@ -12,11 +12,22 @@ export const onedriveStatusPessoal = createServerFn({ method: "GET" })
 
 export const onedriveIniciarLogin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((i: { loginHint?: string | null; reautorizar?: boolean } | undefined) =>
+    z
+      .object({
+        loginHint: z.string().email().max(200).nullish(),
+        reautorizar: z.boolean().optional(),
+      })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data, context }) => {
     const { iniciarLogin } = await import("@/lib/onedrive-appuser.server");
     const request = getRequest();
     if (!request) throw new Error("O login precisa ser iniciado a partir do aplicativo.");
-    return iniciarLogin(context.userId, request.url);
+    return iniciarLogin(context.userId, request.url, {
+      loginHint: data.loginHint ?? null,
+      forcarConsentimento: data.reautorizar === true,
+    });
   });
 
 export const onedriveConcluirLogin = createServerFn({ method: "POST" })

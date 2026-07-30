@@ -46,12 +46,23 @@ export async function definirContaOrganizacao(userId: string) {
   const bruto = await getConnectionKeyForUser(userId, CONNECTOR_ID);
   if (!bruto) throw new Error("Entre com a conta corporativa da Microsoft antes de defini-la como conta do sistema.");
   const linha = await getConnectionRowForUser(userId, CONNECTOR_ID).catch(() => null);
+  const anterior = await getConnectionRowForUser(ORG_USER_ID, ORG_CONNECTOR_ID).catch(() => null);
   await saveConnectionKeyForUser(ORG_USER_ID, ORG_CONNECTOR_ID, bruto, linha?.conta ?? undefined);
+  const { registrarAuditoria } = await import("@/lib/onedrive-auditoria.server");
+  await registrarAuditoria({
+    userId,
+    acao: "vinculo_sistema",
+    conta: linha?.conta ?? null,
+    detalhe: anterior?.conta ? `Substituiu a conta anterior: ${anterior.conta}` : null,
+  });
   return { ok: true as const, conta: linha?.conta ?? null };
 }
 
-export async function limparContaOrganizacao() {
+export async function limparContaOrganizacao(userId?: string | null) {
+  const linha = await getConnectionRowForUser(ORG_USER_ID, ORG_CONNECTOR_ID).catch(() => null);
   await deleteConnectionForUser(ORG_USER_ID, ORG_CONNECTOR_ID);
+  const { registrarAuditoria } = await import("@/lib/onedrive-auditoria.server");
+  await registrarAuditoria({ userId: userId ?? null, acao: "desvinculo_sistema", conta: linha?.conta ?? null });
   return { ok: true as const };
 }
 
