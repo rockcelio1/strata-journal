@@ -51,18 +51,14 @@ function encodePath(path: string): string {
 
 const MESES_PT = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
-/** Conexão escolhida na tela de vínculo (padrão: a primeira do projeto). */
-let conexaoAtiva: string | null = null;
-
-function getKeys() {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  const connKey =
-    (conexaoAtiva ? process.env[conexaoAtiva] : undefined) ?? process.env.MICROSOFT_ONEDRIVE_API_KEY;
-  if (!apiKey || !connKey) {
-    throw naoConectado("credenciais");
-  }
-  return { apiKey, connKey };
+/** Confere se a conta OneDrive da organização está conectada dentro do RDO. */
+async function getKeys() {
+  const { statusOrganizacao } = await import("@/lib/onedrive-org.server");
+  const st = await statusOrganizacao();
+  if (!st.conectado) throw naoConectado("credenciais");
+  return st;
 }
+
 
 function parseGraphError(status: number, body: string, step: string, url: string, requestId?: string | null): string {
   let code = "", message = body.slice(0, 200);
