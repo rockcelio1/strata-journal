@@ -181,11 +181,12 @@ export function MinhaContaMicrosoft() {
           </p>
         </div>
       )}
-
+      {status.data?.verificacao && <EscoposVerificacao verificacao={status.data.verificacao} />}
 
       {status.data?.erro && (
         <p className="text-xs text-destructive">Diagnóstico: {status.data.erro}</p>
       )}
+
 
       {conectado && (
         <div className="border-t border-border pt-3 space-y-2">
