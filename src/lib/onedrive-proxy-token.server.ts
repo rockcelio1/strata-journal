@@ -4,8 +4,15 @@ const TOKEN_VERSION = "v1";
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 function getSecret() {
-  return process.env.LOVABLE_API_KEY ?? "";
+  // Segredo próprio do RDO (sem dependência de serviços externos).
+  return (
+    process.env.ONEDRIVE_TOKEN_SECRET ??
+    process.env.APP_USER_CONNECTION_KEY_SECRET ??
+    process.env.MICROSOFT_CLIENT_SECRET ??
+    ""
+  );
 }
+
 
 function toBase64Url(buffer: Buffer) {
   return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");

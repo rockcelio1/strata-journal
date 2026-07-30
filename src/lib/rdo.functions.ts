@@ -455,13 +455,11 @@ export const removerAnexo = createServerFn({ method: "POST" })
     if (row.data?.storage_provider === "supabase" && row.data?.storage_path) {
       await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
     } else if (row.data?.storage_provider === "onedrive" && row.data?.onedrive_item_id) {
-      const apiKey = process.env.LOVABLE_API_KEY;
-      const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
-      if (apiKey && connKey) {
-        await fetch(`https://connector-gateway.lovable.dev/microsoft_onedrive/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
-        }).catch(() => {});
+      try {
+        const { graphOrganizacao } = await import("@/lib/onedrive-org.server");
+        await graphOrganizacao(`/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, { method: "DELETE" });
+      } catch (e) {
+        console.error("[rdo] não foi possível apagar o anexo no OneDrive:", (e as Error)?.message);
       }
     }
     const { error } = await context.supabase.from("rdo_anexos").delete().eq("id", data.id);
