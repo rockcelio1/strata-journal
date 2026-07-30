@@ -56,6 +56,7 @@ import { Route as AuthenticatedConfiguracoesBackupRouteImport } from './routes/_
 import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
 import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
 import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
+import { Route as AuthenticatedConfiguracoesAcessosRouteImport } from './routes/_authenticated/configuracoes.acessos'
 import { Route as AuthenticatedCadastrosTemplatesTarefasRouteImport } from './routes/_authenticated/cadastros.templates-tarefas'
 import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
 import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
@@ -334,6 +335,12 @@ const AuthenticatedConfiguracoesAplicativoRoute =
     path: '/aplicativo',
     getParentRoute: () => AuthenticatedConfiguracoesRoute,
   } as any)
+const AuthenticatedConfiguracoesAcessosRoute =
+  AuthenticatedConfiguracoesAcessosRouteImport.update({
+    id: '/acessos',
+    path: '/acessos',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
 const AuthenticatedCadastrosTemplatesTarefasRoute =
   AuthenticatedCadastrosTemplatesTarefasRouteImport.update({
     id: '/cadastros/templates-tarefas',
@@ -470,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
+  '/configuracoes/acessos': typeof AuthenticatedConfiguracoesAcessosRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
@@ -535,6 +543,7 @@ export interface FileRoutesByTo {
   '/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
+  '/configuracoes/acessos': typeof AuthenticatedConfiguracoesAcessosRoute
   '/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
@@ -603,6 +612,7 @@ export interface FileRoutesById {
   '/_authenticated/cadastros/mao-de-obra': typeof AuthenticatedCadastrosMaoDeObraRoute
   '/_authenticated/cadastros/ocorrencias': typeof AuthenticatedCadastrosOcorrenciasRoute
   '/_authenticated/cadastros/templates-tarefas': typeof AuthenticatedCadastrosTemplatesTarefasRouteWithChildren
+  '/_authenticated/configuracoes/acessos': typeof AuthenticatedConfiguracoesAcessosRoute
   '/_authenticated/configuracoes/aplicativo': typeof AuthenticatedConfiguracoesAplicativoRoute
   '/_authenticated/configuracoes/auditoria': typeof AuthenticatedConfiguracoesAuditoriaRoute
   '/_authenticated/configuracoes/auditoria-midia': typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/cadastros/templates-tarefas'
+    | '/configuracoes/acessos'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/auditoria-midia'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/cadastros/mao-de-obra'
     | '/cadastros/ocorrencias'
     | '/cadastros/templates-tarefas'
+    | '/configuracoes/acessos'
     | '/configuracoes/aplicativo'
     | '/configuracoes/auditoria'
     | '/configuracoes/auditoria-midia'
@@ -803,6 +815,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cadastros/mao-de-obra'
     | '/_authenticated/cadastros/ocorrencias'
     | '/_authenticated/cadastros/templates-tarefas'
+    | '/_authenticated/configuracoes/acessos'
     | '/_authenticated/configuracoes/aplicativo'
     | '/_authenticated/configuracoes/auditoria'
     | '/_authenticated/configuracoes/auditoria-midia'
@@ -1192,6 +1205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesAplicativoRouteImport
       parentRoute: typeof AuthenticatedConfiguracoesRoute
     }
+    '/_authenticated/configuracoes/acessos': {
+      id: '/_authenticated/configuracoes/acessos'
+      path: '/acessos'
+      fullPath: '/configuracoes/acessos'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAcessosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
     '/_authenticated/cadastros/templates-tarefas': {
       id: '/_authenticated/cadastros/templates-tarefas'
       path: '/cadastros/templates-tarefas'
@@ -1337,6 +1357,7 @@ const AuthenticatedConfiguracoesOnedriveRouteWithChildren =
   )
 
 interface AuthenticatedConfiguracoesRouteChildren {
+  AuthenticatedConfiguracoesAcessosRoute: typeof AuthenticatedConfiguracoesAcessosRoute
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
   AuthenticatedConfiguracoesAuditoriaRoute: typeof AuthenticatedConfiguracoesAuditoriaRoute
   AuthenticatedConfiguracoesAuditoriaMidiaRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRoute
@@ -1357,6 +1378,8 @@ interface AuthenticatedConfiguracoesRouteChildren {
 
 const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteChildren =
   {
+    AuthenticatedConfiguracoesAcessosRoute:
+      AuthenticatedConfiguracoesAcessosRoute,
     AuthenticatedConfiguracoesAplicativoRoute:
       AuthenticatedConfiguracoesAplicativoRoute,
     AuthenticatedConfiguracoesAuditoriaRoute:
