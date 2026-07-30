@@ -153,6 +153,10 @@ function OneDriveSettings() {
         onDesconectar={() => setAccountModal("disconnect")}
       />
 
+      <MinhaContaMicrosoft />
+
+
+
 
       <section className="border border-border rounded-lg p-4 bg-card space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
