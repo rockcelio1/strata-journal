@@ -13,6 +13,7 @@ import { RdoAvancosSection } from "@/components/rdo/RdoAvancosSection";
 import { setAnexoTaskItem } from "@/lib/rdo.functions";
 
 import { uploadOneDriveAnexo } from "@/lib/onedrive.functions";
+import { ReautorizarOneDrive } from "@/components/onedrive/ReautorizarOneDrive";
 import { getMe } from "@/lib/core.functions";
 import { supabase } from "@/integrations/supabase/client";
 // exportRdoPdf / exportRdoExcel são chamados dentro do RdoExportPreview
