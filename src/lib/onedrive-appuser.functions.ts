@@ -21,11 +21,16 @@ export const onedriveIniciarLogin = createServerFn({ method: "POST" })
 
 export const onedriveConcluirLogin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { code: string }) => z.object({ code: z.string().min(1) }).parse(i))
+  .inputValidator((i: { code: string; state: string }) =>
+    z.object({ code: z.string().min(1).max(4000), state: z.string().min(1).max(500) }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { concluirLogin } = await import("@/lib/onedrive-appuser.server");
-    return concluirLogin(context.userId, data.code);
+    const request = getRequest();
+    if (!request) throw new Error("A conclusão do login precisa partir do aplicativo.");
+    return concluirLogin(context.userId, data.code, data.state, request.url);
   });
+
 
 export const onedriveDesconectarPessoal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
