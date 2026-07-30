@@ -10,6 +10,7 @@ import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
 import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
 import { OneDriveConnectPanel, classificarEstadoConexao } from "@/components/onedrive/ConnectPanel";
+import { MinhaContaMicrosoft } from "@/components/onedrive/MinhaContaMicrosoft";
 
 const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
