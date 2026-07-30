@@ -68,19 +68,8 @@ export function MinhaContaMicrosoft() {
   });
 
   const login = useMutation({
-    mutationFn: async () => {
-      const popup = window.open("", "onedrive-oauth", "width=620,height=740");
-      if (!popup) throw new Error("O navegador bloqueou a janela. Libere pop-ups e tente de novo.");
-      try {
-        const { authorizationUrl } = await iniciarFn({ data: undefined as never });
-        const conclusao = esperarConclusao(popup);
-        popup.location.href = authorizationUrl;
-        await conclusao;
-      } catch (e) {
-        popup.close();
-        throw e;
-      }
-    },
+    mutationFn: () => rodarLoginMicrosoft(() => iniciarFn({ data: {} })),
+
     onSuccess: async () => {
       notify.success("Conta Microsoft conectada");
       await qc.invalidateQueries({ queryKey: ["onedrive", "pessoal"] });
