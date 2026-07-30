@@ -1,10 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Link2, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, CheckCircle2, Link2, Loader2, LogIn, RefreshCw, ShieldAlert, Unplug } from "lucide-react";
 import { notify } from "@/lib/toast";
-import { listOneDriveConexoes, vincularOneDriveConexao } from "@/lib/onedrive.functions";
+import {
+  desvincularOneDriveConexao,
+  listOneDriveConexoes,
+  vincularOneDriveConexao,
+} from "@/lib/onedrive.functions";
+import { onedriveIniciarLogin, onedriveStatusPessoal } from "@/lib/onedrive-appuser.functions";
 import { ESCOPOS_ONEDRIVE } from "@/lib/onedrive-conexoes";
+import { rodarLoginMicrosoft } from "@/components/onedrive/oauth-popup";
+import { EscoposVerificacao } from "@/components/onedrive/EscoposVerificacao";
+import { OneDriveAuditoria } from "@/components/onedrive/OneDriveAuditoria";
 
 export const Route = createFileRoute("/_authenticated/configuracoes/onedrive/vincular")({
   component: VincularOneDrive,
@@ -24,8 +32,12 @@ export const Route = createFileRoute("/_authenticated/configuracoes/onedrive/vin
 });
 
 function VincularOneDrive() {
+  const qc = useQueryClient();
   const listarFn = useServerFn(listOneDriveConexoes);
   const vincularFn = useServerFn(vincularOneDriveConexao);
+  const desvincularFn = useServerFn(desvincularOneDriveConexao);
+  const statusFn = useServerFn(onedriveStatusPessoal);
+  const iniciarFn = useServerFn(onedriveIniciarLogin);
 
   const conexoes = useQuery({
     queryKey: ["onedrive", "conexoes"],
@@ -34,12 +46,27 @@ function VincularOneDrive() {
     refetchOnWindowFocus: true,
   });
 
+  const status = useQuery({
+    queryKey: ["onedrive", "pessoal", "status"],
+    queryFn: () => statusFn({ data: undefined as never }),
+    retry: 0,
+  });
+
+  const conectarNova = useMutation({
+    mutationFn: () => rodarLoginMicrosoft(() => iniciarFn({ data: { reautorizar: true } })),
+    onSuccess: async () => {
+      notify.success("Conta Microsoft autorizada", { description: "Agora defina-a como conta do sistema." });
+      await qc.invalidateQueries({ queryKey: ["onedrive"] });
+    },
+    onError: (e: Error) => notify.error("Não foi possível autorizar", { description: e.message }),
+  });
+
   const vincular = useMutation({
     mutationFn: () => vincularFn({ data: undefined as any }),
-    onSuccess: (r) => {
+    onSuccess: async (r) => {
       if (r.ok) {
         notify.success("Conta definida", { description: r.conexao.conta ?? "Conta do sistema" });
-        conexoes.refetch();
+        await qc.invalidateQueries({ queryKey: ["onedrive"] });
       } else {
         notify.error("Não foi possível definir a conta", { description: r.erro });
       }
@@ -47,8 +74,22 @@ function VincularOneDrive() {
     onError: (e: any) => notify.error("Não foi possível definir a conta", { description: e?.message }),
   });
 
+  const desvincular = useMutation({
+    mutationFn: () => desvincularFn({ data: undefined as any }),
+    onSuccess: async (r) => {
+      if (r.ok) {
+        notify.success("Conta do sistema removida deste projeto");
+        await qc.invalidateQueries({ queryKey: ["onedrive"] });
+      } else {
+        notify.error("Não foi possível remover", { description: r.erro });
+      }
+    },
+    onError: (e: any) => notify.error("Não foi possível remover", { description: e?.message }),
+  });
+
   const lista = conexoes.data?.conexoes ?? [];
   const atual = lista[0];
+  const contaPessoal = status.data?.conta ?? status.data?.nome ?? null;
 
   return (
     <div className="space-y-6" data-testid="onedrive-vinculo">
@@ -59,7 +100,7 @@ function VincularOneDrive() {
         >
           <ArrowLeft className="h-3 w-3" /> Voltar
         </Link>
-        <h1 className="text-lg font-semibold">Conta OneDrive do sistema</h1>
+        <h1 className="text-lg font-semibold">Assistente de conexão OneDrive</h1>
       </header>
 
       <section className="border border-border rounded-lg p-4 bg-card space-y-3">
@@ -82,8 +123,8 @@ function VincularOneDrive() {
             <div>
               <p className="font-medium">Nenhuma conta corporativa definida ainda.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Entre com a conta corporativa da Microsoft em Configurações → OneDrive e depois clique no botão abaixo
-                para usá-la como conta do sistema. Permissões necessárias: {ESCOPOS_ONEDRIVE.join(", ")}.
+                Passo 1: entre com a conta Microsoft. Passo 2: defina-a como conta do sistema. Permissões necessárias:{" "}
+                {ESCOPOS_ONEDRIVE.join(", ")}.
               </p>
             </div>
           </div>
@@ -93,21 +134,60 @@ function VincularOneDrive() {
             <span>{atual.rotulo}</span>
           </p>
         )}
+      </section>
 
-        <button
-          onClick={() => vincular.mutate()}
-          disabled={vincular.isPending}
-          className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded bg-brand text-brand-foreground disabled:opacity-50"
-        >
-          {vincular.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
-          Usar minha conta Microsoft como conta do sistema
-        </button>
-
+      {/* Passo 1 — conectar uma conta */}
+      <section className="border border-border rounded-lg p-4 bg-card space-y-3">
+        <h2 className="font-medium text-sm">1. Conta Microsoft autorizada por você</h2>
         <p className="text-xs text-muted-foreground">
-          A conexão é feita direto com a Microsoft pelo próprio RDO. Os tokens ficam guardados criptografados no banco
-          deste sistema.
+          {contaPessoal
+            ? <>Você está autorizado como <strong>{contaPessoal}</strong>. Pode usar esta conta ou entrar com outra.</>
+            : "Nenhuma conta Microsoft autorizada nesta sessão. Entre com a conta corporativa."}
+        </p>
+        <EscoposVerificacao verificacao={status.data?.verificacao} />
+        <button
+          onClick={() => conectarNova.mutate()}
+          disabled={conectarNova.isPending || status.data?.configurado === false}
+          className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent disabled:opacity-50"
+        >
+          {conectarNova.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogIn className="h-3 w-3" />}
+          {contaPessoal ? "Entrar com outra conta Microsoft" : "Entrar com a Microsoft"}
+        </button>
+      </section>
+
+      {/* Passo 2 — vincular ao projeto */}
+      <section className="border border-border rounded-lg p-4 bg-card space-y-3">
+        <h2 className="font-medium text-sm">2. Vincular a conta a este projeto</h2>
+        <p className="text-xs text-muted-foreground">
+          A vinculação vale apenas para o <strong>Diário de Obra FACOM</strong> e é guardada no banco deste sistema —
+          não depende de nenhum workspace externo.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => vincular.mutate()}
+            disabled={vincular.isPending || !contaPessoal}
+            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded bg-brand text-brand-foreground disabled:opacity-50"
+          >
+            {vincular.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
+            Usar minha conta Microsoft como conta do sistema
+          </button>
+          {atual && (
+            <button
+              onClick={() => desvincular.mutate()}
+              disabled={desvincular.isPending}
+              className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              {desvincular.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Unplug className="h-3 w-3" />}
+              Remover conta do sistema
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Os tokens ficam criptografados no banco deste sistema e são renovados automaticamente.
         </p>
       </section>
+
+      <OneDriveAuditoria />
     </div>
   );
 }
