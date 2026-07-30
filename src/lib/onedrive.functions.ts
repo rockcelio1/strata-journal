@@ -16,15 +16,8 @@ import {
 } from "@/lib/onedrive-conexoes";
 
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
+const GATEWAY_URL = "https://graph.microsoft.com/v1.0";
 
-// Sanity: o gateway já mapeia para o Microsoft Graph; "/v1.0" NÃO pode estar no base URL,
-// senão o Graph responde "Resource not found for the segment 'v1.0'".
-if (/\/v\d+(\.\d+)?\/?$/.test(GATEWAY_URL)) {
-  throw new Error(
-    `Configuração inválida do gateway OneDrive: GATEWAY_URL não pode conter versão de API (/v1.0). Atual: ${GATEWAY_URL}`,
-  );
-}
 
 // Diagnóstico em memória (últimas chamadas) — exibido em Configurações → OneDrive.
 type DiagEntry = {
