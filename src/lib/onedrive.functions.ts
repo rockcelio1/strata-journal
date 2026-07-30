@@ -9,11 +9,6 @@ import {
   OneDriveError,
   type Fetcher,
 } from "@/lib/onedrive-graph";
-import {
-  conexaoPermitida,
-  detectarConexoes,
-  montarDiagnosticoVinculo,
-} from "@/lib/onedrive-conexoes";
 
 
 const GATEWAY_URL = "https://graph.microsoft.com/v1.0";
