@@ -34,6 +34,7 @@ import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
+import { Route as OauthOnedriveReturnRouteImport } from './routes/oauth.onedrive.return'
 import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
 import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
 import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api.public.bootstrap-master'
@@ -206,6 +207,11 @@ const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const OauthOnedriveReturnRoute = OauthOnedriveReturnRouteImport.update({
+  id: '/oauth/onedrive/return',
+  path: '/oauth/onedrive/return',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
   id: '/api/public/lgpd-request',
@@ -500,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
+  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -566,6 +573,7 @@ export interface FileRoutesByTo {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
+  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
@@ -635,6 +643,7 @@ export interface FileRoutesById {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
+  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -704,6 +713,7 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
+    | '/oauth/onedrive/return'
     | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
@@ -770,6 +780,7 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
+    | '/oauth/onedrive/return'
     | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
@@ -838,6 +849,7 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
+    | '/oauth/onedrive/return'
     | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
@@ -870,6 +882,7 @@ export interface RootRouteChildren {
   ApiPublicBootstrapMasterRoute: typeof ApiPublicBootstrapMasterRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
+  OauthOnedriveReturnRoute: typeof OauthOnedriveReturnRoute
   ApiPublicHooksBackupRoute: typeof ApiPublicHooksBackupRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -1050,6 +1063,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/oauth/onedrive/return': {
+      id: '/oauth/onedrive/return'
+      path: '/oauth/onedrive/return'
+      fullPath: '/oauth/onedrive/return'
+      preLoaderRoute: typeof OauthOnedriveReturnRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/lgpd-request': {
       id: '/api/public/lgpd-request'
@@ -1526,6 +1546,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBootstrapMasterRoute: ApiPublicBootstrapMasterRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
+  OauthOnedriveReturnRoute: OauthOnedriveReturnRoute,
   ApiPublicHooksBackupRoute: ApiPublicHooksBackupRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
 }
