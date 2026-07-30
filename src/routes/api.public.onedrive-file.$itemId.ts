@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_onedrive";
+const GRAPH_URL = "https://graph.microsoft.com/v1.0";
 
 function cleanFilename(value: string | null) {
   return (value || "anexo")
@@ -128,9 +128,14 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
           }
         }
 
-        const apiKey = process.env.LOVABLE_API_KEY;
-        const connKey = process.env.MICROSOFT_ONEDRIVE_API_KEY;
-        if (!apiKey || !connKey) {
+        let token: string | null = null;
+        try {
+          const { tokenOrganizacao } = await import("@/lib/onedrive-org.server");
+          token = await tokenOrganizacao();
+        } catch (e) {
+          console.error("[onedrive-proxy] conta do sistema indisponível:", (e as Error)?.message);
+        }
+        if (!token) {
           void logEvent({
             empresa_id: empresaId, onedrive_item_id: itemId, thumb_size: thumbSize,
             cache_status: "ERROR", http_status: 503, duration_ms: Date.now() - t0,
@@ -140,19 +145,17 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
 
         const encId = encodeURIComponent(itemId);
         const graphUrl = thumbSize
-          ? `${GATEWAY_URL}/me/drive/items/${encId}/thumbnails/0/${thumbSize}/content`
-          : `${GATEWAY_URL}/me/drive/items/${encId}/content`;
+          ? `${GRAPH_URL}/me/drive/items/${encId}/thumbnails/0/${thumbSize}/content`
+          : `${GRAPH_URL}/me/drive/items/${encId}/content`;
 
-        const upstream = await fetch(graphUrl, {
-          headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
-        });
+        const upstream = await fetch(graphUrl, { headers: { Authorization: `Bearer ${token}` } });
 
         if (!upstream.ok) {
           const body = await upstream.text().catch(() => "");
           console.error(`[onedrive-proxy] ${upstream.status} thumb=${thumbSize ?? "no"} item=${itemId}: ${body.slice(0, 200)}`);
           if (thumbSize && upstream.status === 404) {
-            const fallback = await fetch(`${GATEWAY_URL}/me/drive/items/${encId}/content`, {
-              headers: { Authorization: `Bearer ${apiKey}`, "X-Connection-Api-Key": connKey },
+            const fallback = await fetch(`${GRAPH_URL}/me/drive/items/${encId}/content`, {
+              headers: { Authorization: `Bearer ${token}` },
             });
             if (fallback.ok) {
               const h = new Headers();
