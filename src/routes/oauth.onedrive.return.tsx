@@ -23,30 +23,29 @@ function RetornoOAuth() {
       window.close();
     };
 
-    if (params.get("success") !== "true") {
-      const erro = params.get("error") ?? "A autorização não foi concluída.";
+    const erroMs = params.get("error_description") ?? params.get("error");
+    if (erroMs) {
+      setMsg(erroMs);
+      avisar("appUserConnectorOAuthFailed", erroMs);
+      return;
+    }
+
+    const code = params.get("code");
+    const state = params.get("state");
+    if (!code || !state) {
+      const erro = "A Microsoft não retornou o código de autorização.";
       setMsg(erro);
       avisar("appUserConnectorOAuthFailed", erro);
       return;
     }
 
-    const code = params.get("code");
-    if (!code) {
-      if (params.get("offline_access_allowed") === "false") {
-        avisar("appUserConnectorOAuthComplete");
-        return;
-      }
-      setMsg("A autorização terminou sem código de troca.");
-      avisar("appUserConnectorOAuthFailed", "sem código de troca");
-      return;
-    }
-
-    void onedriveConcluirLogin({ data: { code } })
+    void onedriveConcluirLogin({ data: { code, state } })
       .then(() => avisar("appUserConnectorOAuthComplete"))
       .catch((e: Error) => {
         setMsg(e.message);
         avisar("appUserConnectorOAuthFailed", e.message);
       });
+
   }, []);
 
   return (

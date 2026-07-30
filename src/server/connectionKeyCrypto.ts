@@ -1,13 +1,20 @@
 // Somente servidor — nunca importe no navegador.
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
-// A Lovable provisiona APP_USER_CONNECTION_KEY_SECRET (base64, 32 bytes)
-// automaticamente quando um App User Connector é vinculado ao projeto.
-function key(): Buffer {
-  const raw = process.env.APP_USER_CONNECTION_KEY_SECRET;
-  if (!raw) throw new Error("APP_USER_CONNECTION_KEY_SECRET não está configurada");
-  return Buffer.from(raw, "base64");
+// Chave de cifra dos tokens da Microsoft, mantida apenas no servidor.
+// Usa ONEDRIVE_TOKEN_SECRET (própria do RDO). Mantém compatibilidade com o
+// segredo antigo APP_USER_CONNECTION_KEY_SECRET, se ainda existir.
+export function segredoBruto(): string {
+  const raw = process.env.ONEDRIVE_TOKEN_SECRET || process.env.APP_USER_CONNECTION_KEY_SECRET;
+  if (!raw) throw new Error("ONEDRIVE_TOKEN_SECRET não está configurada no servidor.");
+  return raw;
 }
+
+function key(): Buffer {
+  // Deriva sempre 32 bytes, aceitando segredo em base64 ou texto.
+  return createHash("sha256").update(segredoBruto()).digest();
+}
+
 
 export function encryptConnectionKey(plaintext: string): string {
   const iv = randomBytes(12);

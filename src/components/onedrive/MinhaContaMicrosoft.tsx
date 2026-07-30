@@ -208,11 +208,20 @@ export function MinhaContaMicrosoft() {
       </div>
 
       {status.data?.configurado === false && (
-        <p className="text-xs text-destructive">
-          O aplicativo ainda não foi registrado na Microsoft. Um administrador precisa concluir o cadastro do cliente
-          OAuth (Client ID/Secret do Entra ID) para liberar o botão de login.
-        </p>
+        <div className="text-xs text-destructive space-y-1">
+          <p>
+            O aplicativo ainda não foi registrado na Microsoft. Um administrador precisa cadastrar o app no Entra ID e
+            informar o Client ID e o Client Secret nas configurações do servidor do RDO.
+          </p>
+          <p className="text-muted-foreground">
+            URL de redirecionamento a cadastrar no Entra ID:{" "}
+            <code className="break-all">
+              {typeof window !== "undefined" ? `${window.location.origin}/oauth/onedrive/return` : "/oauth/onedrive/return"}
+            </code>
+          </p>
+        </div>
       )}
+
 
       {status.data?.erro && (
         <p className="text-xs text-destructive">Diagnóstico: {status.data.erro}</p>
