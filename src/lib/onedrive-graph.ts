@@ -180,8 +180,8 @@ const SELECT_ITENS =
 export function buildChildrenUrl(path?: string | null, cursor?: string | null): string {
   const p = normalizePath(path);
   const base = p
-    ? `/me/drive/root:/${encodePath(p)}:/children?${SELECT_ITENS}`
-    : `/me/drive/root/children?${SELECT_ITENS}`;
+    ? `/drive/root:/${encodePath(p)}:/children?${SELECT_ITENS}`
+    : `/drive/root/children?${SELECT_ITENS}`;
   return cursor ? `${base}&$skiptoken=${encodeURIComponent(cursor)}` : base;
 }
 
@@ -265,7 +265,7 @@ export async function uploadContent(
   }
   const folder = normalizePath(args.path);
   const full = folder ? `${folder}/${args.nome}` : args.nome;
-  const url = `/me/drive/root:/${encodePath(full)}:/content?@microsoft.graph.conflictBehavior=rename`;
+  const url = `/drive/root:/${encodePath(full)}:/content?@microsoft.graph.conflictBehavior=rename`;
   const res = await fetcher(
     url,
     {
@@ -288,7 +288,7 @@ export async function uploadContent(
 
 /** Link temporário de download de um item. */
 export async function getDownloadUrl(fetcher: Fetcher, itemId: string) {
-  const url = `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,name,size,webUrl,@microsoft.graph.downloadUrl`;
+  const url = `/drive/items/${encodeURIComponent(itemId)}?$select=id,name,size,webUrl,@microsoft.graph.downloadUrl`;
   const res = await fetcher(url, undefined, "downloadUrl");
   await garantirOk(res, "downloadUrl", url);
   const j: any = await res.json();

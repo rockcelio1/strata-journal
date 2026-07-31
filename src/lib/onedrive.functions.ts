@@ -25,11 +25,11 @@ export const getOneDriveQuota = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     try {
-      const res = await gatewayFetch("/me/drive?$select=quota,webUrl", undefined, 2, "quota");
+      const res = await gatewayFetch("/drive?$select=quota,webUrl", undefined, 2, "quota");
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         const requestId = res.headers.get("request-id");
-        return { ok: false as const, error: parseGraphError(res.status, body, "quota", `${GATEWAY_URL}/me/drive`, requestId) };
+        return { ok: false as const, error: parseGraphError(res.status, body, "quota", `${GATEWAY_URL}/drive`, requestId) };
       }
       const j = await res.json() as { webUrl?: string; quota?: { total?: number; used?: number; remaining?: number; deleted?: number; state?: string } };
       const q = j.quota ?? {};
@@ -51,25 +51,23 @@ export const verifyOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     try {
-      const res = await gatewayFetch("/me", undefined, 2, "verify");
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        const requestId = res.headers.get("request-id");
-        const err = parseGraphError(res.status, body, "verify", `${GATEWAY_URL}/me`, requestId);
-        console.error("[onedrive] verify falhou", err);
-        return { ok: false as const, status: res.status, error: err };
+      const { statusIntegracao } = await import("@/lib/onedrive-app.server");
+      const st = await statusIntegracao();
+      if (!st.configured || st.token !== "ok" || st.drive !== "ok") {
+        return { ok: false as const, status: 0, error: st.message ?? "Integração OneDrive indisponível." };
       }
-      const me = await res.json() as { id?: string; displayName?: string; userPrincipalName?: string; mail?: string };
+      const res = await gatewayFetch("/drive?$select=id,name,owner,webUrl", undefined, 2, "verify");
+      const j = (await res.json()) as { id?: string; owner?: { user?: { displayName?: string } } };
       return {
         ok: true as const,
         account: {
-          id: me.id ?? null,
-          displayName: me.displayName ?? null,
-          email: me.userPrincipalName ?? me.mail ?? null,
+          id: j.id ?? null,
+          displayName: j.owner?.user?.displayName ?? "Conta técnica do RDO",
+          email: st.targetUser,
         },
       };
     } catch (e: any) {
-      console.error("[onedrive] verify exception", e);
+      console.error("[onedrive] verify falhou:", e?.message);
       return { ok: false as const, status: 0, error: e?.message ?? "Erro desconhecido" };
     }
   });
@@ -80,8 +78,8 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const path = (data.path ?? "").replace(/^\/+|\/+$/g, "");
     const url = path
-      ? `/me/drive/root:/${encodePath(path)}:/children?$select=id,name,folder,parentReference&$top=200`
-      : `/me/drive/root/children?$select=id,name,folder,parentReference&$top=200`;
+      ? `/drive/root:/${encodePath(path)}:/children?$select=id,name,folder,parentReference&$top=200`
+      : `/drive/root/children?$select=id,name,folder,parentReference&$top=200`;
     const res = await gatewayFetch(url, undefined, 2, "listFolders");
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -103,7 +101,7 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
     if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
 
     // 1) Já existe?
-    const getUrl = `/me/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
+    const getUrl = `/drive/root:/${encodePath(clean)}?$select=id,name,folder`;
     const getRes = await gatewayFetch(getUrl, undefined, 2, "ensureFolder:get");
     if (getRes.ok) {
       const item = await getRes.json() as { id: string; name: string; folder?: unknown };
@@ -122,7 +120,7 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
     let lastItem: { id: string; name: string } | null = null;
     for (const seg of segments) {
       const currentPath = parentPath ? `${parentPath}/${seg}` : seg;
-      const checkUrl = `/me/drive/root:/${encodePath(currentPath)}?$select=id,name,folder`;
+      const checkUrl = `/drive/root:/${encodePath(currentPath)}?$select=id,name,folder`;
       const checkRes = await gatewayFetch(checkUrl, undefined, 2, "ensureFolder:check");
       if (checkRes.ok) {
         const item = await checkRes.json() as { id: string; name: string; folder?: unknown };
@@ -130,8 +128,8 @@ export const ensureOneDriveFolder = createServerFn({ method: "POST" })
         lastItem = { id: item.id, name: item.name };
       } else if (checkRes.status === 404) {
         const createUrl = parentPath
-          ? `/me/drive/root:/${encodePath(parentPath)}:/children`
-          : `/me/drive/root/children`;
+          ? `/drive/root:/${encodePath(parentPath)}:/children`
+          : `/drive/root/children`;
         const createRes = await gatewayFetch(createUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -161,24 +159,24 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
     const path = data.path.replace(/^\/+|\/+$/g, "");
     const log: Array<{ step: string; ok: boolean; detail?: string }> = [];
 
-    const exists = await gatewayFetch(`/me/drive/root:/${encodePath(path)}?$select=id,folder`, undefined, 2, "test:exists");
+    const exists = await gatewayFetch(`/drive/root:/${encodePath(path)}?$select=id,folder`, undefined, 2, "test:exists");
     if (exists.status === 404) {
       log.push({ step: "Pasta existe", ok: false, detail: `Não encontrada (404, request-id: ${exists.headers.get("request-id") ?? "n/a"})` });
       return { ok: false as const, log };
     }
     if (!exists.ok) {
       const b = await exists.text().catch(() => "");
-      log.push({ step: "Pasta existe", ok: false, detail: parseGraphError(exists.status, b, "test:exists", `${GATEWAY_URL}/me/drive/root:/${encodePath(path)}`, exists.headers.get("request-id")) });
+      log.push({ step: "Pasta existe", ok: false, detail: parseGraphError(exists.status, b, "test:exists", `${GATEWAY_URL}/drive/root:/${encodePath(path)}`, exists.headers.get("request-id")) });
       return { ok: false as const, log };
     }
     log.push({ step: "Pasta existe", ok: true });
 
-    const list = await gatewayFetch(`/me/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`, undefined, 2, "test:list");
+    const list = await gatewayFetch(`/drive/root:/${encodePath(path)}:/children?$top=1&$select=id,name`, undefined, 2, "test:list");
     log.push({ step: "Listar conteúdo", ok: list.ok, detail: list.ok ? undefined : `HTTP ${list.status} request-id ${list.headers.get("request-id") ?? "n/a"}` });
 
     const testName = `.lovable-test-${Date.now()}.txt`;
     const testPath = `${path}/${testName}`;
-    const put = await gatewayFetch(`/me/drive/root:/${encodePath(testPath)}:/content`, {
+    const put = await gatewayFetch(`/drive/root:/${encodePath(testPath)}:/content`, {
       method: "PUT", headers: { "Content-Type": "text/plain" }, body: "ok",
     }, 2, "test:write");
     log.push({ step: "Escrever arquivo", ok: put.ok, detail: put.ok ? undefined : `HTTP ${put.status} request-id ${put.headers.get("request-id") ?? "n/a"}` });
@@ -190,7 +188,7 @@ export const testOneDrivePermissions = createServerFn({ method: "POST" })
     }
 
     if (itemId) {
-      const del = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }, 2, "test:delete");
+      const del = await gatewayFetch(`/drive/items/${encodeURIComponent(itemId)}`, { method: "DELETE" }, 2, "test:delete");
       log.push({ step: "Remover arquivo de teste", ok: del.ok || del.status === 204, detail: del.ok ? undefined : `HTTP ${del.status}` });
     }
 
@@ -245,7 +243,7 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
     const fullPath = `${folder}/${filename}`;
 
     // Valida que a pasta raiz existe antes de enviar (erro claro em vez de criar pasta nova silenciosamente)
-    const rootUrl = `/me/drive/root:/${encodePath(root)}?$select=id,folder`;
+    const rootUrl = `/drive/root:/${encodePath(root)}?$select=id,folder`;
     const rootCheck = await gatewayFetch(rootUrl, undefined, 2, "upload:validateRoot");
     const rootReqId = rootCheck.headers.get("request-id");
     if (rootCheck.status === 404) {
@@ -258,7 +256,7 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
 
     const binary = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
 
-    const uploadUrl = `/me/drive/root:/${encodePath(fullPath)}:/content`;
+    const uploadUrl = `/drive/root:/${encodePath(fullPath)}:/content`;
     const res = await gatewayFetch(uploadUrl, {
       method: "PUT",
       headers: { "Content-Type": data.mime_type },
@@ -387,32 +385,24 @@ export const listOneDriveConexoes = createServerFn({ method: "GET" })
     };
   });
 
-/** Define a conta Microsoft do administrador logado como conta do sistema. */
-export const vincularOneDriveConexao = createServerFn({ method: "POST" })
+/** Situação técnica da integração app-only (sem revelar segredos). */
+export const statusIntegracaoOneDrive = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
-    if (!(await ehAdmin(context.supabase, context.userId))) {
-      return { ok: false as const, erro: "Apenas administradores podem definir a conta do sistema.", diagnostico: null };
-    }
-    const { definirContaOrganizacao } = await import("@/lib/onedrive-org.server");
-    try {
-      const r = await definirContaOrganizacao(context.userId);
-      return { ok: true as const, conexao: { id: "organizacao", envName: "organizacao", conta: r.conta, organizacao: null } };
-    } catch (e) {
-      return { ok: false as const, erro: (e as Error).message, diagnostico: null };
-    }
+  .handler(async () => {
+    const { statusIntegracao } = await import("@/lib/onedrive-app.server");
+    return statusIntegracao();
   });
 
-/** Remove a conta do sistema deste projeto (assistente de conexão). */
-export const desvincularOneDriveConexao = createServerFn({ method: "POST" })
+/** Força a renovação do token/drive em memória (admin). */
+export const recarregarIntegracaoOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
     if (!(await ehAdmin(context.supabase, context.userId))) {
-      return { ok: false as const, erro: "Apenas administradores podem alterar a conta do sistema." };
+      return { ok: false as const, erro: "Apenas administradores podem recarregar a integração." };
     }
-    const { limparContaOrganizacao } = await import("@/lib/onedrive-org.server");
-    await limparContaOrganizacao(context.userId);
-    return { ok: true as const };
+    const { limparCacheGraph, statusIntegracao } = await import("@/lib/onedrive-app.server");
+    limparCacheGraph();
+    return { ok: true as const, status: await statusIntegracao() };
   });
+

@@ -34,7 +34,6 @@ import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
-import { Route as OauthOnedriveReturnRouteImport } from './routes/oauth.onedrive.return'
 import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
 import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
 import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api.public.bootstrap-master'
@@ -72,7 +71,6 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
-import { Route as AuthenticatedConfiguracoesOnedriveVincularRouteImport } from './routes/_authenticated/configuracoes.onedrive.vincular'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
@@ -207,11 +205,6 @@ const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const OauthOnedriveReturnRoute = OauthOnedriveReturnRouteImport.update({
-  id: '/oauth/onedrive/return',
-  path: '/oauth/onedrive/return',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
   id: '/api/public/lgpd-request',
@@ -426,12 +419,6 @@ const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
   path: '/api/public/hooks/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedConfiguracoesOnedriveVincularRoute =
-  AuthenticatedConfiguracoesOnedriveVincularRouteImport.update({
-    id: '/vincular',
-    path: '/vincular',
-    getParentRoute: () => AuthenticatedConfiguracoesOnedriveRoute,
-  } as any)
 const AuthenticatedCadastrosTemplatesTarefasIdRoute =
   AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
     id: '/$id',
@@ -492,7 +479,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -506,7 +493,6 @@ export interface FileRoutesByFullPath {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -515,7 +501,6 @@ export interface FileRoutesByFullPath {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -559,7 +544,7 @@ export interface FileRoutesByTo {
   '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -573,7 +558,6 @@ export interface FileRoutesByTo {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
@@ -582,7 +566,6 @@ export interface FileRoutesByTo {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -629,7 +612,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/_authenticated/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -643,7 +626,6 @@ export interface FileRoutesById {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -652,7 +634,6 @@ export interface FileRoutesById {
   '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/_authenticated/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -713,7 +694,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
@@ -722,7 +702,6 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
-    | '/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -780,7 +759,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
@@ -789,7 +767,6 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
-    | '/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   id:
@@ -849,7 +826,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
@@ -858,7 +834,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ajuda/artigo/$slug'
     | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
-    | '/_authenticated/configuracoes/onedrive/vincular'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
   fileRoutesById: FileRoutesById
@@ -882,7 +857,6 @@ export interface RootRouteChildren {
   ApiPublicBootstrapMasterRoute: typeof ApiPublicBootstrapMasterRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
-  OauthOnedriveReturnRoute: typeof OauthOnedriveReturnRoute
   ApiPublicHooksBackupRoute: typeof ApiPublicHooksBackupRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
 }
@@ -1063,13 +1037,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/oauth/onedrive/return': {
-      id: '/oauth/onedrive/return'
-      path: '/oauth/onedrive/return'
-      fullPath: '/oauth/onedrive/return'
-      preLoaderRoute: typeof OauthOnedriveReturnRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/public/lgpd-request': {
       id: '/api/public/lgpd-request'
@@ -1330,13 +1297,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/configuracoes/onedrive/vincular': {
-      id: '/_authenticated/configuracoes/onedrive/vincular'
-      path: '/vincular'
-      fullPath: '/configuracoes/onedrive/vincular'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
-    }
     '/_authenticated/cadastros/templates-tarefas/$id': {
       id: '/_authenticated/cadastros/templates-tarefas/$id'
       path: '/$id'
@@ -1361,21 +1321,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedConfiguracoesOnedriveRouteChildren {
-  AuthenticatedConfiguracoesOnedriveVincularRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRoute
-}
-
-const AuthenticatedConfiguracoesOnedriveRouteChildren: AuthenticatedConfiguracoesOnedriveRouteChildren =
-  {
-    AuthenticatedConfiguracoesOnedriveVincularRoute:
-      AuthenticatedConfiguracoesOnedriveVincularRoute,
-  }
-
-const AuthenticatedConfiguracoesOnedriveRouteWithChildren =
-  AuthenticatedConfiguracoesOnedriveRoute._addFileChildren(
-    AuthenticatedConfiguracoesOnedriveRouteChildren,
-  )
-
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAcessosRoute: typeof AuthenticatedConfiguracoesAcessosRoute
   AuthenticatedConfiguracoesAplicativoRoute: typeof AuthenticatedConfiguracoesAplicativoRoute
@@ -1386,7 +1331,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesEmailRoute: typeof AuthenticatedConfiguracoesEmailRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
-  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesRotacaoChavesRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   AuthenticatedConfiguracoesRunbookRoute: typeof AuthenticatedConfiguracoesRunbookRoute
@@ -1415,7 +1360,7 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesLgpdRoute: AuthenticatedConfiguracoesLgpdRoute,
     AuthenticatedConfiguracoesOnedriveRoute:
-      AuthenticatedConfiguracoesOnedriveRouteWithChildren,
+      AuthenticatedConfiguracoesOnedriveRoute,
     AuthenticatedConfiguracoesPermissoesRoute:
       AuthenticatedConfiguracoesPermissoesRoute,
     AuthenticatedConfiguracoesRotacaoChavesRoute:
@@ -1546,20 +1491,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBootstrapMasterRoute: ApiPublicBootstrapMasterRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
-  OauthOnedriveReturnRoute: OauthOnedriveReturnRoute,
   ApiPublicHooksBackupRoute: ApiPublicHooksBackupRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

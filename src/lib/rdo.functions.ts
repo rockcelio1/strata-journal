@@ -457,7 +457,7 @@ export const removerAnexo = createServerFn({ method: "POST" })
     } else if (row.data?.storage_provider === "onedrive" && row.data?.onedrive_item_id) {
       try {
         const { graphOrganizacao } = await import("@/lib/onedrive-org.server");
-        await graphOrganizacao(`/me/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, { method: "DELETE" });
+        await graphOrganizacao(`/drive/items/${encodeURIComponent(row.data.onedrive_item_id)}`, { method: "DELETE" });
       } catch (e) {
         console.error("[rdo] não foi possível apagar o anexo no OneDrive:", (e as Error)?.message);
       }
