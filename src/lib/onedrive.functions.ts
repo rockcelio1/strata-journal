@@ -1,138 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getDownloadUrl, listChildren, uploadContent, OneDriveError } from "@/lib/onedrive-graph";
 import {
-  getDownloadUrl,
-  listChildren,
-  naoConectado,
-  uploadContent,
-  OneDriveError,
-  type Fetcher,
-} from "@/lib/onedrive-graph";
+  DIAG_MAX,
+  GATEWAY_URL,
+  MESES_PT,
+  diagBuf,
+  encodePath,
+  falhaOneDrive,
+  fetcherGateway,
+  gatewayFetch,
+  getKeys,
+  parseGraphError,
+  slugSegment,
+} from "@/lib/onedrive-gateway.server";
 
-
-const GATEWAY_URL = "https://graph.microsoft.com/v1.0";
-
-
-// Diagnóstico em memória (últimas chamadas) — exibido em Configurações → OneDrive.
-type DiagEntry = {
-  ts: string;
-  method: string;
-  url: string;
-  status: number;
-  ok: boolean;
-  requestId?: string | null;
-  step?: string | null;
-  error?: string | null;
-};
-const DIAG_MAX = 30;
-const diagBuf: DiagEntry[] = [];
-function pushDiag(e: DiagEntry) {
-  diagBuf.unshift(e);
-  if (diagBuf.length > DIAG_MAX) diagBuf.length = DIAG_MAX;
-}
-
-function slugSegment(s: string): string {
-  return (s || "sem-nome")
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w.\-]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 80) || "sem-nome";
-}
-
-function encodePath(path: string): string {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
-const MESES_PT = ["janeiro","fevereiro","marco","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-
-/** Confere se a conta OneDrive da organização está conectada dentro do RDO. */
-async function getKeys() {
-  const { statusOrganizacao } = await import("@/lib/onedrive-org.server");
-  const st = await statusOrganizacao();
-  if (!st.conectado) throw naoConectado("credenciais");
-  return st;
-}
-
-
-function parseGraphError(status: number, body: string, step: string, url: string, requestId?: string | null): string {
-  let code = "", message = body.slice(0, 200);
-  try {
-    const j = JSON.parse(body);
-    code = j?.error?.code ?? "";
-    message = j?.error?.message ?? message;
-  } catch { /* texto puro */ }
-  let hint = "";
-  if (code === "BadRequest" && /segment 'v\d/i.test(message)) {
-    hint = " — confira a rota do gateway (base URL não deve conter /v1.0).";
-  } else if (status === 404 || code === "itemNotFound") {
-    hint = " — recurso/pasta não existe no OneDrive.";
-  } else if (status === 401 || status === 403) {
-    hint = " — token expirado ou sem permissão; reconecte o OneDrive.";
-  } else if (status === 429) {
-    hint = " — limite de requisições da Microsoft (tente novamente).";
-  }
-  return `[${step}] ${status} ${code || ""} ${message}${hint} (URL: ${url}${requestId ? ` | request-id: ${requestId}` : ""})`.trim();
-}
-
-async function gatewayFetch(path: string, init?: RequestInit, retries = 2, step = "graph"): Promise<Response> {
-  const { graphOrganizacao } = await import("@/lib/onedrive-org.server");
-  const url = `${GATEWAY_URL}${path}`;
-  const method = init?.method ?? "GET";
-  let lastErr: any;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await graphOrganizacao(path, {
-        ...init,
-        signal: init?.signal ?? AbortSignal.timeout(15000),
-      });
-
-      const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
-      if (res.status >= 500 || res.status === 429) {
-        if (attempt < retries) {
-          const wait = 300 * Math.pow(2, attempt);
-          console.warn(`[onedrive:${step}] ${res.status} em ${path} — retry ${attempt + 1}/${retries} em ${wait}ms`);
-          await new Promise((r) => setTimeout(r, wait));
-          continue;
-        }
-      }
-      pushDiag({
-        ts: new Date().toISOString(), method, url, status: res.status, ok: res.ok,
-        requestId, step,
-      });
-      return res;
-    } catch (e: any) {
-      lastErr = e;
-      console.error(`[onedrive:${step}] erro de rede em ${path} (tentativa ${attempt + 1}):`, e);
-      pushDiag({
-        ts: new Date().toISOString(), method, url, status: 0, ok: false,
-        step, error: e?.message ?? "network",
-      });
-      if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 300 * Math.pow(2, attempt)));
-        continue;
-      }
-    }
-  }
-  throw lastErr ?? new Error("OneDrive: falha de rede após retentativas");
-}
-
-async function gatewayCall(path: string, init: RequestInit | undefined, step: string): Promise<{ res: Response; body: string; requestId: string | null }> {
-  const res = await gatewayFetch(path, init, 2, step);
-  const requestId = res.headers.get("request-id") ?? res.headers.get("client-request-id");
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    const msg = parseGraphError(res.status, body, step, `${GATEWAY_URL}${path}`, requestId);
-    pushDiag({
-      ts: new Date().toISOString(), method: init?.method ?? "GET",
-      url: `${GATEWAY_URL}${path}`, status: res.status, ok: false, requestId, step, error: msg,
-    });
-    const err = new Error(msg) as Error & { status?: number; requestId?: string | null; step?: string };
-    err.status = res.status; err.requestId = requestId; err.step = step;
-    throw err;
-  }
-  return { res, body: "", requestId };
-}
 
 export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
