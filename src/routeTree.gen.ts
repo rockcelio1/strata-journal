@@ -34,7 +34,6 @@ import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
 import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
 import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
-import { Route as OauthOnedriveReturnRouteImport } from './routes/oauth.onedrive.return'
 import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
 import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
 import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api.public.bootstrap-master'
@@ -70,12 +69,15 @@ import { Route as AuthenticatedAjudaBuscaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAjudaAdminRouteImport } from './routes/_authenticated/ajuda.admin'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiRdoRdoIdArquivosRouteImport } from './routes/api.rdo.$rdoId.arquivos'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
-import { Route as AuthenticatedConfiguracoesOnedriveVincularRouteImport } from './routes/_authenticated/configuracoes.onedrive.vincular'
+import { Route as ApiIntegracoesOnedriveStatusRouteImport } from './routes/api.integracoes.onedrive.status'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
+import { Route as ApiRdoRdoIdArquivosArquivoIdRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId'
+import { Route as ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId.download'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -207,11 +209,6 @@ const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const OauthOnedriveReturnRoute = OauthOnedriveReturnRouteImport.update({
-  id: '/oauth/onedrive/return',
-  path: '/oauth/onedrive/return',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
   id: '/api/public/lgpd-request',
@@ -415,6 +412,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRdoRdoIdArquivosRoute = ApiRdoRdoIdArquivosRouteImport.update({
+  id: '/api/rdo/$rdoId/arquivos',
+  path: '/api/rdo/$rdoId/arquivos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicOnedriveFileItemIdRoute =
   ApiPublicOnedriveFileItemIdRouteImport.update({
     id: '/api/public/onedrive-file/$itemId',
@@ -426,11 +428,11 @@ const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
   path: '/api/public/hooks/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedConfiguracoesOnedriveVincularRoute =
-  AuthenticatedConfiguracoesOnedriveVincularRouteImport.update({
-    id: '/vincular',
-    path: '/vincular',
-    getParentRoute: () => AuthenticatedConfiguracoesOnedriveRoute,
+const ApiIntegracoesOnedriveStatusRoute =
+  ApiIntegracoesOnedriveStatusRouteImport.update({
+    id: '/api/integracoes/onedrive/status',
+    path: '/api/integracoes/onedrive/status',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedCadastrosTemplatesTarefasIdRoute =
   AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
@@ -449,6 +451,18 @@ const AuthenticatedAjudaArtigoSlugRoute =
     id: '/ajuda/artigo/$slug',
     path: '/ajuda/artigo/$slug',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiRdoRdoIdArquivosArquivoIdRoute =
+  ApiRdoRdoIdArquivosArquivoIdRouteImport.update({
+    id: '/$arquivoId',
+    path: '/$arquivoId',
+    getParentRoute: () => ApiRdoRdoIdArquivosRoute,
+  } as any)
+const ApiRdoRdoIdArquivosArquivoIdDownloadRoute =
+  ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport.update({
+    id: '/download',
+    path: '/download',
+    getParentRoute: () => ApiRdoRdoIdArquivosArquivoIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -492,7 +506,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -506,7 +520,6 @@ export interface FileRoutesByFullPath {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -515,9 +528,12 @@ export interface FileRoutesByFullPath {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
+  '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
+  '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -559,7 +575,7 @@ export interface FileRoutesByTo {
   '/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -573,7 +589,6 @@ export interface FileRoutesByTo {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/ajuda': typeof AuthenticatedAjudaIndexRoute
   '/cadastros': typeof AuthenticatedCadastrosIndexRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesIndexRoute
@@ -582,9 +597,12 @@ export interface FileRoutesByTo {
   '/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
+  '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
+  '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -629,7 +647,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/email': typeof AuthenticatedConfiguracoesEmailRoute
   '/_authenticated/configuracoes/grupos': typeof AuthenticatedConfiguracoesGruposRoute
   '/_authenticated/configuracoes/lgpd': typeof AuthenticatedConfiguracoesLgpdRoute
-  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  '/_authenticated/configuracoes/onedrive': typeof AuthenticatedConfiguracoesOnedriveRoute
   '/_authenticated/configuracoes/permissoes': typeof AuthenticatedConfiguracoesPermissoesRoute
   '/_authenticated/configuracoes/rotacao-chaves': typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   '/_authenticated/configuracoes/runbook': typeof AuthenticatedConfiguracoesRunbookRoute
@@ -643,7 +661,6 @@ export interface FileRoutesById {
   '/api/public/bootstrap-master': typeof ApiPublicBootstrapMasterRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/lgpd-request': typeof ApiPublicLgpdRequestRoute
-  '/oauth/onedrive/return': typeof OauthOnedriveReturnRoute
   '/_authenticated/ajuda/': typeof AuthenticatedAjudaIndexRoute
   '/_authenticated/cadastros/': typeof AuthenticatedCadastrosIndexRoute
   '/_authenticated/configuracoes/': typeof AuthenticatedConfiguracoesIndexRoute
@@ -652,9 +669,12 @@ export interface FileRoutesById {
   '/_authenticated/ajuda/artigo/$slug': typeof AuthenticatedAjudaArtigoSlugRoute
   '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
-  '/_authenticated/configuracoes/onedrive/vincular': typeof AuthenticatedConfiguracoesOnedriveVincularRoute
+  '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
+  '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -713,7 +733,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/ajuda/'
     | '/cadastros/'
     | '/configuracoes/'
@@ -722,9 +741,12 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
-    | '/configuracoes/onedrive/vincular'
+    | '/api/integracoes/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
+    | '/api/rdo/$rdoId/arquivos'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -780,7 +802,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/ajuda'
     | '/cadastros'
     | '/configuracoes'
@@ -789,9 +810,12 @@ export interface FileRouteTypes {
     | '/ajuda/artigo/$slug'
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
-    | '/configuracoes/onedrive/vincular'
+    | '/api/integracoes/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
+    | '/api/rdo/$rdoId/arquivos'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   id:
     | '__root__'
     | '/'
@@ -849,7 +873,6 @@ export interface FileRouteTypes {
     | '/api/public/bootstrap-master'
     | '/api/public/health'
     | '/api/public/lgpd-request'
-    | '/oauth/onedrive/return'
     | '/_authenticated/ajuda/'
     | '/_authenticated/cadastros/'
     | '/_authenticated/configuracoes/'
@@ -858,9 +881,12 @@ export interface FileRouteTypes {
     | '/_authenticated/ajuda/artigo/$slug'
     | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
-    | '/_authenticated/configuracoes/onedrive/vincular'
+    | '/api/integracoes/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
+    | '/api/rdo/$rdoId/arquivos'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -882,9 +908,10 @@ export interface RootRouteChildren {
   ApiPublicBootstrapMasterRoute: typeof ApiPublicBootstrapMasterRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
-  OauthOnedriveReturnRoute: typeof OauthOnedriveReturnRoute
+  ApiIntegracoesOnedriveStatusRoute: typeof ApiIntegracoesOnedriveStatusRoute
   ApiPublicHooksBackupRoute: typeof ApiPublicHooksBackupRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
+  ApiRdoRdoIdArquivosRoute: typeof ApiRdoRdoIdArquivosRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -1063,13 +1090,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/oauth/onedrive/return': {
-      id: '/oauth/onedrive/return'
-      path: '/oauth/onedrive/return'
-      fullPath: '/oauth/onedrive/return'
-      preLoaderRoute: typeof OauthOnedriveReturnRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/public/lgpd-request': {
       id: '/api/public/lgpd-request'
@@ -1316,6 +1336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rdo/$rdoId/arquivos': {
+      id: '/api/rdo/$rdoId/arquivos'
+      path: '/api/rdo/$rdoId/arquivos'
+      fullPath: '/api/rdo/$rdoId/arquivos'
+      preLoaderRoute: typeof ApiRdoRdoIdArquivosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/onedrive-file/$itemId': {
       id: '/api/public/onedrive-file/$itemId'
       path: '/api/public/onedrive-file/$itemId'
@@ -1330,12 +1357,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/configuracoes/onedrive/vincular': {
-      id: '/_authenticated/configuracoes/onedrive/vincular'
-      path: '/vincular'
-      fullPath: '/configuracoes/onedrive/vincular'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
+    '/api/integracoes/onedrive/status': {
+      id: '/api/integracoes/onedrive/status'
+      path: '/api/integracoes/onedrive/status'
+      fullPath: '/api/integracoes/onedrive/status'
+      preLoaderRoute: typeof ApiIntegracoesOnedriveStatusRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/cadastros/templates-tarefas/$id': {
       id: '/_authenticated/cadastros/templates-tarefas/$id'
@@ -1358,23 +1385,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAjudaArtigoSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/rdo/$rdoId/arquivos/$arquivoId': {
+      id: '/api/rdo/$rdoId/arquivos/$arquivoId'
+      path: '/$arquivoId'
+      fullPath: '/api/rdo/$rdoId/arquivos/$arquivoId'
+      preLoaderRoute: typeof ApiRdoRdoIdArquivosArquivoIdRouteImport
+      parentRoute: typeof ApiRdoRdoIdArquivosRoute
+    }
+    '/api/rdo/$rdoId/arquivos/$arquivoId/download': {
+      id: '/api/rdo/$rdoId/arquivos/$arquivoId/download'
+      path: '/download'
+      fullPath: '/api/rdo/$rdoId/arquivos/$arquivoId/download'
+      preLoaderRoute: typeof ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport
+      parentRoute: typeof ApiRdoRdoIdArquivosArquivoIdRoute
+    }
   }
 }
-
-interface AuthenticatedConfiguracoesOnedriveRouteChildren {
-  AuthenticatedConfiguracoesOnedriveVincularRoute: typeof AuthenticatedConfiguracoesOnedriveVincularRoute
-}
-
-const AuthenticatedConfiguracoesOnedriveRouteChildren: AuthenticatedConfiguracoesOnedriveRouteChildren =
-  {
-    AuthenticatedConfiguracoesOnedriveVincularRoute:
-      AuthenticatedConfiguracoesOnedriveVincularRoute,
-  }
-
-const AuthenticatedConfiguracoesOnedriveRouteWithChildren =
-  AuthenticatedConfiguracoesOnedriveRoute._addFileChildren(
-    AuthenticatedConfiguracoesOnedriveRouteChildren,
-  )
 
 interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesAcessosRoute: typeof AuthenticatedConfiguracoesAcessosRoute
@@ -1386,7 +1412,7 @@ interface AuthenticatedConfiguracoesRouteChildren {
   AuthenticatedConfiguracoesEmailRoute: typeof AuthenticatedConfiguracoesEmailRoute
   AuthenticatedConfiguracoesGruposRoute: typeof AuthenticatedConfiguracoesGruposRoute
   AuthenticatedConfiguracoesLgpdRoute: typeof AuthenticatedConfiguracoesLgpdRoute
-  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRouteWithChildren
+  AuthenticatedConfiguracoesOnedriveRoute: typeof AuthenticatedConfiguracoesOnedriveRoute
   AuthenticatedConfiguracoesPermissoesRoute: typeof AuthenticatedConfiguracoesPermissoesRoute
   AuthenticatedConfiguracoesRotacaoChavesRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRoute
   AuthenticatedConfiguracoesRunbookRoute: typeof AuthenticatedConfiguracoesRunbookRoute
@@ -1415,7 +1441,7 @@ const AuthenticatedConfiguracoesRouteChildren: AuthenticatedConfiguracoesRouteCh
       AuthenticatedConfiguracoesGruposRoute,
     AuthenticatedConfiguracoesLgpdRoute: AuthenticatedConfiguracoesLgpdRoute,
     AuthenticatedConfiguracoesOnedriveRoute:
-      AuthenticatedConfiguracoesOnedriveRouteWithChildren,
+      AuthenticatedConfiguracoesOnedriveRoute,
     AuthenticatedConfiguracoesPermissoesRoute:
       AuthenticatedConfiguracoesPermissoesRoute,
     AuthenticatedConfiguracoesRotacaoChavesRoute:
@@ -1526,6 +1552,33 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ApiRdoRdoIdArquivosArquivoIdRouteChildren {
+  ApiRdoRdoIdArquivosArquivoIdDownloadRoute: typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
+}
+
+const ApiRdoRdoIdArquivosArquivoIdRouteChildren: ApiRdoRdoIdArquivosArquivoIdRouteChildren =
+  {
+    ApiRdoRdoIdArquivosArquivoIdDownloadRoute:
+      ApiRdoRdoIdArquivosArquivoIdDownloadRoute,
+  }
+
+const ApiRdoRdoIdArquivosArquivoIdRouteWithChildren =
+  ApiRdoRdoIdArquivosArquivoIdRoute._addFileChildren(
+    ApiRdoRdoIdArquivosArquivoIdRouteChildren,
+  )
+
+interface ApiRdoRdoIdArquivosRouteChildren {
+  ApiRdoRdoIdArquivosArquivoIdRoute: typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+}
+
+const ApiRdoRdoIdArquivosRouteChildren: ApiRdoRdoIdArquivosRouteChildren = {
+  ApiRdoRdoIdArquivosArquivoIdRoute:
+    ApiRdoRdoIdArquivosArquivoIdRouteWithChildren,
+}
+
+const ApiRdoRdoIdArquivosRouteWithChildren =
+  ApiRdoRdoIdArquivosRoute._addFileChildren(ApiRdoRdoIdArquivosRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1546,9 +1599,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBootstrapMasterRoute: ApiPublicBootstrapMasterRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
-  OauthOnedriveReturnRoute: OauthOnedriveReturnRoute,
+  ApiIntegracoesOnedriveStatusRoute: ApiIntegracoesOnedriveStatusRoute,
   ApiPublicHooksBackupRoute: ApiPublicHooksBackupRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
+  ApiRdoRdoIdArquivosRoute: ApiRdoRdoIdArquivosRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

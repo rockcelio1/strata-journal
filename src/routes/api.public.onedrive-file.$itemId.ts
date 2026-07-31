@@ -143,10 +143,12 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
           return new Response("OneDrive não conectado", { status: 503 });
         }
 
+        const { obterDriveId } = await import("@/lib/onedrive-app.server");
+        const driveId = await obterDriveId();
         const encId = encodeURIComponent(itemId);
         const graphUrl = thumbSize
-          ? `${GRAPH_URL}/me/drive/items/${encId}/thumbnails/0/${thumbSize}/content`
-          : `${GRAPH_URL}/me/drive/items/${encId}/content`;
+          ? `${GRAPH_URL}/drives/${driveId}/items/${encId}/thumbnails/0/${thumbSize}/content`
+          : `${GRAPH_URL}/drives/${driveId}/items/${encId}/content`;
 
         const upstream = await fetch(graphUrl, { headers: { Authorization: `Bearer ${token}` } });
 
@@ -154,7 +156,7 @@ export const Route = createFileRoute("/api/public/onedrive-file/$itemId")({
           const body = await upstream.text().catch(() => "");
           console.error(`[onedrive-proxy] ${upstream.status} thumb=${thumbSize ?? "no"} item=${itemId}: ${body.slice(0, 200)}`);
           if (thumbSize && upstream.status === 404) {
-            const fallback = await fetch(`${GRAPH_URL}/me/drive/items/${encId}/content`, {
+            const fallback = await fetch(`${GRAPH_URL}/drives/${driveId}/items/${encId}/content`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (fallback.ok) {

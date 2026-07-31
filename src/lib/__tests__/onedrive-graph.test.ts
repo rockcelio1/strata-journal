@@ -50,7 +50,7 @@ describe("OneDrive — listagem", () => {
   it("lista itens da raiz mapeando pastas e arquivos", async () => {
     const { fn, chamadas } = fetcherFila(resp(200, { value: [ARQ, PASTA] }));
     const r = await listChildren(fn);
-    expect(chamadas[0]).toContain("/me/drive/root/children");
+    expect(chamadas[0]).toContain("/drive/root/children");
     expect(r.path).toBe("");
     expect(r.items.map((i) => i.name)).toEqual(["Relatórios", "rdo.pdf"]); // pastas primeiro
     expect(r.items[0]).toMatchObject({ isFolder: true, childCount: 3 });
@@ -59,13 +59,13 @@ describe("OneDrive — listagem", () => {
 
   it("monta a rota de subpasta com o caminho codificado", () => {
     const url = buildChildrenUrl("/FACOM/Obra Norte/");
-    expect(url).toContain("/me/drive/root:/FACOM/Obra%20Norte:/children");
+    expect(url).toContain("/drive/root:/FACOM/Obra%20Norte:/children");
   });
 
   it("paginação: devolve cursor e reenvia o skiptoken na página seguinte", async () => {
     const p1 = resp(200, {
       value: [ARQ],
-      "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/drive/root/children?$skiptoken=ABC123",
+      "@odata.nextLink": "https://graph.microsoft.com/v1.0/drive/root/children?$skiptoken=ABC123",
     });
     const p2 = resp(200, { value: [PASTA] });
     const { fn, chamadas } = fetcherFila(p1, p2);
@@ -106,7 +106,7 @@ describe("OneDrive — upload", () => {
       mimeType: "image/jpeg",
       bytes: new Uint8Array(10),
     });
-    expect(chamadas[0].path).toContain("/me/drive/root:/FACOM/Anexos/foto.jpg:/content");
+    expect(chamadas[0].path).toContain("/drive/root:/FACOM/Anexos/foto.jpg:/content");
     expect(chamadas[0].path).toContain("conflictBehavior=rename");
     expect(chamadas[0].init?.method).toBe("PUT");
     expect(r).toMatchObject({ id: "novo", path: "FACOM/Anexos/foto.jpg" });

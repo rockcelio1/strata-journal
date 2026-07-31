@@ -165,7 +165,7 @@ export function falhaOneDrive(e: unknown): never {
 export async function refreshOnedriveDownloadUrl(itemId: string): Promise<string | null> {
   if (!itemId) return null;
   try {
-    const res = await gatewayFetch(`/me/drive/items/${encodeURIComponent(itemId)}`, undefined, 1, "refreshDownloadUrl");
+    const res = await gatewayFetch(`/drive/items/${encodeURIComponent(itemId)}`, undefined, 1, "refreshDownloadUrl");
     if (!res.ok) return null;
     const j: any = await res.json().catch(() => null);
     return j?.["@microsoft.graph.downloadUrl"] ?? j?.webUrl ?? null;

@@ -2761,17 +2761,22 @@ export type Database = {
           nome: string
           ocorrencia_id: string | null
           onedrive_download_url: string | null
+          onedrive_drive_id: string | null
           onedrive_item_id: string | null
+          onedrive_path: string | null
           onedrive_web_url: string | null
           ordem: number
           rdo_id: string
           rdo_tarefa_avanco_id: string | null
+          sha256: string | null
           storage_path: string
           storage_provider: string
           tamanho_bytes: number | null
           tarefa_item_id: string | null
           task_item_id: string | null
           thumbnail_url: string | null
+          upload_erro: string | null
+          upload_status: string
         }
         Insert: {
           autor_id?: string | null
@@ -2784,17 +2789,22 @@ export type Database = {
           nome: string
           ocorrencia_id?: string | null
           onedrive_download_url?: string | null
+          onedrive_drive_id?: string | null
           onedrive_item_id?: string | null
+          onedrive_path?: string | null
           onedrive_web_url?: string | null
           ordem?: number
           rdo_id: string
           rdo_tarefa_avanco_id?: string | null
+          sha256?: string | null
           storage_path: string
           storage_provider?: string
           tamanho_bytes?: number | null
           tarefa_item_id?: string | null
           task_item_id?: string | null
           thumbnail_url?: string | null
+          upload_erro?: string | null
+          upload_status?: string
         }
         Update: {
           autor_id?: string | null
@@ -2807,17 +2817,22 @@ export type Database = {
           nome?: string
           ocorrencia_id?: string | null
           onedrive_download_url?: string | null
+          onedrive_drive_id?: string | null
           onedrive_item_id?: string | null
+          onedrive_path?: string | null
           onedrive_web_url?: string | null
           ordem?: number
           rdo_id?: string
           rdo_tarefa_avanco_id?: string | null
+          sha256?: string | null
           storage_path?: string
           storage_provider?: string
           tamanho_bytes?: number | null
           tarefa_item_id?: string | null
           task_item_id?: string | null
           thumbnail_url?: string | null
+          upload_erro?: string | null
+          upload_status?: string
         }
         Relationships: [
           {

@@ -2,20 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, Unplug, UserCog, Copy, PlayCircle, ExternalLink, HardDrive } from "lucide-react";
+import { Cloud, CheckCircle2, AlertCircle, RefreshCw, FolderOpen, ChevronRight, ArrowLeft, Loader2, PlayCircle, ExternalLink, HardDrive } from "lucide-react";
 import { notify } from "@/lib/toast";
-import { listOneDriveConexoes, verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
+import { verifyOneDrive, listOneDriveFolders, testOneDrivePermissions, ensureOneDriveFolder, getOneDriveDiagnostics, getOneDriveQuota } from "@/lib/onedrive.functions";
 import { QuotaChart3D, fmtBytes } from "@/components/onedrive/QuotaChart3D";
 import { QuotaDashboard } from "@/components/onedrive/QuotaDashboard";
 import { CacheSettingsSection } from "@/components/onedrive/CacheSettingsSection";
 import { OneDriveFileExplorer } from "@/components/onedrive/FileExplorer";
-import { OneDriveConnectPanel, classificarEstadoConexao } from "@/components/onedrive/ConnectPanel";
-import { MinhaContaMicrosoft } from "@/components/onedrive/MinhaContaMicrosoft";
-import { ReautorizarOneDrive } from "@/components/onedrive/ReautorizarOneDrive";
+import { IntegracaoOneDriveCard } from "@/components/onedrive/IntegracaoOneDriveCard";
 import { OneDrivePermissoes } from "@/components/onedrive/OneDrivePermissoes";
 import { OneDriveAuditoria } from "@/components/onedrive/OneDriveAuditoria";
 
-const ONEDRIVE_ACCOUNT = "sistemas@facom.com.br";
+const ONEDRIVE_ACCOUNT = "arquivos@facom.com.br";
 const ONEDRIVE_DIRECT_URL = `https://onedrive.live.com/?login_hint=${encodeURIComponent(ONEDRIVE_ACCOUNT)}`;
 const TOTAL_QUOTA_HINT = 1024 * 1024 * 1024 * 1024; // 1 TB
 
@@ -62,13 +60,6 @@ function OneDriveSettings() {
     refetchInterval: (q) => (q.state.data?.ok === true ? false : 10_000),
   });
 
-  const conexoesFn = useServerFn(listOneDriveConexoes);
-  const conexoes = useQuery({
-    queryKey: ["onedrive", "conexoes"],
-    queryFn: () => conexoesFn({ data: undefined as any }),
-    retry: 0,
-  });
-
   const folders = useQuery({
     queryKey: ["onedrive", "folders", path],
     queryFn: () => listFn({ data: { path } }),
@@ -110,7 +101,6 @@ function OneDriveSettings() {
     onError: (e: any) => notify.error("Conexão falhou", { description: e?.message ?? "Sem resposta do OneDrive" }),
   });
 
-  const [accountModal, setAccountModal] = useState<null | "switch" | "disconnect">(null);
 
   const ok = verify.data?.ok === true;
   const status: "loading" | "connected" | "error" = verify.isLoading
@@ -135,30 +125,7 @@ function OneDriveSettings() {
         </div>
       </header>
 
-      <OneDriveConnectPanel
-        estado={classificarEstadoConexao({
-          carregando: verify.isLoading,
-          ok,
-          erro: (verify.error as Error | null)?.message ?? verify.data?.error ?? null,
-        })}
-        conta={acc?.email ?? acc?.displayName ?? ONEDRIVE_ACCOUNT}
-        erro={(verify.error as Error | null)?.message ?? verify.data?.error ?? null}
-        verificando={verify.isFetching}
-        contexto={{
-          conexaoId: conexoes.data?.conexoes?.[0]?.id ?? null,
-          organizacao: acc?.displayName ?? null,
-          requestId: diag.data?.entries?.find((e) => !e.ok)?.requestId ?? null,
-          status: (verify.data as any)?.status ?? null,
-          projeto: "Diário de Obra FACOM",
-        }}
-        onVerificar={() => verify.refetch()}
-        onTrocarConta={() => setAccountModal("switch")}
-        onDesconectar={() => setAccountModal("disconnect")}
-      />
-
-      <ReautorizarOneDrive />
-
-      <MinhaContaMicrosoft />
+      <IntegracaoOneDriveCard />
 
       <OneDrivePermissoes />
 
@@ -238,14 +205,6 @@ function OneDriveSettings() {
               {verify.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Verificar
             </button>
-            {ok && (
-              <button
-                onClick={() => setAccountModal("switch")}
-                className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-accent"
-              >
-                <UserCog className="h-3 w-3" /> Trocar conta
-              </button>
-            )}
             <button
               onClick={() => testConn.mutate()}
               disabled={testConn.isPending || !ok}
@@ -264,7 +223,7 @@ function OneDriveSettings() {
             <div className="text-sm">
               <div className="font-medium">{acc?.displayName ?? "Conta OneDrive"}</div>
               {acc?.email && <div className="text-muted-foreground text-xs">{acc.email}</div>}
-              <div className="text-xs text-muted-foreground mt-1">Acesso autorizado via Lovable Connector.</div>
+              <div className="text-xs text-muted-foreground mt-1">Acesso pelo aplicativo Microsoft (Client Credentials), sem login de usuário.</div>
             </div>
           </div>
         ) : (
@@ -275,12 +234,6 @@ function OneDriveSettings() {
               <div className="text-xs text-muted-foreground mt-1 break-all">
                 {(verify.data as any)?.error ?? (verify.error as any)?.message ?? "Conector OneDrive não está disponível."}
               </div>
-              <button
-                onClick={() => setAccountModal("switch")}
-                className="mt-2 text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-brand text-brand-foreground"
-              >
-                <UserCog className="h-3 w-3" /> Conectar conta
-              </button>
             </div>
           </div>
         )}
@@ -426,69 +379,6 @@ function OneDriveSettings() {
       <CacheSettingsSection />
 
 
-      <section className="border border-border rounded-lg p-4 bg-card">
-        <h3 className="font-medium text-sm mb-2">Conta conectada</h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Para trocar a conta do OneDrive, o assistente abre o login oficial da Microsoft para você escolher outra conta.
-          Clique em "Trocar conta" e cole o comando no chat do Lovable.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setAccountModal("switch")}
-            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded bg-brand text-brand-foreground"
-          >
-            <UserCog className="h-3 w-3" /> Trocar conta do OneDrive
-          </button>
-          <button
-            onClick={() => setAccountModal("disconnect")}
-            className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-destructive text-destructive hover:bg-destructive/10"
-          >
-            <Unplug className="h-3 w-3" /> Desconectar OneDrive
-          </button>
-        </div>
-      </section>
-
-      {accountModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4" onClick={() => setAccountModal(null)}>
-          <div className="bg-card border border-border rounded-lg p-5 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-medium text-sm mb-2">
-              {accountModal === "switch" ? "Trocar conta do OneDrive" : "Desconectar OneDrive"}
-            </h4>
-            <p className="text-xs text-muted-foreground mb-3">
-              {accountModal === "switch"
-                ? "Copie o comando abaixo e envie no chat do Lovable. O login oficial da Microsoft será aberto para você escolher outra conta."
-                : "Copie o comando abaixo e envie no chat do Lovable para desconectar a conta atual deste projeto."}
-            </p>
-            <pre className="text-xs bg-muted rounded p-3 whitespace-pre-wrap break-all mb-3">
-              {accountModal === "switch"
-                ? "Trocar a conta do OneDrive conectada a este projeto"
-                : "Desconectar a conta do OneDrive deste projeto"}
-            </pre>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  const msg = accountModal === "switch"
-                    ? "Trocar a conta do OneDrive conectada a este projeto"
-                    : "Desconectar a conta do OneDrive deste projeto";
-                  navigator.clipboard?.writeText(msg).then(
-                    () => notify.success("Comando copiado — cole no chat"),
-                    () => notify.error("Não foi possível copiar"),
-                  );
-                }}
-                className="text-xs inline-flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-accent"
-              >
-                <Copy className="h-3 w-3" /> Copiar comando
-              </button>
-              <button
-                onClick={() => setAccountModal(null)}
-                className="text-xs px-3 py-1.5 rounded bg-brand text-brand-foreground"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
 
   );
