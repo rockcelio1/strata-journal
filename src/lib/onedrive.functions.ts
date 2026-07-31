@@ -297,49 +297,6 @@ export const uploadOneDriveAnexo = createServerFn({ method: "POST" })
   });
 
 
-/** Retorna uma downloadUrl fresca (~1h de validade) para um item do OneDrive.
- * Usar sempre que for exibir a imagem: a URL persistida na tabela expira. */
-export async function refreshOnedriveDownloadUrl(itemId: string): Promise<string | null> {
-  if (!itemId) return null;
-  try {
-    const res = await gatewayFetch(
-      `/me/drive/items/${encodeURIComponent(itemId)}`,
-      undefined,
-      1,
-      "refreshDownloadUrl",
-    );
-    if (!res.ok) return null;
-    const j: any = await res.json().catch(() => null);
-    return j?.["@microsoft.graph.downloadUrl"] ?? j?.webUrl ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/* ------------------------------------------------------------------ *
- * Explorador de arquivos (Configurações → OneDrive)
- * Listagem, upload e download apoiados no núcleo puro `onedrive-graph`,
- * que é coberto por testes de integração com fetch simulado.
- * ------------------------------------------------------------------ */
-
-const fetcherGateway: Fetcher = (path, init, step) => gatewayFetch(path, init, 2, step ?? "graph");
-
-function falhaOneDrive(e: unknown): never {
-  if (e instanceof OneDriveError) {
-    pushDiag({
-      ts: new Date().toISOString(),
-      method: "GET",
-      url: e.detalhe.url ?? GATEWAY_URL,
-      status: e.detalhe.status,
-      ok: false,
-      requestId: e.detalhe.requestId ?? null,
-      step: e.detalhe.step,
-      error: `${e.detalhe.kind}: ${e.detalhe.message}`,
-    });
-    throw new Error(`${e.detalhe.message} ${e.detalhe.action}`);
-  }
-  throw e instanceof Error ? e : new Error("Falha inesperada no OneDrive.");
-}
 
 /** Lista pastas E arquivos de um caminho, com paginação por cursor (skipToken). */
 export const listOneDriveItems = createServerFn({ method: "POST" })
