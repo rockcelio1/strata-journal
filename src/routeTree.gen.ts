@@ -76,6 +76,7 @@ import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
 import { Route as ApiRdoRdoIdArquivosArquivoIdRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId'
+import { Route as ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId.download'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -450,6 +451,12 @@ const ApiRdoRdoIdArquivosArquivoIdRoute =
     path: '/$arquivoId',
     getParentRoute: () => ApiRdoRdoIdArquivosRoute,
   } as any)
+const ApiRdoRdoIdArquivosArquivoIdDownloadRoute =
+  ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport.update({
+    id: '/download',
+    path: '/download',
+    getParentRoute: () => ApiRdoRdoIdArquivosArquivoIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -517,7 +524,8 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
-  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRoute
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -584,7 +592,8 @@ export interface FileRoutesByTo {
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
-  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRoute
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -654,7 +663,8 @@ export interface FileRoutesById {
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
-  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRoute
+  '/api/rdo/$rdoId/arquivos/$arquivoId': typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
+  '/api/rdo/$rdoId/arquivos/$arquivoId/download': typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -725,6 +735,7 @@ export interface FileRouteTypes {
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
     | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -792,6 +803,7 @@ export interface FileRouteTypes {
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
     | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   id:
     | '__root__'
     | '/'
@@ -861,6 +873,7 @@ export interface FileRouteTypes {
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
     | '/api/rdo/$rdoId/arquivos/$arquivoId'
+    | '/api/rdo/$rdoId/arquivos/$arquivoId/download'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1358,6 +1371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRdoRdoIdArquivosArquivoIdRouteImport
       parentRoute: typeof ApiRdoRdoIdArquivosRoute
     }
+    '/api/rdo/$rdoId/arquivos/$arquivoId/download': {
+      id: '/api/rdo/$rdoId/arquivos/$arquivoId/download'
+      path: '/download'
+      fullPath: '/api/rdo/$rdoId/arquivos/$arquivoId/download'
+      preLoaderRoute: typeof ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport
+      parentRoute: typeof ApiRdoRdoIdArquivosArquivoIdRoute
+    }
   }
 }
 
@@ -1511,12 +1531,28 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ApiRdoRdoIdArquivosArquivoIdRouteChildren {
+  ApiRdoRdoIdArquivosArquivoIdDownloadRoute: typeof ApiRdoRdoIdArquivosArquivoIdDownloadRoute
+}
+
+const ApiRdoRdoIdArquivosArquivoIdRouteChildren: ApiRdoRdoIdArquivosArquivoIdRouteChildren =
+  {
+    ApiRdoRdoIdArquivosArquivoIdDownloadRoute:
+      ApiRdoRdoIdArquivosArquivoIdDownloadRoute,
+  }
+
+const ApiRdoRdoIdArquivosArquivoIdRouteWithChildren =
+  ApiRdoRdoIdArquivosArquivoIdRoute._addFileChildren(
+    ApiRdoRdoIdArquivosArquivoIdRouteChildren,
+  )
+
 interface ApiRdoRdoIdArquivosRouteChildren {
-  ApiRdoRdoIdArquivosArquivoIdRoute: typeof ApiRdoRdoIdArquivosArquivoIdRoute
+  ApiRdoRdoIdArquivosArquivoIdRoute: typeof ApiRdoRdoIdArquivosArquivoIdRouteWithChildren
 }
 
 const ApiRdoRdoIdArquivosRouteChildren: ApiRdoRdoIdArquivosRouteChildren = {
-  ApiRdoRdoIdArquivosArquivoIdRoute: ApiRdoRdoIdArquivosArquivoIdRoute,
+  ApiRdoRdoIdArquivosArquivoIdRoute:
+    ApiRdoRdoIdArquivosArquivoIdRouteWithChildren,
 }
 
 const ApiRdoRdoIdArquivosRouteWithChildren =
