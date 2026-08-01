@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "./security/permissao.server";
 import { assertAdminEmpresa, mascarar, garantirTemplatesPadrao, montarMensagem, enfileirar } from "@/lib/email/admin.server";
 import { carregarConfig, enviarComProvedor, enviarViaEdgeFunction, processarFila, registrarLog } from "@/lib/email.server";
 import { htmlParaTexto } from "@/lib/email/providers";
@@ -8,6 +9,7 @@ import { htmlParaTexto } from "@/lib/email/providers";
 export const getEmailConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "visualizar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await garantirTemplatesPadrao(supabaseAdmin, empresaId);
@@ -55,6 +57,7 @@ export const saveEmailConfig = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -82,6 +85,7 @@ export const saveEmailCredentials = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch = {
@@ -117,6 +121,7 @@ export const saveEmailTemplate = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("email_templates").upsert(
@@ -139,6 +144,7 @@ export const enviarEmailTeste = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ destinatario: z.string().trim().email() }).parse(d))
   .handler(async ({ data, context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { cfg, cred } = await carregarConfig(supabaseAdmin, empresaId);
@@ -166,6 +172,7 @@ export const enviarEmailTeste = createServerFn({ method: "POST" })
 export const listEmailFila = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "visualizar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [fila, logs] = await Promise.all([
@@ -188,6 +195,7 @@ export const listEmailFila = createServerFn({ method: "GET" })
 export const processarFilaEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     return await processarFila(supabaseAdmin, empresaId);
@@ -197,6 +205,7 @@ export const reenfileirarEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.email", "editar");
     const empresaId = await assertAdminEmpresa(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
