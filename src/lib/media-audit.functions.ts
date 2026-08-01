@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 // ================= AUDITORIA: falhas de carregamento de mídia =================
 export const listMediaFailures = createServerFn({ method: "POST" })
@@ -23,6 +24,7 @@ export const listMediaFailures = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     const { data: prof } = await context.supabase
       .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     const empresaId = (prof as any)?.empresa_id;
@@ -65,6 +67,7 @@ export const getMediaMetrics = createServerFn({ method: "POST" })
     z.object({ hours: z.number().int().min(1).max(24 * 30).default(24) }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     const { data: prof } = await context.supabase
       .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     const empresaId = (prof as any)?.empresa_id;
@@ -134,6 +137,7 @@ export const getMediaMetrics = createServerFn({ method: "POST" })
 export const listCacheSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     const { data, error } = await context.supabase
       .from("onedrive_cache_settings")
       .select("id, thumb_size, max_age_seconds, swr_seconds, ttl_seconds, updated_at")
@@ -159,6 +163,7 @@ export const upsertCacheSetting = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "editar");
     // Somente admin/master (também garantido por RLS)
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     const { data: isMaster } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "master" });
