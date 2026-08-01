@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 // =============== MAO DE OBRA ===============
 const maoSchema = z.object({
@@ -24,8 +25,8 @@ export const upsertMaoDeObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => maoSchema.extend({ id: z.string().uuid().optional() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.mao_de_obra", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
     if (data.id) {
       const { id, ...rest } = data;
       const { error } = await context.supabase.from("mao_de_obra").update(rest).eq("id", id);
@@ -41,6 +42,7 @@ export const deleteMaoDeObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.mao_de_obra", "excluir");
     const { error } = await context.supabase.from("mao_de_obra").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
