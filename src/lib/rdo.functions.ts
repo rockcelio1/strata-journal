@@ -444,6 +444,7 @@ export const setAnexoTaskItem = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { error } = await context.supabase
       .from("rdo_anexos")
       .update({ task_item_id: data.task_item_id } as any)
