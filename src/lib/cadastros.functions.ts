@@ -16,6 +16,7 @@ const maoSchema = z.object({
 export const listMaoDeObra = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.mao_de_obra", "ver");
     const { data, error } = await context.supabase.from("mao_de_obra").select("*").order("nome");
     if (error) throw error;
     return data;
