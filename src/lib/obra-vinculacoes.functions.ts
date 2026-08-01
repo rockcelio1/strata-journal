@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const empresaId = async (ctx: any) => {
   const me = await ctx.supabase.from("profiles").select("empresa_id").eq("id", ctx.userId).maybeSingle();
@@ -39,6 +40,7 @@ export const createObraListFromTemplate = createServerFn({ method: "POST" })
     z.object({ obra_id: z.string().uuid(), template_id: z.string().uuid() }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const emp = await empresaId(context);
     const t = await context.supabase.from("templates_tarefas").select("*").eq("id", data.template_id).maybeSingle();
     if (t.error || !t.data) throw new Error("Template não encontrado");
@@ -76,6 +78,7 @@ export const deleteObraList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const { error } = await context.supabase.from("obra_listas_tarefas").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -106,6 +109,7 @@ export const toggleFuncaoPermitida = createServerFn({ method: "POST" })
     z.object({ obra_id: z.string().uuid(), mao_de_obra_id: z.string().uuid(), enabled: z.boolean() }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const emp = await empresaId(context);
     if (data.enabled) {
       const { error } = await context.supabase.from("obra_funcoes_permitidas").upsert({
@@ -126,6 +130,7 @@ export const toggleEquipamentoPermitido = createServerFn({ method: "POST" })
     z.object({ obra_id: z.string().uuid(), equipamento_id: z.string().uuid(), enabled: z.boolean() }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const emp = await empresaId(context);
     if (data.enabled) {
       const { error } = await context.supabase.from("obra_equipamentos_permitidos").upsert({
@@ -171,6 +176,7 @@ export const uploadObraAnexo = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const emp = await empresaId(context);
     const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0));
     const path = `${emp}/${data.obra_id}/anexos/${Date.now()}-${data.file_name.replace(/[^\w.-]/g, "_")}`;
@@ -190,6 +196,7 @@ export const deleteObraAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "excluir");
     const row = await context.supabase.from("obra_anexos").select("storage_path").eq("id", data.id).maybeSingle();
     if (row.data?.storage_path) {
       await context.supabase.storage.from(BUCKET).remove([row.data.storage_path]);

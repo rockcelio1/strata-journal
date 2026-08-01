@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 import type { Database } from "@/integrations/supabase/types";
 
 export type AppResource = Database["public"]["Enums"]["app_resource"];
@@ -95,13 +96,7 @@ async function getEmpresaId(supabase: any, userId: string): Promise<string> {
 }
 
 async function assertCanEditPerms(supabase: any, userId: string) {
-  const { data, error } = await supabase.rpc("has_permission", {
-    _user_id: userId,
-    _resource: "permissoes" as const,
-    _action: "editar" as const,
-  });
-  if (error) throw error;
-  if (!data) throw new Error("Acesso negado: você não tem permissão para editar permissões.");
+  await exigirPermissao(supabase, userId, "permissoes", "editar");
 }
 
 // ============== Minhas permissões (para o cliente) ==============
