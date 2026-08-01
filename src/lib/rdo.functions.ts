@@ -367,6 +367,7 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos").select("id, rdo_id, empresa_id, autor_id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, ordem, task_item_id, storage_provider, onedrive_item_id, onedrive_web_url, onedrive_download_url, thumbnail_url, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
       .eq("rdo_id", data.rdo_id)
