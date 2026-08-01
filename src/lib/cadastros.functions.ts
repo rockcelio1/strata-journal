@@ -27,12 +27,15 @@ export const upsertMaoDeObra = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await exigirPermissao(context.supabase, context.userId, "cadastros.mao_de_obra", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
+    const empresaId = me.data?.empresa_id;
+    if (!empresaId) throw new Error("Empresa não encontrada");
+
     if (data.id) {
       const { id, ...rest } = data;
       const { error } = await context.supabase.from("mao_de_obra").update(rest).eq("id", id);
       if (error) throw error;
     } else {
-      const { error } = await context.supabase.from("mao_de_obra").insert({ ...data, empresa_id: me.data.empresa_id });
+      const { error } = await context.supabase.from("mao_de_obra").insert({ ...data, empresa_id: empresaId });
       if (error) throw error;
     }
     return { ok: true };
