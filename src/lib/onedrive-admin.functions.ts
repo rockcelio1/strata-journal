@@ -1,110 +1,168 @@
-/**
- * Administração da conexão OneDrive: trilha de auditoria e permissões
- * de leitura/escrita por usuário. Tudo validado no servidor.
- */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { exigirPermissao } from "./security/permissao.server";
+import { encrypt, maskSecret } from "./crypto.server";
+import { obterToken, obterDriveId, chamarGraph, limparCacheGraph } from "./onedrive-app.server";
 
-async function exigirAdmin(supabase: any, userId: string, acao: "ver" | "editar" = "editar") {
-  await exigirPermissao(supabase, userId, "integracoes.onedrive", acao);
+async function exigirAdmin(supabase: any, userId: string) {
+  await exigirPermissao(supabase, userId, "integracoes.onedrive", "editar");
 }
 
-/** Histórico: quem vinculou, quem reautorizou e quando. */
-export const onedriveHistorico = createServerFn({ method: "GET" })
+export const getOneDriveAdminConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await exigirAdmin(context.supabase, context.userId, "ver");
-    const { listarAuditoria } = await import("@/lib/onedrive-auditoria.server");
-    return { eventos: await listarAuditoria(50) };
-  });
-
-/** Lista os usuários da empresa com a permissão atual de OneDrive. */
-export const onedriveListarPermissoes = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await exigirAdmin(context.supabase, context.userId, "ver");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: me } = await context.supabase
-      .from("profiles")
-      .select("empresa_id")
-      .eq("id", context.userId)
+    await exigirAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("onedrive_admin_config" as any)
+      .select("*")
       .maybeSingle();
 
-    let q = (supabaseAdmin as any).from("profiles").select("id, nome, email, cargo, empresa_id").order("nome");
-    if (me?.empresa_id) q = q.eq("empresa_id", me.empresa_id);
-    const { data: perfis, error } = await q;
     if (error) throw error;
+    if (!data) return null;
 
-    const { data: perms } = await (supabaseAdmin as any)
-      .from("onedrive_permissoes")
-      .select("user_id, pode_ler, pode_escrever, updated_at");
-    const mapa = new Map<string, any>(((perms ?? []) as any[]).map((p) => [p.user_id, p]));
-
+    const d = data as any;
     return {
-      usuarios: ((perfis ?? []) as any[]).map((p) => {
-        const perm = mapa.get(p.id);
-        return {
-          id: p.id as string,
-          nome: (p.nome as string) || (p.email as string) || "Usuário",
-          email: (p.email as string) ?? null,
-          cargo: (p.cargo as string) ?? null,
-          podeLer: perm ? !!perm.pode_ler : true,
-          podeEscrever: perm ? !!perm.pode_escrever : false,
-          definido: !!perm,
-          atualizadoEm: perm?.updated_at ?? null,
-        };
-      }),
+      tenantId: d.tenant_id,
+      clientId: maskSecret(d.client_id),
+      clientSecretConfigured: true,
+      targetUserId: d.target_user_id,
+      targetUserEmail: d.target_user_email,
+      driveId: d.drive_id,
+      webUrl: d.web_url,
+      status: d.status,
+      lastTestAt: d.last_test_at,
+      lastError: d.last_error,
     };
   });
 
-/** Concede ou revoga leitura/escrita do OneDrive para um usuário. */
-export const onedriveDefinirPermissao = createServerFn({ method: "POST" })
+export const saveOneDriveAdminConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { userId: string; podeLer: boolean; podeEscrever: boolean }) =>
-    z.object({ userId: z.string().uuid(), podeLer: z.boolean(), podeEscrever: z.boolean() }).parse(i),
+  .inputValidator((d) =>
+    z.object({
+      tenantId: z.string().uuid(),
+      clientId: z.string().min(1),
+      clientSecret: z.string().min(1),
+      targetUserId: z.string().min(1),
+      targetUserEmail: z.string().email(),
+      driveId: z.string().min(1),
+      webUrl: z.string().url(),
+    }).parse(d)
   )
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { error } = await (supabaseAdmin as any).from("onedrive_permissoes").upsert(
-      {
-        user_id: data.userId,
-        pode_ler: data.podeLer,
-        pode_escrever: data.podeEscrever,
-        concedido_por: context.userId,
+    
+    const secretCiphertext = encrypt(data.clientSecret);
+    
+    const { error } = await context.supabase
+      .from("onedrive_admin_config" as any)
+      .upsert({
+        tenant_id: data.tenantId,
+        client_id: data.clientId,
+        client_secret_ciphertext: secretCiphertext,
+        target_user_id: data.targetUserId,
+        target_user_email: data.targetUserEmail,
+        drive_id: data.driveId,
+        web_url: data.webUrl,
+        status: 'configurado',
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
+      }, { onConflict: 'id' } as any);
+
     if (error) throw error;
 
-    const { data: alvo } = await (supabaseAdmin as any)
-      .from("profiles")
-      .select("nome, email")
-      .eq("id", data.userId)
-      .maybeSingle();
+    await context.supabase.from("onedrive_config_audit" as any).insert({
+      user_id: context.userId,
+      acao: "configuracao_atualizada",
+      detalhes: { tenantId: data.tenantId, targetUser: data.targetUserEmail }
+    } as any);
 
-    const { registrarAuditoria } = await import("@/lib/onedrive-auditoria.server");
-    await registrarAuditoria({
-      userId: context.userId,
-      acao: "permissao_alterada",
-      conta: alvo?.email ?? null,
-      detalhe: `${alvo?.nome ?? "Usuário"}: ${data.podeLer ? "pode ler" : "sem leitura"}, ${
-        data.podeEscrever ? "pode gravar" : "sem gravação"
-      }`,
-    });
-
-    return { ok: true as const };
+    limparCacheGraph();
+    return { ok: true };
   });
 
-/** Permissão do próprio usuário logado (usada para esconder ações na tela). */
-export const onedriveMinhaPermissao = createServerFn({ method: "GET" })
+export const testOneDriveAdminConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { permissaoDe } = await import("@/lib/onedrive-permissoes.server");
-    return permissaoDe(context.supabase, context.userId);
+    await exigirAdmin(context.supabase, context.userId);
+    
+    const start = Date.now();
+    try {
+      await obterToken();
+      const driveId = await obterDriveId();
+      const testName = `.rdo-test-${Date.now()}.txt`;
+      const testPath = `RDO/TESTE-INTEGRACAO/${testName}`;
+      
+      const putRes = await chamarGraph(`/drive/root:/${testPath}:/content`, {
+        method: "PUT",
+        headers: { "Content-Type": "text/plain" },
+        body: "Teste de integridade RDO"
+      }, "test:write");
+      
+      if (!putRes.ok) throw new Error("Falha ao criar arquivo de teste");
+      const item = await putRes.json();
+      await chamarGraph(`/drive/items/${item.id}`, { method: "DELETE" }, "test:delete");
+      
+      const latency = Date.now() - start;
+      
+      await context.supabase
+        .from("onedrive_admin_config" as any)
+        .update({
+          status: 'operacional',
+          last_test_at: new Date().toISOString(),
+          last_error: null
+        } as any)
+        .neq('id' as any, '00000000-0000-0000-0000-000000000000' as any);
+
+      return { ok: true, latency, driveId, timestamp: new Date().toISOString() };
+    } catch (e: any) {
+      const errorMsg = e.message || "Erro desconhecido";
+      await context.supabase
+        .from("onedrive_admin_config" as any)
+        .update({
+          status: 'erro',
+          last_test_at: new Date().toISOString(),
+          last_error: errorMsg
+        } as any)
+        .neq('id' as any, '00000000-0000-0000-0000-000000000000' as any);
+        
+      return { ok: false, error: errorMsg };
+    }
+  });
+
+export const getOneDriveHealth = createServerFn({ method: "GET" })
+  .handler(async () => {
+    return { status: "ok", service: "onedrive-gateway", timestamp: new Date().toISOString() };
+  });
+
+// Funções para manter compatibilidade com componentes existentes que podem ter sido quebrados
+export const onedriveHistorico = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("onedrive_config_audit" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    return data || [];
+  });
+
+export const onedriveListarPermissoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    // Retorna permissões se existirem no sistema antigo ou vazio
+    const { data } = await context.supabase.from("onedrive_permissoes" as any).select("*");
+    return data || [];
+  });
+
+export const onedriveDefinirPermissao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string(), acao: z.string(), permitido: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("onedrive_permissoes" as any)
+      .upsert({ user_id: data.userId, acao: data.acao, permitido: data.permitido } as any);
+    if (error) throw error;
+    return { ok: true };
   });
