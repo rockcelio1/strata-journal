@@ -51,6 +51,7 @@ function EquipPage() {
       title="Equipamentos"
       subtitle="Máquinas e ferramentas disponíveis para alocação"
       onNew={() => { setForm(empty); setOpen(true); }}
+      recurso="cadastros.equipamentos"
       extraActions={
         <>
           <NewBadge since="2026-07-05" label="Disciplinas + controle" />

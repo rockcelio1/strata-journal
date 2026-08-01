@@ -47,6 +47,7 @@ function TiposOcorrenciaPage() {
       title="Tipos de ocorrência"
       subtitle="Catálogo usado pelos RDOs para classificar eventos no canteiro"
       onNew={() => { setForm(empty); setOpen(true); }}
+      recurso="cadastros.ocorrencias"
       extraActions={
         <>
           <NewBadge since="2026-07-05" label="Tipos padrão" />

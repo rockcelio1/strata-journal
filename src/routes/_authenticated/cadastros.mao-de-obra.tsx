@@ -45,6 +45,7 @@ function MaoDeObraPage() {
       title="Mão de obra"
       subtitle="Equipe e empresas terceirizadas atuando nas obras"
       onNew={() => { setForm(empty); setOpen(true); }}
+      recurso="cadastros.mao_de_obra"
       extraActions={
         <>
           <NewBadge since="2026-07-05" label="Disciplinas" />
