@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const tipoControle = z.enum(["porcentagem", "produtividade", "misto"]);
 
@@ -41,6 +42,7 @@ export const upsertTemplate = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "templates_tarefas", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data?.empresa_id) throw new Error("Sem empresa");
     if (data.id) {
@@ -62,6 +64,7 @@ export const deleteTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "templates_tarefas", "excluir");
     const { error } = await context.supabase.from("templates_tarefas").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -86,6 +89,7 @@ export const saveItens = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "templates_tarefas", "editar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data?.empresa_id) throw new Error("Sem empresa");
     if (data.removed_ids.length) {
@@ -120,6 +124,7 @@ export const commitImport = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "templates_tarefas", "importar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data?.empresa_id) throw new Error("Sem empresa");
     const job = await context.supabase.from("import_jobs_tarefas").insert({

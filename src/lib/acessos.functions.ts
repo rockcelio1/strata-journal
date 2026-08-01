@@ -50,7 +50,7 @@ async function getEmpresaId(supabase: any, userId: string): Promise<string> {
 
 async function assertPode(supabase: any, userId: string, acao: "ver" | "editar") {
   const { exigirPermissao } = await import("@/lib/security/permissao.server");
-  await exigirPermissao(supabase, userId, "admin.permissoes", acao);
+  await exigirPermissao(supabase, userId, "permissoes", acao);
 }
 
 // ===================== Meus acessos (cliente) =====================

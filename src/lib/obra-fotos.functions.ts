@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const BUCKET = "obra-fotos";
 const SIGNED_TTL = 3600;
@@ -69,6 +70,7 @@ export const registerObraFoto = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const empresa_id = await getEmpresaId(context);
     const { data: row, error } = await context.supabase
       .from("obra_fotos")
@@ -103,6 +105,7 @@ export const setObraCapa = createServerFn({ method: "POST" })
     z.object({ obra_id: z.string().uuid(), foto_id: z.string().uuid().nullable() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     if (!data.foto_id) {
       const { error } = await context.supabase
         .from("obras")
@@ -132,6 +135,7 @@ export const deleteObraFoto = createServerFn({ method: "POST" })
     z.object({ foto_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "excluir");
     const { data: foto, error: fErr } = await context.supabase
       .from("obra_fotos")
       .select("id, obra_id, storage_path")

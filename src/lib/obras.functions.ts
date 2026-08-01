@@ -18,6 +18,7 @@ const obraSchema = z.object({
 export const listObras = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "ver");
     const { data, error } = await context.supabase
       .from("obras").select("*").order("created_at", { ascending: false });
     if (error) throw error;
@@ -46,6 +47,7 @@ export const listObras = createServerFn({ method: "GET" })
 export const listObrasOptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "ver");
     const { data, error } = await context.supabase
       .from("obras")
       .select("id, nome")
@@ -60,6 +62,7 @@ export const getObra = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "ver");
     const { data: obra, error } = await context.supabase
       .from("obras").select("*").eq("id", data.id).maybeSingle();
     if (error) throw error;
@@ -155,6 +158,7 @@ export const getObraClimaCache = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { obra_id: string }) => z.object({ obra_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "ver");
     const { data: row, error } = await context.supabase
       .from("obras")
       .select("clima_cache, clima_cache_at")
@@ -170,6 +174,7 @@ export const saveObraClimaCache = createServerFn({ method: "POST" })
     z.object({ obra_id: z.string().uuid(), cache: z.any() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const { error } = await context.supabase
       .from("obras")
       .update({ clima_cache: data.cache, clima_cache_at: new Date().toISOString() } as any)
@@ -183,6 +188,7 @@ export const getObraGeo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { obra_id: string }) => z.object({ obra_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "ver");
     const { data: row, error } = await context.supabase
       .from("obras")
       .select("geo_lat, geo_lng, geo_endereco, geo_at, endereco")
@@ -203,6 +209,7 @@ export const saveObraGeo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const { error } = await context.supabase
       .from("obras")
       .update({

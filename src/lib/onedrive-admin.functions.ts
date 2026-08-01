@@ -5,19 +5,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "./security/permissao.server";
 
-async function exigirAdmin(supabase: any, userId: string) {
-  const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
-  if (!(await ehAdmin(supabase, userId))) {
-    throw new Error("Apenas administradores podem gerenciar a conexão do OneDrive.");
-  }
+async function exigirAdmin(supabase: any, userId: string, acao: "ver" | "editar" = "editar") {
+  await exigirPermissao(supabase, userId, "integracoes.onedrive", acao);
 }
 
 /** Histórico: quem vinculou, quem reautorizou e quando. */
 export const onedriveHistorico = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await exigirAdmin(context.supabase, context.userId);
+    await exigirAdmin(context.supabase, context.userId, "ver");
     const { listarAuditoria } = await import("@/lib/onedrive-auditoria.server");
     return { eventos: await listarAuditoria(50) };
   });
@@ -26,7 +24,7 @@ export const onedriveHistorico = createServerFn({ method: "GET" })
 export const onedriveListarPermissoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await exigirAdmin(context.supabase, context.userId);
+    await exigirAdmin(context.supabase, context.userId, "ver");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: me } = await context.supabase

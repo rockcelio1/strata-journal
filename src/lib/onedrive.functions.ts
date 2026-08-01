@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { exigirPermissao } from "./security/permissao.server";
 import { getDownloadUrl, listChildren, uploadContent, OneDriveError } from "@/lib/onedrive-graph";
 import {
   DIAG_MAX,
@@ -19,11 +20,15 @@ import {
 
 export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: getDiag().slice(0, DIAG_MAX) }));
+  .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
+    return { gatewayUrl: GATEWAY_URL, entries: getDiag().slice(0, DIAG_MAX) };
+  });
 
 export const getOneDriveQuota = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     try {
       const res = await gatewayFetch("/drive?$select=quota,webUrl", undefined, 2, "quota");
       if (!res.ok) {
@@ -49,7 +54,8 @@ export const getOneDriveQuota = createServerFn({ method: "GET" })
 
 export const verifyOneDrive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     try {
       const { statusIntegracao } = await import("@/lib/onedrive-app.server");
       const st = await statusIntegracao();
@@ -96,7 +102,9 @@ export const listOneDriveFolders = createServerFn({ method: "POST" })
 export const ensureOneDriveFolder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { path: string }) => z.object({ path: z.string().min(1).max(400) }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const { exigirEscrita } = await import("@/lib/onedrive-permissoes.server");
+    await exigirEscrita(context.supabase, context.userId);
     const clean = data.path.replace(/^\/+|\/+$/g, "");
     if (!clean) return { ok: false as const, status: 400, error: "Caminho vazio" };
 
@@ -354,7 +362,9 @@ export const uploadOneDriveFile = createServerFn({ method: "POST" })
 export const getOneDriveDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { itemId: string }) => z.object({ itemId: z.string().min(1).max(300) }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const { exigirLeitura } = await import("@/lib/onedrive-permissoes.server");
+    await exigirLeitura(context.supabase, context.userId);
     try {
       const r = await getDownloadUrl(fetcherGateway, data.itemId);
       return { ok: true as const, ...r };
@@ -373,7 +383,8 @@ export const getOneDriveDownloadUrl = createServerFn({ method: "POST" })
 /** Situação da conta corporativa usada pelos anexos do RDO. */
 export const listOneDriveConexoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     const { statusOrganizacao } = await import("@/lib/onedrive-org.server");
     const st = await statusOrganizacao();
     return {
@@ -388,7 +399,8 @@ export const listOneDriveConexoes = createServerFn({ method: "GET" })
 /** Situação técnica da integração app-only (sem revelar segredos). */
 export const statusIntegracaoOneDrive = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "integracoes.onedrive", "ver");
     const { statusIntegracao } = await import("@/lib/onedrive-app.server");
     return statusIntegracao();
   });

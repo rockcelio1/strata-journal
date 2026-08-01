@@ -10,8 +10,8 @@ export type PermissaoOneDrive = { podeLer: boolean; podeEscrever: boolean; admin
 const PADRAO = { podeLer: true, podeEscrever: false };
 
 export async function ehAdmin(supabase: any, userId: string): Promise<boolean> {
-  const { data } = await supabase.rpc("has_admin_access", { _user_id: userId });
-  return data === true;
+  const { temPermissao } = await import("./security/permissao.server");
+  return await temPermissao(supabase, userId, "integracoes.onedrive", "editar");
 }
 
 export async function permissaoDe(supabase: any, userId: string): Promise<PermissaoOneDrive> {

@@ -11,10 +11,12 @@ export async function temPermissao(
   recurso: string,
   acao: string
 ): Promise<boolean> {
+  // Conversão de "ver" para "visualizar" para compatibilidade com o banco
+  const acaoDb = acao === "ver" ? "visualizar" : acao;
   const { data, error } = await supabase.rpc("has_permission", {
     _user_id: userId,
     _resource: recurso as any,
-    _action: acao as any,
+    _action: acaoDb as any,
   });
 
   if (error) {

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const empresaId = async (ctx: any) => {
   const me = await ctx.supabase.from("profiles").select("empresa_id").eq("id", ctx.userId).maybeSingle();
@@ -15,6 +16,7 @@ export const requestRevisionRdo = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), motivo: z.string().min(1) }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "solicitar_revisao");
     const { error } = await context.supabase.from("rdos").update({
       status: "revisao_solicitada" as const,
       revision_requested_at: new Date().toISOString(),
@@ -29,6 +31,7 @@ export const reopenRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { error } = await context.supabase.from("rdos").update({
       status: "reaberto" as const,
       aprovado_por: null,
@@ -83,6 +86,7 @@ export const saveRdoAvancos = createServerFn({ method: "POST" })
     }).parse(d)
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const emp = await empresaId(context);
     if (data.removed_ids.length) {
       const { error } = await context.supabase.from("rdo_tarefa_avancos").delete().in("id", data.removed_ids);

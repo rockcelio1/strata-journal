@@ -156,6 +156,7 @@ export const createRdo = createServerFn({ method: "POST" })
     return data;
   })
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "criar");
     // Rate limit: no máx. 20 criações de RDO por minuto por usuário.
     await checkRateLimit(context.supabase, "createRdo", 20, 60);
     const sanitize: SanitizeResult<any> | undefined = (data as any).__sanitize;
@@ -237,6 +238,7 @@ export const submitRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     await checkRateLimit(context.supabase, "submitRdo", 30, 60);
     const { error } = await context.supabase.from("rdos").update({ status: "enviado", enviado_em: new Date().toISOString() }).eq("id", data.id);
     if (error) throw error;
@@ -304,6 +306,7 @@ export const listRdoLogs = createServerFn({ method: "GET" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     let q = context.supabase
       .from("rdo_audit_logs")
       .select("*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email)", { count: "exact" })
@@ -334,6 +337,7 @@ export const listEmpresaRdoLogs = createServerFn({ method: "GET" })
     }).parse(d ?? {}),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
     // Usamos !inner para permitir filtrar por obra_id (join obrigatório).
@@ -363,6 +367,7 @@ export const listRdoAnexos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { rdo_id: string }) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos").select("id, rdo_id, empresa_id, autor_id, nome, legenda, storage_path, mime_type, tamanho_bytes, created_at, ordem, task_item_id, storage_provider, onedrive_item_id, onedrive_web_url, onedrive_download_url, thumbnail_url, autor:profiles!rdo_anexos_autor_id_profiles_fkey(id, nome)")
       .eq("rdo_id", data.rdo_id)
@@ -396,6 +401,7 @@ export const registrarAnexo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     // Rate limit generoso para uploads (canteiro faz muitos anexos por RDO)
     await checkRateLimit(context.supabase, "registrarAnexo", 120, 60);
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
@@ -443,6 +449,7 @@ export const setAnexoTaskItem = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { error } = await context.supabase
       .from("rdo_anexos")
       .update({ task_item_id: data.task_item_id } as any)
@@ -455,6 +462,8 @@ export const removerAnexo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const row = await context.supabase.from("rdo_anexos").select("storage_path, storage_provider, onedrive_item_id").eq("id", data.id).maybeSingle();
     if (row.data?.storage_provider === "supabase" && row.data?.storage_path) {
       await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
@@ -733,6 +742,7 @@ export const reorderRdoAnexos = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     // Valida que todos os anexos pertencem ao RDO informado
     const { data: rows, error: qerr } = await context.supabase
       .from("rdo_anexos").select("id").eq("rdo_id", data.rdo_id);
@@ -753,6 +763,7 @@ export const listRdoAnexosHist = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos_hist")
       .select("*")
