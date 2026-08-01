@@ -11,7 +11,7 @@ import {
   OneDriveConfigError,
   OneDriveGraphError,
   enviarArquivo,
-  excluirItem,
+  excluirItem, excluirItem,
   linkDownload,
   nomeFisico,
   pastaRdo,
@@ -173,7 +173,7 @@ export async function enviarArquivoRdo(
     .single();
   if (error) {
     // Banco falhou depois do upload: remove o arquivo para não deixar órfão.
-    await excluirItem(enviado.itemId).catch(() => undefined);
+    await excluirItem, excluirItem(enviado.itemId).catch(() => undefined);
     throw error;
   }
   return { ...data, duplicado: false as const };
@@ -190,8 +190,8 @@ export async function downloadArquivoRdo(ctx: Ctx, rdoId: string, arquivoId: str
   if (data.storage_provider !== "onedrive" || !data.onedrive_item_id) {
     throw new ArquivoInvalido("Este arquivo não está armazenado no OneDrive.");
   }
-  const link = await linkDownload(data.onedrive_item_id);
-  return { ...link, nome: data.nome ?? link.nome, mimeType: data.mime_type };
+  const link = await linkDownload("me", data.onedrive_item_id);
+  return { url: link, nome: data.nome ?? link.nome, mimeType: data.mime_type };
 }
 
 export async function excluirArquivoRdo(ctx: Ctx, rdoId: string, arquivoId: string) {
@@ -203,7 +203,7 @@ export async function excluirArquivoRdo(ctx: Ctx, rdoId: string, arquivoId: stri
     .maybeSingle();
   if (error || !data) throw new ArquivoInvalido("Arquivo não encontrado.");
   if (data.onedrive_item_id) {
-    await excluirItem(data.onedrive_item_id).catch((e) => {
+    await excluirItem, excluirItem(data.onedrive_item_id).catch((e) => {
       console.error("[onedrive] falha ao excluir item:", (e as Error).message);
     });
   }
