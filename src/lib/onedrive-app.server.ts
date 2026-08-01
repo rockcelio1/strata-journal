@@ -225,8 +225,8 @@ export type StatusIntegracao = {
   ok: boolean;
   status: string;
   configured: boolean;
-  token: "ok" | "erro" | "na";
-  drive: "ok" | "erro" | "na";
+  token: "ok" | "erro" | "nao_verificado";
+  drive: "ok" | "erro" | "nao_verificado";
   account: string | null;
   targetUser: string | null;
   missing: string[];
@@ -236,7 +236,7 @@ export type StatusIntegracao = {
 
 export async function statusIntegracao(): Promise<StatusIntegracao> {
   const base: StatusIntegracao = {
-    ok: false, status: "nao_configurado", configured: false, token: "na", drive: "na",
+    ok: false, status: "nao_configurado", configured: false, token: "nao_verificado", drive: "nao_verificado",
     account: null, targetUser: null, missing: [], message: null, error: null,
   };
   try {
