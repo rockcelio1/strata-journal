@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { exigirPermissao } from "./security/permissao.server";
-import { encrypt, decrypt, maskSecret } from "./crypto.server";
+import { encrypt, maskSecret } from "./crypto.server";
 import { obterToken, obterDriveId, chamarGraph, limparCacheGraph } from "./onedrive-app.server";
 
 async function exigirAdmin(supabase: any, userId: string) {
@@ -14,24 +14,25 @@ export const getOneDriveAdminConfig = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await exigirAdmin(context.supabase, context.userId);
     const { data, error } = await context.supabase
-      .from("onedrive_admin_config")
+      .from("onedrive_admin_config" as any)
       .select("*")
       .maybeSingle();
 
     if (error) throw error;
     if (!data) return null;
 
+    const d = data as any;
     return {
-      tenantId: data.tenant_id,
-      clientId: maskSecret(data.client_id),
+      tenantId: d.tenant_id,
+      clientId: maskSecret(d.client_id),
       clientSecretConfigured: true,
-      targetUserId: data.target_user_id,
-      targetUserEmail: data.target_user_email,
-      driveId: data.drive_id,
-      webUrl: data.web_url,
-      status: data.status,
-      lastTestAt: data.last_test_at,
-      lastError: data.last_error,
+      targetUserId: d.target_user_id,
+      targetUserEmail: d.target_user_email,
+      driveId: d.drive_id,
+      webUrl: d.web_url,
+      status: d.status,
+      lastTestAt: d.last_test_at,
+      lastError: d.last_error,
     };
   });
 
@@ -51,11 +52,10 @@ export const saveOneDriveAdminConfig = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
     
-    // Criptografa o segredo
     const secretCiphertext = encrypt(data.clientSecret);
     
     const { error } = await context.supabase
-      .from("onedrive_admin_config")
+      .from("onedrive_admin_config" as any)
       .upsert({
         tenant_id: data.tenantId,
         client_id: data.clientId,
@@ -66,16 +66,15 @@ export const saveOneDriveAdminConfig = createServerFn({ method: "POST" })
         web_url: data.webUrl,
         status: 'configurado',
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      }, { onConflict: 'id' } as any);
 
     if (error) throw error;
 
-    // Auditoria
-    await context.supabase.from("onedrive_config_audit").insert({
+    await context.supabase.from("onedrive_config_audit" as any).insert({
       user_id: context.userId,
       acao: "configuracao_atualizada",
       detalhes: { tenantId: data.tenantId, targetUser: data.targetUserEmail }
-    });
+    } as any);
 
     limparCacheGraph();
     return { ok: true };
@@ -88,13 +87,8 @@ export const testOneDriveAdminConnection = createServerFn({ method: "POST" })
     
     const start = Date.now();
     try {
-      // 1. Obter Token
       await obterToken();
-      
-      // 2. Resolver Drive
       const driveId = await obterDriveId();
-      
-      // 3. Criar arquivo de teste
       const testName = `.rdo-test-${Date.now()}.txt`;
       const testPath = `RDO/TESTE-INTEGRACAO/${testName}`;
       
@@ -106,38 +100,30 @@ export const testOneDriveAdminConnection = createServerFn({ method: "POST" })
       
       if (!putRes.ok) throw new Error("Falha ao criar arquivo de teste");
       const item = await putRes.json();
-      
-      // 4. Excluir arquivo
       await chamarGraph(`/drive/items/${item.id}`, { method: "DELETE" }, "test:delete");
       
       const latency = Date.now() - start;
       
-      // Atualiza status no banco
       await context.supabase
-        .from("onedrive_admin_config")
+        .from("onedrive_admin_config" as any)
         .update({
           status: 'operacional',
           last_test_at: new Date().toISOString(),
           last_error: null
-        })
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to target the single record
+        } as any)
+        .neq('id' as any, '00000000-0000-0000-0000-000000000000' as any);
 
-      return {
-        ok: true,
-        latency,
-        driveId,
-        timestamp: new Date().toISOString()
-      };
+      return { ok: true, latency, driveId, timestamp: new Date().toISOString() };
     } catch (e: any) {
       const errorMsg = e.message || "Erro desconhecido";
       await context.supabase
-        .from("onedrive_admin_config")
+        .from("onedrive_admin_config" as any)
         .update({
           status: 'erro',
           last_test_at: new Date().toISOString(),
           last_error: errorMsg
-        })
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+        } as any)
+        .neq('id' as any, '00000000-0000-0000-0000-000000000000' as any);
         
       return { ok: false, error: errorMsg };
     }
@@ -145,6 +131,38 @@ export const testOneDriveAdminConnection = createServerFn({ method: "POST" })
 
 export const getOneDriveHealth = createServerFn({ method: "GET" })
   .handler(async () => {
-    // Endpoint público para status
     return { status: "ok", service: "onedrive-gateway", timestamp: new Date().toISOString() };
+  });
+
+// Funções para manter compatibilidade com componentes existentes que podem ter sido quebrados
+export const onedriveHistorico = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    const { data } = await context.supabase
+      .from("onedrive_config_audit" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    return data || [];
+  });
+
+export const onedriveListarPermissoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    // Retorna permissões se existirem no sistema antigo ou vazio
+    const { data } = await context.supabase.from("onedrive_permissoes" as any).select("*");
+    return data || [];
+  });
+
+export const onedriveDefinirPermissao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string(), acao: z.string(), permitido: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await exigirAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase
+      .from("onedrive_permissoes" as any)
+      .upsert({ user_id: data.userId, acao: data.acao, permitido: data.permitido } as any);
+    if (error) throw error;
+    return { ok: true };
   });
