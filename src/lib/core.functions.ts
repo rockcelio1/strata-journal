@@ -150,6 +150,7 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await exigirPermissao(context.supabase, context.userId, "configuracoes.empresa", "editar");
+    const { supabase, userId } = context;
     // Apenas administradores podem REMOVER o logotipo
     if (data.logo_url === null) {
       await assertAdminOrMaster(supabase, userId);
