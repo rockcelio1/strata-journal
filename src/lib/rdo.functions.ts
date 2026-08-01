@@ -763,6 +763,7 @@ export const listRdoAnexosHist = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ rdo_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const { data: rows, error } = await context.supabase
       .from("rdo_anexos_hist")
       .select("*")
