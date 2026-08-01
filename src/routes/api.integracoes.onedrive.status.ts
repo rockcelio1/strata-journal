@@ -11,8 +11,10 @@ export const Route = createFileRoute("/api/integracoes/onedrive/status")({
       GET: async ({ request }) => {
         try {
           const ctx = await autenticarRequisicao(request);
-          const { ehAdmin } = await import("@/lib/onedrive-permissoes.server");
-          if (!(await ehAdmin(ctx.supabase, ctx.userId))) {
+          const { exigirPermissao } = await import("@/lib/security/permissao.server");
+          try {
+            await exigirPermissao(ctx.supabase, ctx.userId, "admin.lgpd", "ver");
+          } catch {
             return respostaErro(403, "SEM_PERMISSAO", "Apenas administradores podem consultar o diagnóstico.");
           }
           const { statusIntegracao } = await import("@/lib/onedrive-app.server");
