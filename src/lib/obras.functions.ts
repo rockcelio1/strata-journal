@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const obraSchema = z.object({
   nome: z.string().min(1),
@@ -119,9 +120,11 @@ export const createObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => obraSchema.parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
-    const { error, data: created } = await context.supabase.from("obras").insert({ ...data, empresa_id: me.data.empresa_id }).select().single();
+    const empresaId = me.data?.empresa_id;
+    if (!empresaId) throw new Error("Sem empresa");
+    const { error, data: created } = await context.supabase.from("obras").insert({ ...data, empresa_id: empresaId }).select().single();
     if (error) throw error;
     return created;
   });
@@ -130,6 +133,7 @@ export const updateObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => obraSchema.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "editar");
     const { id, ...rest } = data;
     const { error } = await context.supabase.from("obras").update(rest).eq("id", id);
     if (error) throw error;
@@ -140,6 +144,7 @@ export const deleteObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "obras", "excluir");
     const { error } = await context.supabase.from("obras").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
