@@ -167,3 +167,79 @@ export async function criarRdo(s: Sessao, obraId: string, numero = Date.now() % 
   expect(res.status, `criar rdo: ${JSON.stringify(res.body)}`).toBeLessThan(300);
   return res.body[0].id as string;
 }
+
+// ======================================================================
+// Convites, papéis e sessões secundárias dentro da MESMA empresa
+// ======================================================================
+
+/** Cria um convite (como admin) para que o próximo cadastro entre na empresa com o papel indicado. */
+export async function convidar(admin: Sessao, email: string, role: string) {
+  const res = await inserir(admin.token, "convites", {
+    empresa_id: admin.empresaId,
+    email,
+    role,
+  });
+  expect(res.status, `convite: ${JSON.stringify(res.body)}`).toBeLessThan(300);
+  return res.body[0].id as string;
+}
+
+/** Cadastro de um usuário convidado: entra na empresa do convite com o papel definido. */
+export async function cadastrarConvidado(page: Page, email: string) {
+  await page.goto("/auth");
+  await expect(page.getByRole("tab", { name: "Entrar" })).toBeVisible();
+  await page.getByRole("tab", { name: "Criar conta" }).click();
+  await page.getByLabel("Seu nome").fill("Convidado E2E");
+  await page.getByLabel("Nome da empresa").fill("Ignorado pelo convite");
+  await page.locator("#email2").fill(email);
+  await page.locator("#password2").fill(SENHA_FORTE);
+  await expect(page.locator("#email2-feedback")).toContainText(/disponível|cadastrado/i, {
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: /Criar empresa|Criar conta/ }).click();
+  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+}
+
+/** Login por e-mail/senha na aba "Entrar". */
+export async function entrar(page: Page, email: string) {
+  await page.goto("/auth");
+  await page.getByRole("tab", { name: "Entrar" }).click();
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(SENHA_FORTE);
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+}
+
+/**
+ * Cria um usuário com papel específico DENTRO da empresa do admin informado,
+ * usando o fluxo real de convite + cadastro (trigger handle_new_user).
+ */
+export async function criarSessaoComPapel(
+  browser: Browser,
+  baseURL: string | undefined,
+  admin: Sessao,
+  role: string,
+  prefixo = "papel",
+): Promise<Sessao> {
+  const email = emailAleatorio(prefixo);
+  await convidar(admin, email, role);
+
+  const context = await browser.newContext({ baseURL });
+  const page = await context.newPage();
+  await cadastrarConvidado(page, email);
+  const { token, userId } = await lerToken(page);
+  expect(token, "convidado deve ter access_token").toBeTruthy();
+  await context.close();
+
+  const perfil = await selecionar(token, `profiles?select=empresa_id&id=eq.${userId}`);
+  const empresaId = perfil.body?.[0]?.empresa_id as string;
+  expect(empresaId, "convidado deve herdar a empresa do convite").toBe(admin.empresaId);
+
+  return { email, token, userId, empresaId };
+}
+
+/** `public.pode(user, recurso, acao)` avaliado no banco como o próprio usuário. */
+export async function podeNoBanco(s: Sessao, recurso: string, acao: string): Promise<boolean> {
+  const res = await rpc(s.token, "pode", { _user: s.userId, _recurso: recurso, _acao: acao });
+  expect(res.status, `pode(${recurso},${acao}): ${JSON.stringify(res.body)}`).toBe(200);
+  return res.body === true;
+}
