@@ -337,6 +337,7 @@ export const listEmpresaRdoLogs = createServerFn({ method: "GET" })
     }).parse(d ?? {}),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
     // Usamos !inner para permitir filtrar por obra_id (join obrigatório).
