@@ -72,6 +72,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as ApiRdoRdoIdArquivosRouteImport } from './routes/api.rdo.$rdoId.arquivos'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
+import { Route as ApiIntegrationsOnedriveStatusRouteImport } from './routes/api/integrations/onedrive/status'
 import { Route as ApiIntegrationsOnedriveHealthRouteImport } from './routes/api/integrations/onedrive/health'
 import { Route as ApiIntegracoesOnedriveStatusRouteImport } from './routes/api.integracoes.onedrive.status'
 import { Route as AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport } from './routes/_authenticated/configuracoes/integracoes/onedrive-admin'
@@ -430,6 +431,12 @@ const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
   path: '/api/public/hooks/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntegrationsOnedriveStatusRoute =
+  ApiIntegrationsOnedriveStatusRouteImport.update({
+    id: '/api/integrations/onedrive/status',
+    path: '/api/integrations/onedrive/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiIntegrationsOnedriveHealthRoute =
   ApiIntegrationsOnedriveHealthRouteImport.update({
     id: '/api/integrations/onedrive/health',
@@ -545,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/integracoes/onedrive-admin': typeof AuthenticatedConfiguracoesIntegracoesOnedriveAdminRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
+  '/api/integrations/onedrive/status': typeof ApiIntegrationsOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -616,6 +624,7 @@ export interface FileRoutesByTo {
   '/configuracoes/integracoes/onedrive-admin': typeof AuthenticatedConfiguracoesIntegracoesOnedriveAdminRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
+  '/api/integrations/onedrive/status': typeof ApiIntegrationsOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -690,6 +699,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes/integracoes/onedrive-admin': typeof AuthenticatedConfiguracoesIntegracoesOnedriveAdminRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
   '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
+  '/api/integrations/onedrive/status': typeof ApiIntegrationsOnedriveStatusRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes/onedrive-admin'
     | '/api/integracoes/onedrive/status'
     | '/api/integrations/onedrive/health'
+    | '/api/integrations/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -835,6 +846,7 @@ export interface FileRouteTypes {
     | '/configuracoes/integracoes/onedrive-admin'
     | '/api/integracoes/onedrive/status'
     | '/api/integrations/onedrive/health'
+    | '/api/integrations/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -908,6 +920,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes/integracoes/onedrive-admin'
     | '/api/integracoes/onedrive/status'
     | '/api/integrations/onedrive/health'
+    | '/api/integrations/onedrive/status'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -936,6 +949,7 @@ export interface RootRouteChildren {
   ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
   ApiIntegracoesOnedriveStatusRoute: typeof ApiIntegracoesOnedriveStatusRoute
   ApiIntegrationsOnedriveHealthRoute: typeof ApiIntegrationsOnedriveHealthRoute
+  ApiIntegrationsOnedriveStatusRoute: typeof ApiIntegrationsOnedriveStatusRoute
   ApiPublicHooksBackupRoute: typeof ApiPublicHooksBackupRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
   ApiRdoRdoIdArquivosRoute: typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -1384,6 +1398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/onedrive/status': {
+      id: '/api/integrations/onedrive/status'
+      path: '/api/integrations/onedrive/status'
+      fullPath: '/api/integrations/onedrive/status'
+      preLoaderRoute: typeof ApiIntegrationsOnedriveStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/integrations/onedrive/health': {
       id: '/api/integrations/onedrive/health'
       path: '/api/integrations/onedrive/health'
@@ -1645,6 +1666,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
   ApiIntegracoesOnedriveStatusRoute: ApiIntegracoesOnedriveStatusRoute,
   ApiIntegrationsOnedriveHealthRoute: ApiIntegrationsOnedriveHealthRoute,
+  ApiIntegrationsOnedriveStatusRoute: ApiIntegrationsOnedriveStatusRoute,
   ApiPublicHooksBackupRoute: ApiPublicHooksBackupRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
   ApiRdoRdoIdArquivosRoute: ApiRdoRdoIdArquivosRouteWithChildren,
@@ -1652,3 +1674,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

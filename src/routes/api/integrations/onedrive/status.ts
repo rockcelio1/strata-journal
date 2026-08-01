@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { statusIntegracao } from '@/lib/onedrive-app.server'
 
-export const Route = createFileRoute('/api/integrations/onedrive/status' as any)({
+export const Route = createFileRoute('/api/integrations/onedrive/status')({
   server: {
     handlers: {
       GET: async () => {
