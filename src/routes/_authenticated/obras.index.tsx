@@ -73,9 +73,12 @@ function ObrasPage() {
             <button onClick={() => setView("list")} className={`p-2 ${view === "list" ? "bg-muted" : ""}`} aria-label="Visualizar em lista"><List className="h-4 w-4" /></button>
           </div>
 
-          <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-brand text-brand-foreground hover:bg-brand/90">
-            <Plus className="h-4 w-4 mr-1" /> Nova obra
-          </Button>
+          <Pode recurso="obras.obras" acao="criar">
+            <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-brand text-brand-foreground hover:bg-brand/90">
+              <Plus className="h-4 w-4 mr-1" /> Nova obra
+            </Button>
+          </Pode>
+
         </div>
       </header>
 
