@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
 const climaEnum = z.enum(["ensolarado", "nublado", "chuvoso", "chuva_forte", "impraticavel"]).nullable().optional();
@@ -81,6 +82,7 @@ export const adminDeleteRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "excluir");
     const { error } = await context.supabase.rpc("admin_soft_delete_rdo", { _rdo_id: data.id });
     if (error) {
       if (error.code === "42501") throw new Error("Apenas administrador ou master podem excluir qualquer RDO.");
@@ -95,6 +97,7 @@ export const adminDisableRdo = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; disable: boolean }) =>
     z.object({ id: z.string().uuid(), disable: z.boolean() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { error } = await context.supabase.rpc("admin_disable_rdo", { _rdo_id: data.id, _disable: data.disable });
     if (error) {
       if (error.code === "42501") throw new Error("Apenas administrador ou master podem desabilitar RDO.");
@@ -246,6 +249,7 @@ export const approveRdo = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), aprovar: z.boolean(), motivo: z.string().optional() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "aprovar");
     const { error } = await context.supabase.from("rdos").update({
       status: data.aprovar ? "aprovado" : "reprovado",
       aprovado_por: context.userId,
