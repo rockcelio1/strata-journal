@@ -72,6 +72,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as ApiRdoRdoIdArquivosRouteImport } from './routes/api.rdo.$rdoId.arquivos'
 import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
 import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
+import { Route as ApiIntegrationsOnedriveHealthRouteImport } from './routes/api/integrations/onedrive/health'
 import { Route as ApiIntegracoesOnedriveStatusRouteImport } from './routes/api.integracoes.onedrive.status'
 import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
 import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
@@ -428,6 +429,12 @@ const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
   path: '/api/public/hooks/backup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiIntegrationsOnedriveHealthRoute =
+  ApiIntegrationsOnedriveHealthRouteImport.update({
+    id: '/api/integrations/onedrive/health',
+    path: '/api/integrations/onedrive/health',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiIntegracoesOnedriveStatusRoute =
   ApiIntegracoesOnedriveStatusRouteImport.update({
     id: '/api/integracoes/onedrive/status',
@@ -529,6 +536,7 @@ export interface FileRoutesByFullPath {
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
+  '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -598,6 +606,7 @@ export interface FileRoutesByTo {
   '/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
+  '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -670,6 +679,7 @@ export interface FileRoutesById {
   '/_authenticated/ajuda/categoria/$slug': typeof AuthenticatedAjudaCategoriaSlugRoute
   '/_authenticated/cadastros/templates-tarefas/$id': typeof AuthenticatedCadastrosTemplatesTarefasIdRoute
   '/api/integracoes/onedrive/status': typeof ApiIntegracoesOnedriveStatusRoute
+  '/api/integrations/onedrive/health': typeof ApiIntegrationsOnedriveHealthRoute
   '/api/public/hooks/backup': typeof ApiPublicHooksBackupRoute
   '/api/public/onedrive-file/$itemId': typeof ApiPublicOnedriveFileItemIdRoute
   '/api/rdo/$rdoId/arquivos': typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -742,6 +752,7 @@ export interface FileRouteTypes {
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/integracoes/onedrive/status'
+    | '/api/integrations/onedrive/health'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -811,6 +822,7 @@ export interface FileRouteTypes {
     | '/ajuda/categoria/$slug'
     | '/cadastros/templates-tarefas/$id'
     | '/api/integracoes/onedrive/status'
+    | '/api/integrations/onedrive/health'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -882,6 +894,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ajuda/categoria/$slug'
     | '/_authenticated/cadastros/templates-tarefas/$id'
     | '/api/integracoes/onedrive/status'
+    | '/api/integrations/onedrive/health'
     | '/api/public/hooks/backup'
     | '/api/public/onedrive-file/$itemId'
     | '/api/rdo/$rdoId/arquivos'
@@ -909,6 +922,7 @@ export interface RootRouteChildren {
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicLgpdRequestRoute: typeof ApiPublicLgpdRequestRoute
   ApiIntegracoesOnedriveStatusRoute: typeof ApiIntegracoesOnedriveStatusRoute
+  ApiIntegrationsOnedriveHealthRoute: typeof ApiIntegrationsOnedriveHealthRoute
   ApiPublicHooksBackupRoute: typeof ApiPublicHooksBackupRoute
   ApiPublicOnedriveFileItemIdRoute: typeof ApiPublicOnedriveFileItemIdRoute
   ApiRdoRdoIdArquivosRoute: typeof ApiRdoRdoIdArquivosRouteWithChildren
@@ -1357,6 +1371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/integrations/onedrive/health': {
+      id: '/api/integrations/onedrive/health'
+      path: '/api/integrations/onedrive/health'
+      fullPath: '/api/integrations/onedrive/health'
+      preLoaderRoute: typeof ApiIntegrationsOnedriveHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/integracoes/onedrive/status': {
       id: '/api/integracoes/onedrive/status'
       path: '/api/integracoes/onedrive/status'
@@ -1600,6 +1621,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicLgpdRequestRoute: ApiPublicLgpdRequestRoute,
   ApiIntegracoesOnedriveStatusRoute: ApiIntegracoesOnedriveStatusRoute,
+  ApiIntegrationsOnedriveHealthRoute: ApiIntegrationsOnedriveHealthRoute,
   ApiPublicHooksBackupRoute: ApiPublicHooksBackupRoute,
   ApiPublicOnedriveFileItemIdRoute: ApiPublicOnedriveFileItemIdRoute,
   ApiRdoRdoIdArquivosRoute: ApiRdoRdoIdArquivosRouteWithChildren,
