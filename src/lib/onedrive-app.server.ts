@@ -203,3 +203,41 @@ export async function enviarArquivo(args: { caminho: string; bytes: Uint8Array; 
 export async function deletarArquivo(driveId: string, itemId: string) {
   return chamarGraph(`/drives/${driveId}/items/${itemId}`, { method: "DELETE" });
 }
+
+export function nomeFisico(nomeOriginal: string): string {
+  const ext = (nomeOriginal.match(/\.[A-Za-z0-9]{1,10}$/)?.[0] ?? "").toLowerCase();
+  const base = sanitizarSegmento(nomeOriginal.slice(0, nomeOriginal.length - ext.length));
+  const carimbo = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${base}-${carimbo}${ext}`;
+}
+
+export function pastaRdo(args: { data: Date | string; obra: string; rdo: string; raiz?: string }): string {
+  const d = typeof args.data === "string" ? new Date(`${args.data.slice(0, 10)}T00:00:00`) : args.data;
+  const base = Number.isNaN(d.getTime()) ? new Date() : d;
+  const ano = String(base.getFullYear());
+  const mes = String(base.getMonth() + 1).padStart(2, "0");
+  return sanitizarCaminho(
+    [args.raiz?.trim() || "RDO", ano, mes, args.obra || "OBRA", args.rdo || "RDO"].join("/"),
+  );
+}
+
+export async function statusIntegracao() {
+  try {
+    const config = await lerConfig();
+    if (!config) return { ok: false, status: 'nao_configurado' };
+    await obterToken();
+    return { ok: true, status: 'operacional', account: config.targetUser };
+  } catch (e) {
+    return { ok: false, status: 'erro', error: (e as Error).message };
+  }
+}
+
+export async function excluirItem(driveId: string, itemId: string) {
+  return chamarGraph(`/drives/${driveId}/items/${itemId}`, { method: "DELETE" });
+}
+
+export async function linkDownload(driveId: string, itemId: string) {
+  const res = await chamarGraph(`/drives/${driveId}/items/${itemId}?$select=id,@microsoft.graph.downloadUrl`);
+  const j = await res.json();
+  return j["@microsoft.graph.downloadUrl"] || null;
+}
