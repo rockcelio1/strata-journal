@@ -1,4 +1,4 @@
-name: E2E — RLS e trilha de aprovação do RDO
+name: E2E — RLS, RBAC e trilha de aprovação do RDO
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
       - name: Instalar navegadores Playwright
         run: bunx playwright install --with-deps chromium
 
-      - name: Testes E2E de RLS e aprovação de RDO
+      - name: Testes E2E de RLS, RBAC e aprovação de RDO
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:8080
@@ -64,6 +64,9 @@ jobs:
             e2e/rdo-fluxo-status.spec.ts \
             e2e/onedrive-conexao.spec.ts \
             e2e/onedrive-fluxo-completo.spec.ts \
+            e2e/rbac-isolamento-modulos.spec.ts \
+            e2e/rbac-papeis-endpoints.spec.ts \
+            e2e/rbac-telas.spec.ts \
             --project=chromium-desktop
 
       - name: Publicar relatório

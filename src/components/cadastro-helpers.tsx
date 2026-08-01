@@ -12,8 +12,12 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2 } from "lucide-react";
+import { Pode } from "@/components/Pode";
 
-export function CadastroLayout({ title, subtitle, onNew, extraActions, children }: { title: string; subtitle?: string; onNew: () => void; extraActions?: ReactNode; children: ReactNode }) {
+export function CadastroLayout({ title, subtitle, onNew, extraActions, recurso, children }: { title: string; subtitle?: string; onNew: () => void; extraActions?: ReactNode; recurso?: string; children: ReactNode }) {
+  const botaoNovo = (
+    <Button onClick={onNew} className="bg-brand text-brand-foreground"><Plus className="h-4 w-4 mr-1" />Novo</Button>
+  );
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <header className="flex items-end justify-between mb-6 gap-4">
@@ -23,13 +27,14 @@ export function CadastroLayout({ title, subtitle, onNew, extraActions, children 
         </div>
         <div className="flex items-center gap-2">
           {extraActions}
-          <Button onClick={onNew} className="bg-brand text-brand-foreground"><Plus className="h-4 w-4 mr-1" />Novo</Button>
+          {recurso ? <Pode recurso={recurso} acao="criar">{botaoNovo}</Pode> : botaoNovo}
         </div>
       </header>
       {children}
     </div>
   );
 }
+
 
 export type Col<T> = { key: keyof T | string; label: string; render?: (r: T) => ReactNode };
 

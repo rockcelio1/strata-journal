@@ -1,3 +1,4 @@
+import { Pode } from "@/components/Pode";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -317,9 +318,12 @@ function RdoListPage() {
           <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)} disabled={filtered.length === 0}>
             <DownloadSimple size={16} className="mr-1" /> Exportar CSV
           </Button>
-          <Link to="/rdo/novo">
-            <Button className="bg-brand text-brand-foreground"><Plus size={16} className="mr-1" />Novo RDO</Button>
-          </Link>
+          <Pode recurso="diario.rdos" acao="criar">
+            <Link to="/rdo/novo">
+              <Button className="bg-brand text-brand-foreground"><Plus size={16} className="mr-1" />Novo RDO</Button>
+            </Link>
+          </Pode>
+
         </div>
       </header>
 
