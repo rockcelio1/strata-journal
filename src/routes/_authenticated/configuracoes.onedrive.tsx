@@ -355,7 +355,7 @@ function OneDriveSettings() {
         </p>
         {diag.data?.entries?.length ? (
           <ul className="text-[11px] space-y-1 max-h-72 overflow-auto">
-            {diag.data.entries.map((e, i) => (
+            {diag.data.entries.map((e: any, i: number) => (
               <li key={i} className={`border-l-2 pl-2 ${e.ok ? "border-emerald-500" : "border-destructive"}`}>
                 <div className="flex flex-wrap gap-2">
                   <span className="font-mono">{e.method}</span>
