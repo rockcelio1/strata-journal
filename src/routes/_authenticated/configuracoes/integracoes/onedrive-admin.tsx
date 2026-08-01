@@ -144,7 +144,7 @@ function OneDriveAdminPage() {
                   <ShieldCheck className="h-5 w-5 text-primary" /> Credenciais do Azure AD
                 </CardTitle>
                 <CardDescription>
-                  Estes dados são obtidos no portal do Azure > Entra ID > App Registrations.
+                  Estes dados são obtidos no portal do Azure {" > "} Entra ID {" > "} App Registrations.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
