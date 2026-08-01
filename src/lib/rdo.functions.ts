@@ -736,6 +736,7 @@ export const reorderRdoAnexos = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     // Valida que todos os anexos pertencem ao RDO informado
     const { data: rows, error: qerr } = await context.supabase
       .from("rdo_anexos").select("id").eq("rdo_id", data.rdo_id);
