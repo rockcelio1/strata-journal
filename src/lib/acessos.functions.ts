@@ -49,13 +49,8 @@ async function getEmpresaId(supabase: any, userId: string): Promise<string> {
 }
 
 async function assertPode(supabase: any, userId: string, acao: "ver" | "editar") {
-  const { data, error } = await supabase.rpc("has_permission", {
-    _user_id: userId,
-    _resource: "permissoes" as const,
-    _action: acao as any,
-  });
-  if (error) throw error;
-  if (!data) throw new Error("Acesso negado: você não tem permissão para gerenciar acessos.");
+  const { exigirPermissao } = await import("@/lib/security/permissao.server");
+  await exigirPermissao(supabase, userId, "admin.permissoes", acao);
 }
 
 // ===================== Meus acessos (cliente) =====================

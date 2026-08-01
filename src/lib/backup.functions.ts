@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 // Grupos de tabelas disponíveis para backup/restauração.
 // Todas são escopadas por empresa_id, exceto onde indicado.
@@ -85,16 +86,8 @@ export const BACKUP_GROUPS = [
 
 export type BackupGroupKey = (typeof BACKUP_GROUPS)[number]["key"];
 
-async function ensureMasterOrAdmin(supabase: any, userId: string) {
-  const { data: rows, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
-  if (error) throw error;
-  const roles = (rows ?? []).map((r: any) => r.role as string);
-  if (!roles.includes("master") && !roles.includes("admin")) {
-    throw new Error("Apenas administrador ou master pode executar backup/restauração.");
-  }
+async function ensureMasterOrAdmin(supabase: any, userId: string, acao: "visualizar" | "criar" | "editar" | "excluir" = "visualizar") {
+  await exigirPermissao(supabase, userId, "configuracoes.backup", acao);
 }
 
 async function getEmpresaId(supabase: any, userId: string): Promise<string> {
@@ -124,7 +117,7 @@ export const exportBackup = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await ensureMasterOrAdmin(context.supabase, context.userId);
+    await ensureMasterOrAdmin(context.supabase, context.userId, "criar");
     const empresaId = await getEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -234,7 +227,7 @@ export const importBackup = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await ensureMasterOrAdmin(context.supabase, context.userId);
+    await ensureMasterOrAdmin(context.supabase, context.userId, "editar");
     const empresaId = await getEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

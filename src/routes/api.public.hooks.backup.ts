@@ -8,10 +8,11 @@ export const Route = createFileRoute("/api/public/hooks/backup")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!expected || apikey !== expected) {
-          return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+        const { exigirSegredoWebhook } = await import("@/lib/security/webhook.server");
+        try {
+          exigirSegredoWebhook(request, "BACKUP_HOOK_SECRET");
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 401 });
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

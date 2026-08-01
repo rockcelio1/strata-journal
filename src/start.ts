@@ -29,7 +29,9 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Permissions-Policy":
     "camera=(self), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()",
   "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-site",
   "X-DNS-Prefetch-Control": "on",
+  "X-XSS-Protection": "1; mode=block",
 };
 
 const CSP_DIRECTIVES = [

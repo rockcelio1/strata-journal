@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { sanitizeExportCell } from "@/lib/security/sanitize-export";
+import { exigirPermissao } from "./security/permissao.server";
 
 // ============== PUBLIC: CHECK EMAIL ==============
 // Helpers puros e testáveis (sem o wrapper de createServerFn).
@@ -126,6 +127,7 @@ export const updateEmpresa = createServerFn({ method: "POST" })
     z.object({ nome: z.string().min(1), cnpj: z.string().nullable().optional() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.empresa", "editar");
     const { supabase, userId } = context;
     const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
@@ -327,9 +329,8 @@ export const getDashboard = createServerFn({ method: "GET" })
 // ============== CONVITES / MEMBROS ==============
 const roleEnum = z.enum(["master", "admin", "engenheiro", "mestre", "visualizador"]);
 
-async function assertAdminOrMaster(supabase: any, userId: string) {
-  const r = await supabase.rpc("has_admin_access", { _user_id: userId });
-  if (!r.data) throw new Error("Acesso negado: apenas administrador ou master");
+async function assertAdminOrMaster(supabase: any, userId: string, acao: "visualizar" | "criar" | "editar" | "excluir" = "visualizar") {
+  await exigirPermissao(supabase, userId, "configuracoes.usuarios", acao);
 }
 
 async function getMyEmpresaId(supabase: any, userId: string): Promise<string> {
@@ -367,7 +368,7 @@ export const adminSetUserPassword = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOrMaster(context.supabase, context.userId);
+    await assertAdminOrMaster(context.supabase, context.userId, "editar");
     const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: data.password });
@@ -389,7 +390,7 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { email: string }) => z.object({ email: z.string().email() }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertAdminOrMaster(context.supabase, context.userId);
+    await assertAdminOrMaster(context.supabase, context.userId, "editar");
     const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const emailLower = data.email.trim().toLowerCase();
@@ -454,7 +455,7 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { user_id: string }) => z.object({ user_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertAdminOrMaster(context.supabase, context.userId);
+    await assertAdminOrMaster(context.supabase, context.userId, "excluir");
     if (data.user_id === context.userId) throw new Error("Não é possível excluir a si mesmo");
     const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const target = await context.supabase.from("profiles").select("email").eq("id", data.user_id).maybeSingle();
@@ -471,7 +472,7 @@ export const adminToggleUserDisabled = createServerFn({ method: "POST" })
     z.object({ user_id: z.string().uuid(), disabled: z.boolean() }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOrMaster(context.supabase, context.userId);
+    await assertAdminOrMaster(context.supabase, context.userId, "editar");
     if (data.user_id === context.userId) throw new Error("Não é possível desabilitar a si mesmo");
     const empresa_id = await assertSameEmpresa(context.supabase, context.userId, data.user_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -497,7 +498,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOrMaster(context.supabase, context.userId);
+    await assertAdminOrMaster(context.supabase, context.userId, "criar");
     const empresa_id = await getMyEmpresaId(context.supabase, context.userId);
     const emailLower = data.email.toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

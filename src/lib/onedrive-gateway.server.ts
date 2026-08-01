@@ -17,11 +17,29 @@ export type DiagEntry = {
 };
 
 export const DIAG_MAX = 30;
-export const diagBuf: DiagEntry[] = [];
+const _diagBuf: DiagEntry[] = [];
+
+/** Sanitiza a URL para remover informações sensíveis como IDs de itens ou drives. */
+function sanitizarUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    // Remove IDs de recursos do path para evitar vazamento
+    u.pathname = u.pathname.replace(/\/items\/[^\/]+/, "/items/[ID]");
+    u.pathname = u.pathname.replace(/\/drives\/[^\/]+/, "/drives/[ID]");
+    return u.toString();
+  } catch {
+    return url.replace(/\/items\/[^\/]+/, "/items/[ID]").replace(/\/drives\/[^\/]+/, "/drives/[ID]");
+  }
+}
 
 export function pushDiag(e: DiagEntry) {
-  diagBuf.unshift(e);
-  if (diagBuf.length > DIAG_MAX) diagBuf.length = DIAG_MAX;
+  const entry = { ...e, url: sanitizarUrl(e.url) };
+  _diagBuf.unshift(entry);
+  if (_diagBuf.length > DIAG_MAX) _diagBuf.length = DIAG_MAX;
+}
+
+export function getDiag() {
+  return [..._diagBuf];
 }
 
 export function slugSegment(s: string): string {

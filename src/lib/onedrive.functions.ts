@@ -6,7 +6,7 @@ import {
   DIAG_MAX,
   GATEWAY_URL,
   MESES_PT,
-  diagBuf,
+  getDiag,
   encodePath,
   falhaOneDrive,
   fetcherGateway,
@@ -19,7 +19,7 @@ import {
 
 export const getOneDriveDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: diagBuf.slice(0, DIAG_MAX) }));
+  .handler(async () => ({ gatewayUrl: GATEWAY_URL, entries: getDiag().slice(0, DIAG_MAX) }));
 
 export const getOneDriveQuota = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
