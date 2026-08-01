@@ -149,7 +149,7 @@ export async function obterDriveId(): Promise<string> {
   const c = await exigirConfig();
   const chave = chaveConfig(c);
   if (cacheDriveId && cacheDriveId.chave === chave) return cacheDriveId.id;
-  const res = await chamarGraph(`/users/${encodeURIComponent(c.targetUser)}/drive?=id`, undefined, "resolverDrive");
+  const res = await chamarGraph(`/users/${encodeURIComponent(c.targetUser)}/drive?$select=id`, undefined, "resolverDrive");
   const j = await res.json() as { id?: string };
   if (!j.id) throw new Error("OneDrive não encontrado para o usuário.");
   cacheDriveId = { id: j.id, chave };
