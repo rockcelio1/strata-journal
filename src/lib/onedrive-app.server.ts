@@ -221,14 +221,40 @@ export function pastaRdo(args: { data: Date | string; obra: string; rdo: string;
   );
 }
 
-export async function statusIntegracao() {
+export type StatusIntegracao = {
+  ok: boolean;
+  status: string;
+  configured: boolean;
+  token: "ok" | "erro" | "na";
+  drive: "ok" | "erro" | "na";
+  account: string | null;
+  targetUser: string | null;
+  missing: string[];
+  message: string | null;
+  error: string | null;
+};
+
+export async function statusIntegracao(): Promise<StatusIntegracao> {
+  const base: StatusIntegracao = {
+    ok: false, status: "nao_configurado", configured: false, token: "na", drive: "na",
+    account: null, targetUser: null, missing: [], message: null, error: null,
+  };
   try {
     const config = await lerConfig();
-    if (!config) return { ok: false, status: 'nao_configurado' };
+    if (!config) {
+      return { ...base, missing: await variaveisFaltando(), message: "Integração OneDrive não configurada." };
+    }
+    base.configured = true;
+    base.account = config.targetUser ?? null;
+    base.targetUser = config.targetUser ?? null;
     await obterToken();
-    return { ok: true, status: 'operacional', account: config.targetUser };
+    base.token = "ok";
+    await obterDriveId();
+    base.drive = "ok";
+    return { ...base, ok: true, status: "operacional" };
   } catch (e) {
-    return { ok: false, status: 'erro', error: (e as Error).message };
+    const msg = (e as Error).message;
+    return { ...base, status: "erro", token: base.token === "ok" ? "ok" : "erro", drive: "erro", message: msg, error: msg };
   }
 }
 
