@@ -306,6 +306,7 @@ export const listRdoLogs = createServerFn({ method: "GET" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "ver");
     let q = context.supabase
       .from("rdo_audit_logs")
       .select("*, autor:profiles!rdo_audit_logs_autor_id_profiles_fkey(id, nome, email)", { count: "exact" })
