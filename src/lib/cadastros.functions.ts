@@ -77,14 +77,17 @@ export const upsertEquipamento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => equipSchema.extend({ id: z.string().uuid().optional() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.equipamentos", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
+    const empresaId = me.data?.empresa_id;
+    if (!empresaId) throw new Error("Empresa não encontrada");
+
     if (data.id) {
       const { id, ...rest } = data;
       const { error } = await context.supabase.from("equipamentos").update(rest).eq("id", id);
       if (error) throw error;
     } else {
-      const { error } = await context.supabase.from("equipamentos").insert({ ...data, empresa_id: me.data.empresa_id });
+      const { error } = await context.supabase.from("equipamentos").insert({ ...data, empresa_id: empresaId });
       if (error) throw error;
     }
     return { ok: true };
@@ -94,6 +97,7 @@ export const deleteEquipamento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.equipamentos", "excluir");
     const { error } = await context.supabase.from("equipamentos").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -119,14 +123,17 @@ export const upsertTipoOcorrencia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => tipoOcSchema.extend({ id: z.string().uuid().optional() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.ocorrencias", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
-    if (!me.data) throw new Error("Sem empresa");
+    const empresaId = me.data?.empresa_id;
+    if (!empresaId) throw new Error("Empresa não encontrada");
+
     if (data.id) {
       const { id, ...rest } = data;
       const { error } = await context.supabase.from("tipos_ocorrencia").update(rest).eq("id", id);
       if (error) throw error;
     } else {
-      const { error } = await context.supabase.from("tipos_ocorrencia").insert({ ...data, empresa_id: me.data.empresa_id });
+      const { error } = await context.supabase.from("tipos_ocorrencia").insert({ ...data, empresa_id: empresaId });
       if (error) throw error;
     }
     return { ok: true };
@@ -136,6 +143,7 @@ export const deleteTipoOcorrencia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "cadastros.ocorrencias", "excluir");
     const { error } = await context.supabase.from("tipos_ocorrencia").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
