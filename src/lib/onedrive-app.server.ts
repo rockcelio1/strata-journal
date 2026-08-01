@@ -55,30 +55,59 @@ export class OneDriveGraphError extends Error {
   }
 }
 
-/** Lê a configuração do ambiente (somente servidor). `null` quando incompleta. */
-export function lerConfig(): ConfigGraph | null {
-  const tenantId = process.env.MICROSOFT_TENANT_ID?.trim();
-  const clientId = process.env.MICROSOFT_CLIENT_ID?.trim();
-  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET?.trim();
-  const targetUser = process.env.MICROSOFT_ONEDRIVE_USER?.trim();
+/** Lê a configuração do ambiente ou do banco de dados (somente servidor). */
+export async function lerConfig(): Promise<ConfigGraph | null> {
+  // 1. Prioridade para variáveis de ambiente (legado/infra)
+  const envTenantId = process.env.MICROSOFT_TENANT_ID?.trim();
+  const envClientId = process.env.MICROSOFT_CLIENT_ID?.trim();
+  const envClientSecret = process.env.MICROSOFT_CLIENT_SECRET?.trim();
+  const envTargetUser = process.env.MICROSOFT_ONEDRIVE_USER?.trim();
   const scope = process.env.MICROSOFT_GRAPH_SCOPE?.trim() || "https://graph.microsoft.com/.default";
-  if (!tenantId || !clientId || !clientSecret || !targetUser) return null;
-  return { tenantId, clientId, clientSecret, targetUser, scope };
+
+  if (envTenantId && envClientId && envClientSecret && envTargetUser) {
+    return { tenantId: envTenantId, clientId: envClientId, clientSecret: envClientSecret, targetUser: envTargetUser, scope };
+  }
+
+  // 2. Fallback para banco de dados (nova arquitetura)
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("onedrive_admin_config")
+      .select("*")
+      .maybeSingle();
+
+    if (data && data.client_secret_ciphertext) {
+      const { decrypt } = await import("./crypto.server");
+      return {
+        tenantId: data.tenant_id,
+        clientId: data.client_id,
+        clientSecret: decrypt(data.client_secret_ciphertext),
+        targetUser: data.target_user_email,
+        scope
+      };
+    }
+  } catch (e) {
+    console.error("[onedrive] erro ao ler config do banco:", e);
+  }
+
+  return null;
 }
 
-export function variaveisFaltando(): string[] {
-  const nomes: Array<[string, string | undefined]> = [
-    ["MICROSOFT_TENANT_ID", process.env.MICROSOFT_TENANT_ID],
-    ["MICROSOFT_CLIENT_ID", process.env.MICROSOFT_CLIENT_ID],
-    ["MICROSOFT_CLIENT_SECRET", process.env.MICROSOFT_CLIENT_SECRET],
-    ["MICROSOFT_ONEDRIVE_USER", process.env.MICROSOFT_ONEDRIVE_USER],
+export async function variaveisFaltando(): Promise<string[]> {
+  const config = await lerConfig();
+  if (config) return [];
+  
+  return [
+    "MICROSOFT_TENANT_ID",
+    "MICROSOFT_CLIENT_ID",
+    "MICROSOFT_CLIENT_SECRET",
+    "MICROSOFT_ONEDRIVE_USER"
   ];
-  return nomes.filter(([, v]) => !v?.trim()).map(([n]) => n);
 }
 
-export function exigirConfig(): ConfigGraph {
-  const c = lerConfig();
-  if (!c) throw new OneDriveConfigError(variaveisFaltando());
+export async function exigirConfig(): Promise<ConfigGraph> {
+  const c = await lerConfig();
+  if (!c) throw new OneDriveConfigError(await variaveisFaltando());
   return c;
 }
 
