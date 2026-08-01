@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const nivelEnum = z.enum(["ver", "editar", "aprovar"]);
 const sujeitoEnum = z.enum(["user", "grupo"]);
@@ -39,6 +40,7 @@ export const criarGrupo = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "grupos", "criar");
     const { data: prof } = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!prof?.empresa_id) throw new Error("Empresa não encontrada");
     if (data.tipo === "equipe_obra" && !data.obra_id) throw new Error("Equipe por obra requer obra_id");
@@ -61,6 +63,7 @@ export const excluirGrupo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "grupos", "excluir");
     const { error } = await context.supabase.from("grupos").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -72,6 +75,7 @@ export const adicionarMembro = createServerFn({ method: "POST" })
     z.object({ grupo_id: z.string().uuid(), user_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "grupos", "editar");
     const { error } = await context.supabase.from("grupo_membros").insert({ grupo_id: data.grupo_id, user_id: data.user_id });
     if (error && !String(error.message).includes("duplicate")) throw error;
     return { ok: true };
@@ -83,6 +87,7 @@ export const removerMembro = createServerFn({ method: "POST" })
     z.object({ grupo_id: z.string().uuid(), user_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "grupos", "editar");
     const { error } = await context.supabase.from("grupo_membros").delete().eq("grupo_id", data.grupo_id).eq("user_id", data.user_id);
     if (error) throw error;
     return { ok: true };

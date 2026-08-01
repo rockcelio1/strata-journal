@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 // ============ LEITURA ============
 export const listHelpCategories = createServerFn({ method: "GET" })
@@ -254,6 +255,7 @@ export const upsertHelpArticle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => articleSchema.extend({ id: z.string().uuid().optional() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "central_ajuda", data.id ? "editar" : "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (data.id) {
       const { id, ...rest } = data;
@@ -283,6 +285,7 @@ export const deleteHelpArticle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "central_ajuda", "excluir");
     const { error } = await context.supabase.from("help_articles").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
@@ -303,6 +306,7 @@ export const createChangelogEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => changelogSchema.parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "central_ajuda", "criar");
     const me = await context.supabase.from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     const { error } = await context.supabase.from("system_changelog").insert({
       ...data,

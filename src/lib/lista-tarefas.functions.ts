@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const itemSchema = z.object({
   id: z.string().uuid().optional(),
@@ -46,6 +47,7 @@ export const upsertListaTarefaItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => itemSchema.parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "lista_tarefas", data.id ? "editar" : "criar");
     const me = await context.supabase
       .from("profiles").select("empresa_id").eq("id", context.userId).maybeSingle();
     if (!me.data) throw new Error("Sem empresa");
@@ -68,6 +70,7 @@ export const deleteListaTarefaItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "lista_tarefas", "excluir");
     const { error } = await context.supabase
       .from("lista_tarefas_itens").delete().eq("id", data.id);
     if (error) throw error;
@@ -78,6 +81,7 @@ export const reorderListaTarefas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ order: z.array(z.string().uuid()) }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "lista_tarefas", "editar");
     for (let i = 0; i < data.order.length; i++) {
       const { error } = await context.supabase
         .from("lista_tarefas_itens").update({ ordem: i }).eq("id", data.order[i]);

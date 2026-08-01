@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { exigirPermissao } from "./security/permissao.server";
 
 const sujeitoSchema = z.object({
   sujeito_tipo: z.enum(["user", "grupo"]),
@@ -92,6 +93,7 @@ export const addSignatario = createServerFn({ method: "POST" })
     z.object({ rdo_id: z.string().uuid() }).merge(sujeitoSchema).parse(d),
   )
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { supabase, userId } = context;
     const { data: prof } = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
     if (!prof?.empresa_id) throw new Error("Empresa não encontrada");
@@ -110,6 +112,7 @@ export const removeSignatario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const { error } = await context.supabase.from("rdo_signatarios_requeridos").delete().eq("id", data.id);
     if (error) throw error;
     return { ok: true };
