@@ -238,6 +238,7 @@ export const submitRdo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     await checkRateLimit(context.supabase, "submitRdo", 30, 60);
     const { error } = await context.supabase.from("rdos").update({ status: "enviado", enviado_em: new Date().toISOString() }).eq("id", data.id);
     if (error) throw error;
