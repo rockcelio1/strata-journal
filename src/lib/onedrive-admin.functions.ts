@@ -104,14 +104,14 @@ export const testOneDriveAdminConnection = createServerFn({ method: "POST" })
       
       const latency = Date.now() - start;
       
-      await context.supabase
-        .from("onedrive_admin_config" as any)
+      await (context.supabase as any)
+        .from("onedrive_admin_config")
         .update({
           status: 'operacional',
           last_test_at: new Date().toISOString(),
-          last_error: null
-        } as any)
-        .neq('id' as any, '00000000-0000-0000-0000-000000000000' as any);
+          last_error: null,
+        })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
       return { ok: true, latency, driveId, timestamp: new Date().toISOString() };
     } catch (e: any) {
