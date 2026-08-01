@@ -192,6 +192,7 @@ export const updateEmpresaLogo = createServerFn({ method: "POST" })
 export const listLogoVersions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await exigirPermissao(context.supabase, context.userId, "configuracoes.empresa", "ver");
     const { supabase, userId } = context;
     const me = await supabase.from("profiles").select("empresa_id").eq("id", userId).maybeSingle();
     if (!me.data) return [];
