@@ -2374,6 +2374,54 @@ export type Database = {
           },
         ]
       }
+      onedrive_admin_config: {
+        Row: {
+          client_id: string
+          client_secret_ciphertext: string
+          created_at: string
+          drive_id: string | null
+          id: string
+          last_error: string | null
+          last_test_at: string | null
+          status: string
+          target_user_email: string
+          target_user_id: string
+          tenant_id: string
+          updated_at: string
+          web_url: string | null
+        }
+        Insert: {
+          client_id: string
+          client_secret_ciphertext: string
+          created_at?: string
+          drive_id?: string | null
+          id?: string
+          last_error?: string | null
+          last_test_at?: string | null
+          status?: string
+          target_user_email: string
+          target_user_id: string
+          tenant_id: string
+          updated_at?: string
+          web_url?: string | null
+        }
+        Update: {
+          client_id?: string
+          client_secret_ciphertext?: string
+          created_at?: string
+          drive_id?: string | null
+          id?: string
+          last_error?: string | null
+          last_test_at?: string | null
+          status?: string
+          target_user_email?: string
+          target_user_id?: string
+          tenant_id?: string
+          updated_at?: string
+          web_url?: string | null
+        }
+        Relationships: []
+      }
       onedrive_auditoria: {
         Row: {
           acao: string
@@ -2444,6 +2492,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      onedrive_config_audit: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: Json
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: Json
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       onedrive_permissoes: {
         Row: {
