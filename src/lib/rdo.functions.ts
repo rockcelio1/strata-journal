@@ -463,6 +463,7 @@ export const removerAnexo = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
+    await exigirPermissao(context.supabase, context.userId, "rdos", "editar");
     const row = await context.supabase.from("rdo_anexos").select("storage_path, storage_provider, onedrive_item_id").eq("id", data.id).maybeSingle();
     if (row.data?.storage_provider === "supabase" && row.data?.storage_path) {
       await context.supabase.storage.from("rdo-anexos").remove([row.data.storage_path]);
