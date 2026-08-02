@@ -419,6 +419,7 @@ export type Database = {
           button_label: string
           created_at: string
           effect_type: string
+          empresa_id: string | null
           id: string
           is_active: boolean
           screen_key: string
@@ -430,6 +431,7 @@ export type Database = {
           button_label: string
           created_at?: string
           effect_type?: string
+          empresa_id?: string | null
           id?: string
           is_active?: boolean
           screen_key: string
@@ -441,13 +443,22 @@ export type Database = {
           button_label?: string
           created_at?: string
           effect_type?: string
+          empresa_id?: string | null
           id?: string
           is_active?: boolean
           screen_key?: string
           screen_name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "button_effect_settings_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       convites: {
         Row: {
@@ -2380,6 +2391,7 @@ export type Database = {
           client_secret_ciphertext: string
           created_at: string
           drive_id: string | null
+          empresa_id: string | null
           id: string
           last_error: string | null
           last_test_at: string | null
@@ -2395,6 +2407,7 @@ export type Database = {
           client_secret_ciphertext: string
           created_at?: string
           drive_id?: string | null
+          empresa_id?: string | null
           id?: string
           last_error?: string | null
           last_test_at?: string | null
@@ -2410,6 +2423,7 @@ export type Database = {
           client_secret_ciphertext?: string
           created_at?: string
           drive_id?: string | null
+          empresa_id?: string | null
           id?: string
           last_error?: string | null
           last_test_at?: string | null
@@ -2420,7 +2434,15 @@ export type Database = {
           updated_at?: string
           web_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "onedrive_admin_config_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onedrive_auditoria: {
         Row: {
@@ -2498,6 +2520,7 @@ export type Database = {
           acao: string
           created_at: string
           detalhes: Json
+          empresa_id: string | null
           id: string
           user_id: string | null
         }
@@ -2505,6 +2528,7 @@ export type Database = {
           acao: string
           created_at?: string
           detalhes?: Json
+          empresa_id?: string | null
           id?: string
           user_id?: string | null
         }
@@ -2512,10 +2536,19 @@ export type Database = {
           acao?: string
           created_at?: string
           detalhes?: Json
+          empresa_id?: string | null
           id?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "onedrive_config_audit_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onedrive_permissoes: {
         Row: {
@@ -3635,6 +3668,7 @@ export type Database = {
         Row: {
           created_at: string
           effect_type: string
+          empresa_id: string | null
           id: string
           is_active: boolean
           layout_type: string
@@ -3645,6 +3679,7 @@ export type Database = {
         Insert: {
           created_at?: string
           effect_type: string
+          empresa_id?: string | null
           id?: string
           is_active?: boolean
           layout_type?: string
@@ -3655,6 +3690,7 @@ export type Database = {
         Update: {
           created_at?: string
           effect_type?: string
+          empresa_id?: string | null
           id?: string
           is_active?: boolean
           layout_type?: string
@@ -3662,7 +3698,15 @@ export type Database = {
           screen_name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "skeleton_loading_settings_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_changelog: {
         Row: {
