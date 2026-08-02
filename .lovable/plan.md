@@ -1,38 +1,73 @@
-# Plano de Correção de Segurança e Auditoria de Acesso
+# ERP FACOM — unificar Chamados, Patrimônio e Protocolo neste banco
 
-Este plano visa corrigir as vulnerabilidades identificadas na auditoria de acesso do sistema RDO, garantindo integridade, confidencialidade e conformidade com as melhores práticas de segurança.
+## Resposta direta
 
-## Falhas Críticas e Ações Imediatas
+Sim, dá para colocar os três sistemas no mesmo banco deste projeto, sem perder dados. Mas **não** jogando tudo em `public`: os três já usam nomes de tabela iguais aos daqui (`profiles`, `audit_logs`, `user_roles`, `app_settings`, `assets`, `departments`, `locations`, `email_queue`...). Jogar tudo junto sobrescreveria dados.
 
-### 1. Proteção de Webhooks e Endpoints Públicos
-- **Problema**: O endpoint de backup utiliza a chave pública do Supabase para autenticação, o que permite disparos não autorizados.
-- **Correção**: 
-    - Criar a variável de ambiente `BACKUP_HOOK_SECRET`.
-    - Atualizar `src/routes/api.public.hooks.backup.ts` para validar o header `apikey` contra este segredo usando comparação em tempo constante (`timingSafeEqual`).
-    - Atualizar a configuração do `pg_cron` no banco de dados para enviar o novo segredo.
+A forma segura é **um banco, quatro áreas separadas (schemas)**: o núcleo comum continua em `public`, e cada sistema ganha sua própria área isolada. Mesmo login, mesmas permissões, mesma auditoria — dados que não se atropelam.
 
-### 2. Blindagem de Server Functions (RBAC)
-- **Problema**: Uso excessivo de `supabaseAdmin` sem validação prévia de permissões do usuário em funções de servidor.
-- **Correção**:
-    - Implementar um middleware ou helper `validarPermissao(recurso, acao)` em `src/lib/security/permissao.server.ts`.
-    - Integrar esta validação em todas as funções de `src/lib/*.functions.ts` que realizam operações de escrita ou acessam dados administrativos (Backup, Configurações, Usuários).
-    - Substituir o uso de `supabaseAdmin` por `context.supabase` (com RLS) sempre que possível, reservando o cliente admin apenas para tarefas de infraestrutura estritamente necessárias.
+## O que já verifiquei
 
-### 3. Prevenção de CSRF e Segurança de Transporte
-- **Problema**: Risco potencial de CSRF em server functions se cookies de sessão forem usados indevidamente.
-- **Correção**:
-    - Configurar explicitamente a política de CORS e Headers de Segurança em `src/start.ts`.
-    - Garantir que todas as requisições sensíveis exijam o cabeçalho `Authorization` Bearer, que não é enviado automaticamente pelo navegador em ataques de cross-site.
+| Sistema | Projeto | Tamanho aproximado |
+|---|---|---|
+| Chamados | CHAMADOS FACOM (chamadorestor.lovable.app) | ~160 tabelas — o maior, com IA, e-mail, backup, credenciais |
+| Patrimônio | Patrimonio (patrimoniofacom.lovable.app) | ~62 tabelas — bens, empréstimos, manutenção, locação, manual |
+| Protocolo | Protocolo (evident-delivery-log.lovable.app) | ~14 tabelas — protocolos, fotos, assinaturas, transportadoras |
 
-### 4. Sanitização de Logs e Metadados
-- **Problema**: Logs de diagnóstico do OneDrive podem expor caminhos e IDs internos.
-- **Correção**:
-    - Alterar `src/lib/onedrive-gateway.server.ts` e `src/routes/api.integracoes.onedrive.status.ts` para filtrar caminhos completos e IDs de drive antes de enviar a resposta ao cliente.
+Colisões confirmadas com este projeto: `profiles`, `user_roles`, `audit_logs`/`audit_logs_usuarios`, `email_queue`, `app_settings`, `departments`, `locations`, `assets`. Por isso a separação por schema não é preferência — é necessidade.
 
-## Cronograma de Execução
-1. **Fase 1**: Migração de banco para novos grants e configuração de segredos de ambiente.
-2. **Fase 2**: Refatoração das Server Functions com guards de permissão.
-3. **Fase 3**: Validação final via auditoria automatizada e testes E2E de isolamento.
+## Arquitetura
 
----
-*Este documento é parte integrante do esforço contínuo de segurança do projeto Strata Journal.*
+```text
+public       núcleo: empresas, profiles, user_roles, permissões,
+             auditoria, notificações, e-mail, backup, LGPD, ajuda
+             + obras/RDO (fica onde está, para não mexer no que funciona)
+chamados     tickets, categorias, SLA, atendimentos, base de conhecimento
+patrimonio   bens, categorias, movimentações, empréstimos, manutenção
+protocolo    documentos, tramitações, recebedores, assinaturas
+```
+
+Regras iguais para toda tabela nova: `empresa_id` obrigatório, RLS ligada usando as funções que já existem aqui, GRANT explícito, e nenhuma ligação cruzando módulos (só para o núcleo).
+
+Login: um só. Os usuários dos três sistemas entram por e-mail; quem já existe aqui é reaproveitado, quem não existe é criado e **redefine a senha no primeiro acesso** (as senhas antigas não são portáveis com segurança entre projetos). O `id` antigo de cada sistema fica guardado para religar os dados migrados.
+
+Navegação: menu monta sozinho conforme os módulos ativos da empresa e as permissões do usuário — `/chamados/*`, `/patrimonio/*`, `/protocolo/*` ao lado de `/obras` e `/rdo`.
+
+## Ondas (nada é apagado; os sistemas antigos ficam no ar)
+
+| Onda | Entrega | Sistemas atuais |
+|---|---|---|
+| 0 | Inventário real: estrutura + contagem de linhas dos 3, relatório de colisões e de usuários duplicados | no ar |
+| 1 | Criar os schemas `chamados`, `patrimonio`, `protocolo` vazios, com RLS, grants e recursos de permissão | no ar |
+| 2 | Importar e de-duplicar usuários por e-mail | no ar |
+| 3 | Protocolo (menor): carga de dados + telas + validação | no ar (leitura) |
+| 4 | Patrimônio | no ar (leitura) |
+| 5 | Chamados (maior, tem anexos e SLA) | no ar (leitura) |
+| 6 | Congelamento, carga incremental do delta, corte | somente leitura |
+| 7 | Domínios apontam para o ERP; antigos mantidos 30 dias | desligados |
+
+Cada onda tem script de carga idempotente (pode rodar de novo sem duplicar), script de validação (contagem origem × destino, órfãos, RLS, grants) e rollback trivial — basta não cortar o domínio.
+
+## Decisões que assumi
+
+- Chamados = **chamadorestor.lovable.app**. Confirmo na Onda 0 comparando volume de dados com o fix-fuse; se o outro estiver mais vivo, troco antes de qualquer carga.
+- Migração de **histórico completo**, incluindo anexos (buckets separados por módulo, todos privados).
+- Obras/RDO **permanece em `public`** nesta fase — menos risco.
+
+## Próximo passo desta aprovação
+
+Executo as Ondas 0 e 1:
+
+1. Inventário completo dos três bancos, gravado em `/mnt/documents/erp-onda0-inventario.md` (estrutura, contagens, colisões, usuários duplicados).
+2. Migration criando os três schemas vazios com RLS, grants e os novos recursos de permissão (`chamados`, `patrimonio`, `protocolo`) — requer sua aprovação da migration.
+3. Tabela de núcleo `empresa_modulos` para ligar/desligar módulo por empresa, e menu lateral preparado para os módulos (ainda sem telas).
+
+Nenhum dado dos sistemas atuais é lido para escrita, nenhum é apagado, e o RDO continua funcionando exatamente como hoje.
+
+## Detalhes técnicos
+
+- Schemas novos precisam de `GRANT USAGE ON SCHEMA ... TO authenticated, service_role` e exposição no Data API para serem acessíveis pelo cliente; alternativa (se a exposição multi-schema atrapalhar) é manter `public` com prefixo de tabela `chm_`, `pat_`, `prt_`. Decido na Onda 1 conforme o comportamento do Data API.
+- Reuso de `private.has_role`, `private.get_user_empresa`, `public.pode()` e `public.escopo_de()` nas policies dos módulos novos — sem duplicar lógica de permissão.
+- `app_resource`/`app_recursos` ganha os recursos novos por INSERT; o enum atual não é alterado onde puder ser evitado, para não quebrar código existente.
+- Carga de dados via scripts Node lendo a origem com service_role e escrevendo aqui em lote, com mapa `legacy_id -> novo id` persistido para reexecução idempotente.
+- Telas dos módulos são reescritas no padrão TanStack Start deste projeto (os originais são React+Vite); a lógica de negócio é reaproveitada, estimativa de 60–70%.
