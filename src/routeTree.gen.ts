@@ -9,117 +9,86 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermosRouteImport } from './routes/termos'
-import { Route as StatusRouteImport } from './routes/status'
-import { Route as SolicitacaoLgpdRouteImport } from './routes/solicitacao-lgpd'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PrivacidadeRouteImport } from './routes/privacidade'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as LgpdRouteImport } from './routes/lgpd'
-import { Route as InstalarRouteImport } from './routes/instalar'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthMfaSetupRouteImport } from './routes/auth.mfa-setup'
-import { Route as AuthenticatedTrocarSenhaRouteImport } from './routes/_authenticated/trocar-senha'
-import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticated/galeria'
-import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as AuthenticatedAcessibilidadeRouteImport } from './routes/_authenticated/acessibilidade'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as InstalarRouteImport } from './routes/instalar'
+import { Route as LgpdRouteImport } from './routes/lgpd'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SolicitacaoLgpdRouteImport } from './routes/solicitacao-lgpd'
+import { Route as StatusRouteImport } from './routes/status'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
-import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
-import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
-import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
-import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
-import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
-import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
-import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api.public.bootstrap-master'
-import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
-import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
-import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
-import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
-import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
-import { Route as AuthenticatedConfiguracoesSkeletonRouteImport } from './routes/_authenticated/configuracoes.skeleton'
-import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
-import { Route as AuthenticatedConfiguracoesRunbookRouteImport } from './routes/_authenticated/configuracoes.runbook'
-import { Route as AuthenticatedConfiguracoesRotacaoChavesRouteImport } from './routes/_authenticated/configuracoes.rotacao-chaves'
-import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
-import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
-import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
-import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
-import { Route as AuthenticatedConfiguracoesEmailRouteImport } from './routes/_authenticated/configuracoes.email'
-import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
-import { Route as AuthenticatedConfiguracoesBackupRouteImport } from './routes/_authenticated/configuracoes.backup'
-import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
-import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
-import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
-import { Route as AuthenticatedConfiguracoesAcessosRouteImport } from './routes/_authenticated/configuracoes.acessos'
-import { Route as AuthenticatedCadastrosTemplatesTarefasRouteImport } from './routes/_authenticated/cadastros.templates-tarefas'
-import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
-import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
-import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes/_authenticated/cadastros.lista-tarefas'
-import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
-import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
-import { Route as AuthenticatedAjudaGlossarioRouteImport } from './routes/_authenticated/ajuda.glossario'
-import { Route as AuthenticatedAjudaFaqRouteImport } from './routes/_authenticated/ajuda.faq'
-import { Route as AuthenticatedAjudaBuscaRouteImport } from './routes/_authenticated/ajuda.busca'
-import { Route as AuthenticatedAjudaAdminRouteImport } from './routes/_authenticated/ajuda.admin'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedAcessibilidadeRouteImport } from './routes/_authenticated/acessibilidade'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEmpresaRouteImport } from './routes/_authenticated/empresa'
+import { Route as AuthenticatedGaleriaRouteImport } from './routes/_authenticated/galeria'
+import { Route as AuthenticatedTrocarSenhaRouteImport } from './routes/_authenticated/trocar-senha'
+import { Route as AuthMfaSetupRouteImport } from './routes/auth.mfa-setup'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as ApiRdoRdoIdArquivosRouteImport } from './routes/api.rdo.$rdoId.arquivos'
-import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
-import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
-import { Route as ApiIntegrationsOnedriveStatusRouteImport } from './routes/api/integrations/onedrive/status'
-import { Route as ApiIntegrationsOnedriveHealthRouteImport } from './routes/api/integrations/onedrive/health'
-import { Route as ApiIntegracoesOnedriveStatusRouteImport } from './routes/api.integracoes.onedrive.status'
-import { Route as AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport } from './routes/_authenticated/configuracoes/integracoes/onedrive-admin'
-import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
-import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as AuthenticatedAjudaIndexRouteImport } from './routes/_authenticated/ajuda.index'
+import { Route as AuthenticatedAjudaAdminRouteImport } from './routes/_authenticated/ajuda.admin'
+import { Route as AuthenticatedAjudaBuscaRouteImport } from './routes/_authenticated/ajuda.busca'
+import { Route as AuthenticatedAjudaFaqRouteImport } from './routes/_authenticated/ajuda.faq'
+import { Route as AuthenticatedAjudaGlossarioRouteImport } from './routes/_authenticated/ajuda.glossario'
+import { Route as AuthenticatedAjudaNovidadesRouteImport } from './routes/_authenticated/ajuda.novidades'
+import { Route as AuthenticatedCadastrosIndexRouteImport } from './routes/_authenticated/cadastros.index'
+import { Route as AuthenticatedCadastrosEquipamentosRouteImport } from './routes/_authenticated/cadastros.equipamentos'
+import { Route as AuthenticatedCadastrosListaTarefasRouteImport } from './routes/_authenticated/cadastros.lista-tarefas'
+import { Route as AuthenticatedCadastrosMaoDeObraRouteImport } from './routes/_authenticated/cadastros.mao-de-obra'
+import { Route as AuthenticatedCadastrosOcorrenciasRouteImport } from './routes/_authenticated/cadastros.ocorrencias'
+import { Route as AuthenticatedCadastrosTemplatesTarefasRouteImport } from './routes/_authenticated/cadastros.templates-tarefas'
+import { Route as AuthenticatedConfiguracoesIndexRouteImport } from './routes/_authenticated/configuracoes.index'
+import { Route as AuthenticatedConfiguracoesAcessosRouteImport } from './routes/_authenticated/configuracoes.acessos'
+import { Route as AuthenticatedConfiguracoesAplicativoRouteImport } from './routes/_authenticated/configuracoes.aplicativo'
+import { Route as AuthenticatedConfiguracoesAuditoriaRouteImport } from './routes/_authenticated/configuracoes.auditoria'
+import { Route as AuthenticatedConfiguracoesAuditoriaMidiaRouteImport } from './routes/_authenticated/configuracoes.auditoria-midia'
+import { Route as AuthenticatedConfiguracoesBackupRouteImport } from './routes/_authenticated/configuracoes.backup'
+import { Route as AuthenticatedConfiguracoesBotoesEfeitosRouteImport } from './routes/_authenticated/configuracoes.botoes-efeitos'
+import { Route as AuthenticatedConfiguracoesEmailRouteImport } from './routes/_authenticated/configuracoes.email'
+import { Route as AuthenticatedConfiguracoesGruposRouteImport } from './routes/_authenticated/configuracoes.grupos'
+import { Route as AuthenticatedConfiguracoesLgpdRouteImport } from './routes/_authenticated/configuracoes.lgpd'
+import { Route as AuthenticatedConfiguracoesOnedriveRouteImport } from './routes/_authenticated/configuracoes.onedrive'
+import { Route as AuthenticatedConfiguracoesPermissoesRouteImport } from './routes/_authenticated/configuracoes.permissoes'
+import { Route as AuthenticatedConfiguracoesRotacaoChavesRouteImport } from './routes/_authenticated/configuracoes.rotacao-chaves'
+import { Route as AuthenticatedConfiguracoesRunbookRouteImport } from './routes/_authenticated/configuracoes.runbook'
+import { Route as AuthenticatedConfiguracoesSistemaRouteImport } from './routes/_authenticated/configuracoes.sistema'
+import { Route as AuthenticatedConfiguracoesSkeletonRouteImport } from './routes/_authenticated/configuracoes.skeleton'
+import { Route as AuthenticatedConfiguracoesUsuariosRouteImport } from './routes/_authenticated/configuracoes.usuarios'
+import { Route as AuthenticatedObrasIndexRouteImport } from './routes/_authenticated/obras.index'
+import { Route as AuthenticatedObrasObraIdRouteImport } from './routes/_authenticated/obras.$obraId'
+import { Route as AuthenticatedRdoIndexRouteImport } from './routes/_authenticated/rdo.index'
+import { Route as AuthenticatedRdoRdoIdRouteImport } from './routes/_authenticated/rdo.$rdoId'
+import { Route as AuthenticatedRdoNovoRouteImport } from './routes/_authenticated/rdo.novo'
+import { Route as AuthenticatedRelatoriosDimRouteImport } from './routes/_authenticated/relatorios.$dim'
+import { Route as ApiPublicBootstrapMasterRouteImport } from './routes/api.public.bootstrap-master'
+import { Route as ApiPublicHealthRouteImport } from './routes/api.public.health'
+import { Route as ApiPublicLgpdRequestRouteImport } from './routes/api.public.lgpd-request'
 import { Route as AuthenticatedAjudaArtigoSlugRouteImport } from './routes/_authenticated/ajuda.artigo.$slug'
+import { Route as AuthenticatedAjudaCategoriaSlugRouteImport } from './routes/_authenticated/ajuda.categoria.$slug'
+import { Route as AuthenticatedCadastrosTemplatesTarefasIdRouteImport } from './routes/_authenticated/cadastros.templates-tarefas.$id'
+import { Route as AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport } from './routes/_authenticated/configuracoes/integracoes/onedrive-admin'
+import { Route as ApiIntegracoesOnedriveStatusRouteImport } from './routes/api.integracoes.onedrive.status'
+import { Route as ApiIntegrationsOnedriveHealthRouteImport } from './routes/api/integrations/onedrive/health'
+import { Route as ApiIntegrationsOnedriveStatusRouteImport } from './routes/api/integrations/onedrive/status'
+import { Route as ApiPublicHooksBackupRouteImport } from './routes/api.public.hooks.backup'
+import { Route as ApiPublicOnedriveFileItemIdRouteImport } from './routes/api.public.onedrive-file.$itemId'
+import { Route as ApiRdoRdoIdArquivosRouteImport } from './routes/api.rdo.$rdoId.arquivos'
 import { Route as ApiRdoRdoIdArquivosArquivoIdRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId'
 import { Route as ApiRdoRdoIdArquivosArquivoIdDownloadRouteImport } from './routes/api.rdo.$rdoId.arquivos.$arquivoId.download'
 
-const TermosRoute = TermosRouteImport.update({
-  id: '/termos',
-  path: '/termos',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StatusRoute = StatusRouteImport.update({
-  id: '/status',
-  path: '/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolicitacaoLgpdRoute = SolicitacaoLgpdRouteImport.update({
-  id: '/solicitacao-lgpd',
-  path: '/solicitacao-lgpd',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacidadeRoute = PrivacidadeRouteImport.update({
-  id: '/privacidade',
-  path: '/privacidade',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LgpdRoute = LgpdRouteImport.update({
-  id: '/lgpd',
-  path: '/lgpd',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InstalarRoute = InstalarRouteImport.update({
-  id: '/instalar',
-  path: '/instalar',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -127,52 +96,51 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const InstalarRoute = InstalarRouteImport.update({
+  id: '/instalar',
+  path: '/instalar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LgpdRoute = LgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthMfaSetupRoute = AuthMfaSetupRouteImport.update({
-  id: '/mfa-setup',
-  path: '/mfa-setup',
-  getParentRoute: () => AuthRoute,
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTrocarSenhaRoute =
-  AuthenticatedTrocarSenhaRouteImport.update({
-    id: '/trocar-senha',
-    path: '/trocar-senha',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedGaleriaRoute = AuthenticatedGaleriaRouteImport.update({
-  id: '/galeria',
-  path: '/galeria',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedEmpresaRoute = AuthenticatedEmpresaRouteImport.update({
-  id: '/empresa',
-  path: '/empresa',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const SolicitacaoLgpdRoute = SolicitacaoLgpdRouteImport.update({
+  id: '/solicitacao-lgpd',
+  path: '/solicitacao-lgpd',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedConfiguracoesRoute =
-  AuthenticatedConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAcessibilidadeRoute =
-  AuthenticatedAcessibilidadeRouteImport.update({
-    id: '/acessibilidade',
-    path: '/acessibilidade',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
@@ -180,201 +148,79 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AuthenticatedRdoIndexRoute = AuthenticatedRdoIndexRouteImport.update({
-  id: '/rdo/',
-  path: '/rdo/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedObrasIndexRoute = AuthenticatedObrasIndexRouteImport.update({
-  id: '/obras/',
-  path: '/obras/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedConfiguracoesIndexRoute =
-  AuthenticatedConfiguracoesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedCadastrosIndexRoute =
-  AuthenticatedCadastrosIndexRouteImport.update({
-    id: '/cadastros/',
-    path: '/cadastros/',
+const AuthenticatedAcessibilidadeRoute =
+  AuthenticatedAcessibilidadeRouteImport.update({
+    id: '/acessibilidade',
+    path: '/acessibilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEmpresaRoute = AuthenticatedEmpresaRouteImport.update({
+  id: '/empresa',
+  path: '/empresa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGaleriaRoute = AuthenticatedGaleriaRouteImport.update({
+  id: '/galeria',
+  path: '/galeria',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTrocarSenhaRoute =
+  AuthenticatedTrocarSenhaRouteImport.update({
+    id: '/trocar-senha',
+    path: '/trocar-senha',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthMfaSetupRoute = AuthMfaSetupRouteImport.update({
+  id: '/mfa-setup',
+  path: '/mfa-setup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedAjudaIndexRoute = AuthenticatedAjudaIndexRouteImport.update({
   id: '/ajuda/',
   path: '/ajuda/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
-  id: '/api/public/lgpd-request',
-  path: '/api/public/lgpd-request',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
-  id: '/api/public/health',
-  path: '/api/public/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicBootstrapMasterRoute =
-  ApiPublicBootstrapMasterRouteImport.update({
-    id: '/api/public/bootstrap-master',
-    path: '/api/public/bootstrap-master',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AuthenticatedRelatoriosDimRoute =
-  AuthenticatedRelatoriosDimRouteImport.update({
-    id: '/relatorios/$dim',
-    path: '/relatorios/$dim',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedRdoNovoRoute = AuthenticatedRdoNovoRouteImport.update({
-  id: '/rdo/novo',
-  path: '/rdo/novo',
+const AuthenticatedAjudaAdminRoute = AuthenticatedAjudaAdminRouteImport.update({
+  id: '/ajuda/admin',
+  path: '/ajuda/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRdoRdoIdRoute = AuthenticatedRdoRdoIdRouteImport.update({
-  id: '/rdo/$rdoId',
-  path: '/rdo/$rdoId',
+const AuthenticatedAjudaBuscaRoute = AuthenticatedAjudaBuscaRouteImport.update({
+  id: '/ajuda/busca',
+  path: '/ajuda/busca',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedObrasObraIdRoute =
-  AuthenticatedObrasObraIdRouteImport.update({
-    id: '/obras/$obraId',
-    path: '/obras/$obraId',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedConfiguracoesUsuariosRoute =
-  AuthenticatedConfiguracoesUsuariosRouteImport.update({
-    id: '/usuarios',
-    path: '/usuarios',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesSkeletonRoute =
-  AuthenticatedConfiguracoesSkeletonRouteImport.update({
-    id: '/skeleton',
-    path: '/skeleton',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesSistemaRoute =
-  AuthenticatedConfiguracoesSistemaRouteImport.update({
-    id: '/sistema',
-    path: '/sistema',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesRunbookRoute =
-  AuthenticatedConfiguracoesRunbookRouteImport.update({
-    id: '/runbook',
-    path: '/runbook',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesRotacaoChavesRoute =
-  AuthenticatedConfiguracoesRotacaoChavesRouteImport.update({
-    id: '/rotacao-chaves',
-    path: '/rotacao-chaves',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesPermissoesRoute =
-  AuthenticatedConfiguracoesPermissoesRouteImport.update({
-    id: '/permissoes',
-    path: '/permissoes',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesOnedriveRoute =
-  AuthenticatedConfiguracoesOnedriveRouteImport.update({
-    id: '/onedrive',
-    path: '/onedrive',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesLgpdRoute =
-  AuthenticatedConfiguracoesLgpdRouteImport.update({
-    id: '/lgpd',
-    path: '/lgpd',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesGruposRoute =
-  AuthenticatedConfiguracoesGruposRouteImport.update({
-    id: '/grupos',
-    path: '/grupos',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesEmailRoute =
-  AuthenticatedConfiguracoesEmailRouteImport.update({
-    id: '/email',
-    path: '/email',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesBotoesEfeitosRoute =
-  AuthenticatedConfiguracoesBotoesEfeitosRouteImport.update({
-    id: '/botoes-efeitos',
-    path: '/botoes-efeitos',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesBackupRoute =
-  AuthenticatedConfiguracoesBackupRouteImport.update({
-    id: '/backup',
-    path: '/backup',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesAuditoriaMidiaRoute =
-  AuthenticatedConfiguracoesAuditoriaMidiaRouteImport.update({
-    id: '/auditoria-midia',
-    path: '/auditoria-midia',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesAuditoriaRoute =
-  AuthenticatedConfiguracoesAuditoriaRouteImport.update({
-    id: '/auditoria',
-    path: '/auditoria',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesAplicativoRoute =
-  AuthenticatedConfiguracoesAplicativoRouteImport.update({
-    id: '/aplicativo',
-    path: '/aplicativo',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedConfiguracoesAcessosRoute =
-  AuthenticatedConfiguracoesAcessosRouteImport.update({
-    id: '/acessos',
-    path: '/acessos',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
-  } as any)
-const AuthenticatedCadastrosTemplatesTarefasRoute =
-  AuthenticatedCadastrosTemplatesTarefasRouteImport.update({
-    id: '/cadastros/templates-tarefas',
-    path: '/cadastros/templates-tarefas',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCadastrosOcorrenciasRoute =
-  AuthenticatedCadastrosOcorrenciasRouteImport.update({
-    id: '/cadastros/ocorrencias',
-    path: '/cadastros/ocorrencias',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCadastrosMaoDeObraRoute =
-  AuthenticatedCadastrosMaoDeObraRouteImport.update({
-    id: '/cadastros/mao-de-obra',
-    path: '/cadastros/mao-de-obra',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCadastrosListaTarefasRoute =
-  AuthenticatedCadastrosListaTarefasRouteImport.update({
-    id: '/cadastros/lista-tarefas',
-    path: '/cadastros/lista-tarefas',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCadastrosEquipamentosRoute =
-  AuthenticatedCadastrosEquipamentosRouteImport.update({
-    id: '/cadastros/equipamentos',
-    path: '/cadastros/equipamentos',
+const AuthenticatedAjudaFaqRoute = AuthenticatedAjudaFaqRouteImport.update({
+  id: '/ajuda/faq',
+  path: '/ajuda/faq',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAjudaGlossarioRoute =
+  AuthenticatedAjudaGlossarioRouteImport.update({
+    id: '/ajuda/glossario',
+    path: '/ajuda/glossario',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAjudaNovidadesRoute =
@@ -383,58 +229,220 @@ const AuthenticatedAjudaNovidadesRoute =
     path: '/ajuda/novidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAjudaGlossarioRoute =
-  AuthenticatedAjudaGlossarioRouteImport.update({
-    id: '/ajuda/glossario',
-    path: '/ajuda/glossario',
+const AuthenticatedCadastrosIndexRoute =
+  AuthenticatedCadastrosIndexRouteImport.update({
+    id: '/cadastros/',
+    path: '/cadastros/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAjudaFaqRoute = AuthenticatedAjudaFaqRouteImport.update({
-  id: '/ajuda/faq',
-  path: '/ajuda/faq',
+const AuthenticatedCadastrosEquipamentosRoute =
+  AuthenticatedCadastrosEquipamentosRouteImport.update({
+    id: '/cadastros/equipamentos',
+    path: '/cadastros/equipamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosListaTarefasRoute =
+  AuthenticatedCadastrosListaTarefasRouteImport.update({
+    id: '/cadastros/lista-tarefas',
+    path: '/cadastros/lista-tarefas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosMaoDeObraRoute =
+  AuthenticatedCadastrosMaoDeObraRouteImport.update({
+    id: '/cadastros/mao-de-obra',
+    path: '/cadastros/mao-de-obra',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosOcorrenciasRoute =
+  AuthenticatedCadastrosOcorrenciasRouteImport.update({
+    id: '/cadastros/ocorrencias',
+    path: '/cadastros/ocorrencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosTemplatesTarefasRoute =
+  AuthenticatedCadastrosTemplatesTarefasRouteImport.update({
+    id: '/cadastros/templates-tarefas',
+    path: '/cadastros/templates-tarefas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiguracoesIndexRoute =
+  AuthenticatedConfiguracoesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesAcessosRoute =
+  AuthenticatedConfiguracoesAcessosRouteImport.update({
+    id: '/acessos',
+    path: '/acessos',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesAplicativoRoute =
+  AuthenticatedConfiguracoesAplicativoRouteImport.update({
+    id: '/aplicativo',
+    path: '/aplicativo',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesAuditoriaRoute =
+  AuthenticatedConfiguracoesAuditoriaRouteImport.update({
+    id: '/auditoria',
+    path: '/auditoria',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesAuditoriaMidiaRoute =
+  AuthenticatedConfiguracoesAuditoriaMidiaRouteImport.update({
+    id: '/auditoria-midia',
+    path: '/auditoria-midia',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesBackupRoute =
+  AuthenticatedConfiguracoesBackupRouteImport.update({
+    id: '/backup',
+    path: '/backup',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesBotoesEfeitosRoute =
+  AuthenticatedConfiguracoesBotoesEfeitosRouteImport.update({
+    id: '/botoes-efeitos',
+    path: '/botoes-efeitos',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesEmailRoute =
+  AuthenticatedConfiguracoesEmailRouteImport.update({
+    id: '/email',
+    path: '/email',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesGruposRoute =
+  AuthenticatedConfiguracoesGruposRouteImport.update({
+    id: '/grupos',
+    path: '/grupos',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesLgpdRoute =
+  AuthenticatedConfiguracoesLgpdRouteImport.update({
+    id: '/lgpd',
+    path: '/lgpd',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesOnedriveRoute =
+  AuthenticatedConfiguracoesOnedriveRouteImport.update({
+    id: '/onedrive',
+    path: '/onedrive',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesPermissoesRoute =
+  AuthenticatedConfiguracoesPermissoesRouteImport.update({
+    id: '/permissoes',
+    path: '/permissoes',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesRotacaoChavesRoute =
+  AuthenticatedConfiguracoesRotacaoChavesRouteImport.update({
+    id: '/rotacao-chaves',
+    path: '/rotacao-chaves',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesRunbookRoute =
+  AuthenticatedConfiguracoesRunbookRouteImport.update({
+    id: '/runbook',
+    path: '/runbook',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesSistemaRoute =
+  AuthenticatedConfiguracoesSistemaRouteImport.update({
+    id: '/sistema',
+    path: '/sistema',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesSkeletonRoute =
+  AuthenticatedConfiguracoesSkeletonRouteImport.update({
+    id: '/skeleton',
+    path: '/skeleton',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedConfiguracoesUsuariosRoute =
+  AuthenticatedConfiguracoesUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const AuthenticatedObrasIndexRoute = AuthenticatedObrasIndexRouteImport.update({
+  id: '/obras/',
+  path: '/obras/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAjudaBuscaRoute = AuthenticatedAjudaBuscaRouteImport.update({
-  id: '/ajuda/busca',
-  path: '/ajuda/busca',
+const AuthenticatedObrasObraIdRoute =
+  AuthenticatedObrasObraIdRouteImport.update({
+    id: '/obras/$obraId',
+    path: '/obras/$obraId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRdoIndexRoute = AuthenticatedRdoIndexRouteImport.update({
+  id: '/rdo/',
+  path: '/rdo/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAjudaAdminRoute = AuthenticatedAjudaAdminRouteImport.update({
-  id: '/ajuda/admin',
-  path: '/ajuda/admin',
+const AuthenticatedRdoRdoIdRoute = AuthenticatedRdoRdoIdRouteImport.update({
+  id: '/rdo/$rdoId',
+  path: '/rdo/$rdoId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const Char91DotmcpChar93InvokeToolToolRoute =
-  Char91DotmcpChar93InvokeToolToolRouteImport.update({
-    id: '/.mcp/invoke-tool/$tool',
-    path: '/.mcp/invoke-tool/$tool',
+const AuthenticatedRdoNovoRoute = AuthenticatedRdoNovoRouteImport.update({
+  id: '/rdo/novo',
+  path: '/rdo/novo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRelatoriosDimRoute =
+  AuthenticatedRelatoriosDimRouteImport.update({
+    id: '/relatorios/$dim',
+    path: '/relatorios/$dim',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicBootstrapMasterRoute =
+  ApiPublicBootstrapMasterRouteImport.update({
+    id: '/api/public/bootstrap-master',
+    path: '/api/public/bootstrap-master',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiRdoRdoIdArquivosRoute = ApiRdoRdoIdArquivosRouteImport.update({
-  id: '/api/rdo/$rdoId/arquivos',
-  path: '/api/rdo/$rdoId/arquivos',
+const ApiPublicLgpdRequestRoute = ApiPublicLgpdRequestRouteImport.update({
+  id: '/api/public/lgpd-request',
+  path: '/api/public/lgpd-request',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicOnedriveFileItemIdRoute =
-  ApiPublicOnedriveFileItemIdRouteImport.update({
-    id: '/api/public/onedrive-file/$itemId',
-    path: '/api/public/onedrive-file/$itemId',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedAjudaArtigoSlugRoute =
+  AuthenticatedAjudaArtigoSlugRouteImport.update({
+    id: '/ajuda/artigo/$slug',
+    path: '/ajuda/artigo/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
-  id: '/api/public/hooks/backup',
-  path: '/api/public/hooks/backup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiIntegrationsOnedriveStatusRoute =
-  ApiIntegrationsOnedriveStatusRouteImport.update({
-    id: '/api/integrations/onedrive/status',
-    path: '/api/integrations/onedrive/status',
+const AuthenticatedAjudaCategoriaSlugRoute =
+  AuthenticatedAjudaCategoriaSlugRouteImport.update({
+    id: '/ajuda/categoria/$slug',
+    path: '/ajuda/categoria/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCadastrosTemplatesTarefasIdRoute =
+  AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
+  } as any)
+const AuthenticatedConfiguracoesIntegracoesOnedriveAdminRoute =
+  AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport.update({
+    id: '/integracoes/onedrive-admin',
+    path: '/integracoes/onedrive-admin',
+    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+  } as any)
+const ApiIntegracoesOnedriveStatusRoute =
+  ApiIntegracoesOnedriveStatusRouteImport.update({
+    id: '/api/integracoes/onedrive/status',
+    path: '/api/integracoes/onedrive/status',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiIntegrationsOnedriveHealthRoute =
@@ -443,36 +451,28 @@ const ApiIntegrationsOnedriveHealthRoute =
     path: '/api/integrations/onedrive/health',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiIntegracoesOnedriveStatusRoute =
-  ApiIntegracoesOnedriveStatusRouteImport.update({
-    id: '/api/integracoes/onedrive/status',
-    path: '/api/integracoes/onedrive/status',
+const ApiIntegrationsOnedriveStatusRoute =
+  ApiIntegrationsOnedriveStatusRouteImport.update({
+    id: '/api/integrations/onedrive/status',
+    path: '/api/integrations/onedrive/status',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedConfiguracoesIntegracoesOnedriveAdminRoute =
-  AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport.update({
-    id: '/integracoes/onedrive-admin',
-    path: '/integracoes/onedrive-admin',
-    getParentRoute: () => AuthenticatedConfiguracoesRoute,
+const ApiPublicHooksBackupRoute = ApiPublicHooksBackupRouteImport.update({
+  id: '/api/public/hooks/backup',
+  path: '/api/public/hooks/backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOnedriveFileItemIdRoute =
+  ApiPublicOnedriveFileItemIdRouteImport.update({
+    id: '/api/public/onedrive-file/$itemId',
+    path: '/api/public/onedrive-file/$itemId',
+    getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedCadastrosTemplatesTarefasIdRoute =
-  AuthenticatedCadastrosTemplatesTarefasIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedCadastrosTemplatesTarefasRoute,
-  } as any)
-const AuthenticatedAjudaCategoriaSlugRoute =
-  AuthenticatedAjudaCategoriaSlugRouteImport.update({
-    id: '/ajuda/categoria/$slug',
-    path: '/ajuda/categoria/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAjudaArtigoSlugRoute =
-  AuthenticatedAjudaArtigoSlugRouteImport.update({
-    id: '/ajuda/artigo/$slug',
-    path: '/ajuda/artigo/$slug',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
+const ApiRdoRdoIdArquivosRoute = ApiRdoRdoIdArquivosRouteImport.update({
+  id: '/api/rdo/$rdoId/arquivos',
+  path: '/api/rdo/$rdoId/arquivos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRdoRdoIdArquivosArquivoIdRoute =
   ApiRdoRdoIdArquivosArquivoIdRouteImport.update({
     id: '/$arquivoId',
@@ -957,67 +957,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/termos': {
-      id: '/termos'
-      path: '/termos'
-      fullPath: '/termos'
-      preLoaderRoute: typeof TermosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/status': {
-      id: '/status'
-      path: '/status'
-      fullPath: '/status'
-      preLoaderRoute: typeof StatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solicitacao-lgpd': {
-      id: '/solicitacao-lgpd'
-      path: '/solicitacao-lgpd'
-      fullPath: '/solicitacao-lgpd'
-      preLoaderRoute: typeof SolicitacaoLgpdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacidade': {
-      id: '/privacidade'
-      path: '/privacidade'
-      fullPath: '/privacidade'
-      preLoaderRoute: typeof PrivacidadeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lgpd': {
-      id: '/lgpd'
-      path: '/lgpd'
-      fullPath: '/lgpd'
-      preLoaderRoute: typeof LgpdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/instalar': {
-      id: '/instalar'
-      path: '/instalar'
-      fullPath: '/instalar'
-      preLoaderRoute: typeof InstalarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1027,67 +971,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/mfa-setup': {
-      id: '/auth/mfa-setup'
-      path: '/mfa-setup'
-      fullPath: '/auth/mfa-setup'
-      preLoaderRoute: typeof AuthMfaSetupRouteImport
-      parentRoute: typeof AuthRoute
+    '/instalar': {
+      id: '/instalar'
+      path: '/instalar'
+      fullPath: '/instalar'
+      preLoaderRoute: typeof InstalarRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/trocar-senha': {
-      id: '/_authenticated/trocar-senha'
-      path: '/trocar-senha'
-      fullPath: '/trocar-senha'
-      preLoaderRoute: typeof AuthenticatedTrocarSenhaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/lgpd': {
+      id: '/lgpd'
+      path: '/lgpd'
+      fullPath: '/lgpd'
+      preLoaderRoute: typeof LgpdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/galeria': {
-      id: '/_authenticated/galeria'
-      path: '/galeria'
-      fullPath: '/galeria'
-      preLoaderRoute: typeof AuthenticatedGaleriaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/empresa': {
-      id: '/_authenticated/empresa'
-      path: '/empresa'
-      fullPath: '/empresa'
-      preLoaderRoute: typeof AuthenticatedEmpresaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/configuracoes': {
-      id: '/_authenticated/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/solicitacao-lgpd': {
+      id: '/solicitacao-lgpd'
+      path: '/solicitacao-lgpd'
+      fullPath: '/solicitacao-lgpd'
+      preLoaderRoute: typeof SolicitacaoLgpdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/acessibilidade': {
-      id: '/_authenticated/acessibilidade'
-      path: '/acessibilidade'
-      fullPath: '/acessibilidade'
-      preLoaderRoute: typeof AuthenticatedAcessibilidadeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -1097,263 +1041,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/rdo/': {
-      id: '/_authenticated/rdo/'
-      path: '/rdo'
-      fullPath: '/rdo/'
-      preLoaderRoute: typeof AuthenticatedRdoIndexRouteImport
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/acessibilidade': {
+      id: '/_authenticated/acessibilidade'
+      path: '/acessibilidade'
+      fullPath: '/acessibilidade'
+      preLoaderRoute: typeof AuthenticatedAcessibilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/obras/': {
-      id: '/_authenticated/obras/'
-      path: '/obras'
-      fullPath: '/obras/'
-      preLoaderRoute: typeof AuthenticatedObrasIndexRouteImport
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/configuracoes/': {
-      id: '/_authenticated/configuracoes/'
-      path: '/'
-      fullPath: '/configuracoes/'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesIndexRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/cadastros/': {
-      id: '/_authenticated/cadastros/'
-      path: '/cadastros'
-      fullPath: '/cadastros/'
-      preLoaderRoute: typeof AuthenticatedCadastrosIndexRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/empresa': {
+      id: '/_authenticated/empresa'
+      path: '/empresa'
+      fullPath: '/empresa'
+      preLoaderRoute: typeof AuthenticatedEmpresaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/galeria': {
+      id: '/_authenticated/galeria'
+      path: '/galeria'
+      fullPath: '/galeria'
+      preLoaderRoute: typeof AuthenticatedGaleriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trocar-senha': {
+      id: '/_authenticated/trocar-senha'
+      path: '/trocar-senha'
+      fullPath: '/trocar-senha'
+      preLoaderRoute: typeof AuthenticatedTrocarSenhaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/auth/mfa-setup': {
+      id: '/auth/mfa-setup'
+      path: '/mfa-setup'
+      fullPath: '/auth/mfa-setup'
+      preLoaderRoute: typeof AuthMfaSetupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/ajuda/': {
       id: '/_authenticated/ajuda/'
       path: '/ajuda'
       fullPath: '/ajuda/'
       preLoaderRoute: typeof AuthenticatedAjudaIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/lgpd-request': {
-      id: '/api/public/lgpd-request'
-      path: '/api/public/lgpd-request'
-      fullPath: '/api/public/lgpd-request'
-      preLoaderRoute: typeof ApiPublicLgpdRequestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/health': {
-      id: '/api/public/health'
-      path: '/api/public/health'
-      fullPath: '/api/public/health'
-      preLoaderRoute: typeof ApiPublicHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/bootstrap-master': {
-      id: '/api/public/bootstrap-master'
-      path: '/api/public/bootstrap-master'
-      fullPath: '/api/public/bootstrap-master'
-      preLoaderRoute: typeof ApiPublicBootstrapMasterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/relatorios/$dim': {
-      id: '/_authenticated/relatorios/$dim'
-      path: '/relatorios/$dim'
-      fullPath: '/relatorios/$dim'
-      preLoaderRoute: typeof AuthenticatedRelatoriosDimRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/rdo/novo': {
-      id: '/_authenticated/rdo/novo'
-      path: '/rdo/novo'
-      fullPath: '/rdo/novo'
-      preLoaderRoute: typeof AuthenticatedRdoNovoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/rdo/$rdoId': {
-      id: '/_authenticated/rdo/$rdoId'
-      path: '/rdo/$rdoId'
-      fullPath: '/rdo/$rdoId'
-      preLoaderRoute: typeof AuthenticatedRdoRdoIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/obras/$obraId': {
-      id: '/_authenticated/obras/$obraId'
-      path: '/obras/$obraId'
-      fullPath: '/obras/$obraId'
-      preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/configuracoes/usuarios': {
-      id: '/_authenticated/configuracoes/usuarios'
-      path: '/usuarios'
-      fullPath: '/configuracoes/usuarios'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesUsuariosRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/skeleton': {
-      id: '/_authenticated/configuracoes/skeleton'
-      path: '/skeleton'
-      fullPath: '/configuracoes/skeleton'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesSkeletonRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/sistema': {
-      id: '/_authenticated/configuracoes/sistema'
-      path: '/sistema'
-      fullPath: '/configuracoes/sistema'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesSistemaRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/runbook': {
-      id: '/_authenticated/configuracoes/runbook'
-      path: '/runbook'
-      fullPath: '/configuracoes/runbook'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRunbookRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/rotacao-chaves': {
-      id: '/_authenticated/configuracoes/rotacao-chaves'
-      path: '/rotacao-chaves'
-      fullPath: '/configuracoes/rotacao-chaves'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/permissoes': {
-      id: '/_authenticated/configuracoes/permissoes'
-      path: '/permissoes'
-      fullPath: '/configuracoes/permissoes'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesPermissoesRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/onedrive': {
-      id: '/_authenticated/configuracoes/onedrive'
-      path: '/onedrive'
-      fullPath: '/configuracoes/onedrive'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/lgpd': {
-      id: '/_authenticated/configuracoes/lgpd'
-      path: '/lgpd'
-      fullPath: '/configuracoes/lgpd'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesLgpdRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/grupos': {
-      id: '/_authenticated/configuracoes/grupos'
-      path: '/grupos'
-      fullPath: '/configuracoes/grupos'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesGruposRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/email': {
-      id: '/_authenticated/configuracoes/email'
-      path: '/email'
-      fullPath: '/configuracoes/email'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesEmailRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/botoes-efeitos': {
-      id: '/_authenticated/configuracoes/botoes-efeitos'
-      path: '/botoes-efeitos'
-      fullPath: '/configuracoes/botoes-efeitos'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/backup': {
-      id: '/_authenticated/configuracoes/backup'
-      path: '/backup'
-      fullPath: '/configuracoes/backup'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesBackupRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/auditoria-midia': {
-      id: '/_authenticated/configuracoes/auditoria-midia'
-      path: '/auditoria-midia'
-      fullPath: '/configuracoes/auditoria-midia'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/auditoria': {
-      id: '/_authenticated/configuracoes/auditoria'
-      path: '/auditoria'
-      fullPath: '/configuracoes/auditoria'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesAuditoriaRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/aplicativo': {
-      id: '/_authenticated/configuracoes/aplicativo'
-      path: '/aplicativo'
-      fullPath: '/configuracoes/aplicativo'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesAplicativoRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/configuracoes/acessos': {
-      id: '/_authenticated/configuracoes/acessos'
-      path: '/acessos'
-      fullPath: '/configuracoes/acessos'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesAcessosRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
-    }
-    '/_authenticated/cadastros/templates-tarefas': {
-      id: '/_authenticated/cadastros/templates-tarefas'
-      path: '/cadastros/templates-tarefas'
-      fullPath: '/cadastros/templates-tarefas'
-      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/cadastros/ocorrencias': {
-      id: '/_authenticated/cadastros/ocorrencias'
-      path: '/cadastros/ocorrencias'
-      fullPath: '/cadastros/ocorrencias'
-      preLoaderRoute: typeof AuthenticatedCadastrosOcorrenciasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/cadastros/mao-de-obra': {
-      id: '/_authenticated/cadastros/mao-de-obra'
-      path: '/cadastros/mao-de-obra'
-      fullPath: '/cadastros/mao-de-obra'
-      preLoaderRoute: typeof AuthenticatedCadastrosMaoDeObraRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/cadastros/lista-tarefas': {
-      id: '/_authenticated/cadastros/lista-tarefas'
-      path: '/cadastros/lista-tarefas'
-      fullPath: '/cadastros/lista-tarefas'
-      preLoaderRoute: typeof AuthenticatedCadastrosListaTarefasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/cadastros/equipamentos': {
-      id: '/_authenticated/cadastros/equipamentos'
-      path: '/cadastros/equipamentos'
-      fullPath: '/cadastros/equipamentos'
-      preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ajuda/novidades': {
-      id: '/_authenticated/ajuda/novidades'
-      path: '/ajuda/novidades'
-      fullPath: '/ajuda/novidades'
-      preLoaderRoute: typeof AuthenticatedAjudaNovidadesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ajuda/glossario': {
-      id: '/_authenticated/ajuda/glossario'
-      path: '/ajuda/glossario'
-      fullPath: '/ajuda/glossario'
-      preLoaderRoute: typeof AuthenticatedAjudaGlossarioRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ajuda/faq': {
-      id: '/_authenticated/ajuda/faq'
-      path: '/ajuda/faq'
-      fullPath: '/ajuda/faq'
-      preLoaderRoute: typeof AuthenticatedAjudaFaqRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ajuda/busca': {
-      id: '/_authenticated/ajuda/busca'
-      path: '/ajuda/busca'
-      fullPath: '/ajuda/busca'
-      preLoaderRoute: typeof AuthenticatedAjudaBuscaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ajuda/admin': {
@@ -1363,46 +1125,291 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAjudaAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/_authenticated/ajuda/busca': {
+      id: '/_authenticated/ajuda/busca'
+      path: '/ajuda/busca'
+      fullPath: '/ajuda/busca'
+      preLoaderRoute: typeof AuthenticatedAjudaBuscaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/faq': {
+      id: '/_authenticated/ajuda/faq'
+      path: '/ajuda/faq'
+      fullPath: '/ajuda/faq'
+      preLoaderRoute: typeof AuthenticatedAjudaFaqRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/glossario': {
+      id: '/_authenticated/ajuda/glossario'
+      path: '/ajuda/glossario'
+      fullPath: '/ajuda/glossario'
+      preLoaderRoute: typeof AuthenticatedAjudaGlossarioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ajuda/novidades': {
+      id: '/_authenticated/ajuda/novidades'
+      path: '/ajuda/novidades'
+      fullPath: '/ajuda/novidades'
+      preLoaderRoute: typeof AuthenticatedAjudaNovidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/': {
+      id: '/_authenticated/cadastros/'
+      path: '/cadastros'
+      fullPath: '/cadastros/'
+      preLoaderRoute: typeof AuthenticatedCadastrosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/equipamentos': {
+      id: '/_authenticated/cadastros/equipamentos'
+      path: '/cadastros/equipamentos'
+      fullPath: '/cadastros/equipamentos'
+      preLoaderRoute: typeof AuthenticatedCadastrosEquipamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/lista-tarefas': {
+      id: '/_authenticated/cadastros/lista-tarefas'
+      path: '/cadastros/lista-tarefas'
+      fullPath: '/cadastros/lista-tarefas'
+      preLoaderRoute: typeof AuthenticatedCadastrosListaTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/mao-de-obra': {
+      id: '/_authenticated/cadastros/mao-de-obra'
+      path: '/cadastros/mao-de-obra'
+      fullPath: '/cadastros/mao-de-obra'
+      preLoaderRoute: typeof AuthenticatedCadastrosMaoDeObraRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/ocorrencias': {
+      id: '/_authenticated/cadastros/ocorrencias'
+      path: '/cadastros/ocorrencias'
+      fullPath: '/cadastros/ocorrencias'
+      preLoaderRoute: typeof AuthenticatedCadastrosOcorrenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cadastros/templates-tarefas': {
+      id: '/_authenticated/cadastros/templates-tarefas'
+      path: '/cadastros/templates-tarefas'
+      fullPath: '/cadastros/templates-tarefas'
+      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracoes/': {
+      id: '/_authenticated/configuracoes/'
+      path: '/'
+      fullPath: '/configuracoes/'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesIndexRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/acessos': {
+      id: '/_authenticated/configuracoes/acessos'
+      path: '/acessos'
+      fullPath: '/configuracoes/acessos'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAcessosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/aplicativo': {
+      id: '/_authenticated/configuracoes/aplicativo'
+      path: '/aplicativo'
+      fullPath: '/configuracoes/aplicativo'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAplicativoRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/auditoria': {
+      id: '/_authenticated/configuracoes/auditoria'
+      path: '/auditoria'
+      fullPath: '/configuracoes/auditoria'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/auditoria-midia': {
+      id: '/_authenticated/configuracoes/auditoria-midia'
+      path: '/auditoria-midia'
+      fullPath: '/configuracoes/auditoria-midia'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesAuditoriaMidiaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/backup': {
+      id: '/_authenticated/configuracoes/backup'
+      path: '/backup'
+      fullPath: '/configuracoes/backup'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesBackupRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/botoes-efeitos': {
+      id: '/_authenticated/configuracoes/botoes-efeitos'
+      path: '/botoes-efeitos'
+      fullPath: '/configuracoes/botoes-efeitos'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesBotoesEfeitosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/email': {
+      id: '/_authenticated/configuracoes/email'
+      path: '/email'
+      fullPath: '/configuracoes/email'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesEmailRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/grupos': {
+      id: '/_authenticated/configuracoes/grupos'
+      path: '/grupos'
+      fullPath: '/configuracoes/grupos'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesGruposRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/lgpd': {
+      id: '/_authenticated/configuracoes/lgpd'
+      path: '/lgpd'
+      fullPath: '/configuracoes/lgpd'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesLgpdRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/onedrive': {
+      id: '/_authenticated/configuracoes/onedrive'
+      path: '/onedrive'
+      fullPath: '/configuracoes/onedrive'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesOnedriveRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/permissoes': {
+      id: '/_authenticated/configuracoes/permissoes'
+      path: '/permissoes'
+      fullPath: '/configuracoes/permissoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesPermissoesRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/rotacao-chaves': {
+      id: '/_authenticated/configuracoes/rotacao-chaves'
+      path: '/rotacao-chaves'
+      fullPath: '/configuracoes/rotacao-chaves'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRotacaoChavesRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/runbook': {
+      id: '/_authenticated/configuracoes/runbook'
+      path: '/runbook'
+      fullPath: '/configuracoes/runbook'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRunbookRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/sistema': {
+      id: '/_authenticated/configuracoes/sistema'
+      path: '/sistema'
+      fullPath: '/configuracoes/sistema'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesSistemaRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/skeleton': {
+      id: '/_authenticated/configuracoes/skeleton'
+      path: '/skeleton'
+      fullPath: '/configuracoes/skeleton'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesSkeletonRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/configuracoes/usuarios': {
+      id: '/_authenticated/configuracoes/usuarios'
+      path: '/usuarios'
+      fullPath: '/configuracoes/usuarios'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesUsuariosRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/_authenticated/obras/': {
+      id: '/_authenticated/obras/'
+      path: '/obras'
+      fullPath: '/obras/'
+      preLoaderRoute: typeof AuthenticatedObrasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/obras/$obraId': {
+      id: '/_authenticated/obras/$obraId'
+      path: '/obras/$obraId'
+      fullPath: '/obras/$obraId'
+      preLoaderRoute: typeof AuthenticatedObrasObraIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/': {
+      id: '/_authenticated/rdo/'
+      path: '/rdo'
+      fullPath: '/rdo/'
+      preLoaderRoute: typeof AuthenticatedRdoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/$rdoId': {
+      id: '/_authenticated/rdo/$rdoId'
+      path: '/rdo/$rdoId'
+      fullPath: '/rdo/$rdoId'
+      preLoaderRoute: typeof AuthenticatedRdoRdoIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rdo/novo': {
+      id: '/_authenticated/rdo/novo'
+      path: '/rdo/novo'
+      fullPath: '/rdo/novo'
+      preLoaderRoute: typeof AuthenticatedRdoNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorios/$dim': {
+      id: '/_authenticated/relatorios/$dim'
+      path: '/relatorios/$dim'
+      fullPath: '/relatorios/$dim'
+      preLoaderRoute: typeof AuthenticatedRelatoriosDimRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/bootstrap-master': {
+      id: '/api/public/bootstrap-master'
+      path: '/api/public/bootstrap-master'
+      fullPath: '/api/public/bootstrap-master'
+      preLoaderRoute: typeof ApiPublicBootstrapMasterRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/rdo/$rdoId/arquivos': {
-      id: '/api/rdo/$rdoId/arquivos'
-      path: '/api/rdo/$rdoId/arquivos'
-      fullPath: '/api/rdo/$rdoId/arquivos'
-      preLoaderRoute: typeof ApiRdoRdoIdArquivosRouteImport
+    '/api/public/lgpd-request': {
+      id: '/api/public/lgpd-request'
+      path: '/api/public/lgpd-request'
+      fullPath: '/api/public/lgpd-request'
+      preLoaderRoute: typeof ApiPublicLgpdRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/onedrive-file/$itemId': {
-      id: '/api/public/onedrive-file/$itemId'
-      path: '/api/public/onedrive-file/$itemId'
-      fullPath: '/api/public/onedrive-file/$itemId'
-      preLoaderRoute: typeof ApiPublicOnedriveFileItemIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/ajuda/artigo/$slug': {
+      id: '/_authenticated/ajuda/artigo/$slug'
+      path: '/ajuda/artigo/$slug'
+      fullPath: '/ajuda/artigo/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaArtigoSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/hooks/backup': {
-      id: '/api/public/hooks/backup'
-      path: '/api/public/hooks/backup'
-      fullPath: '/api/public/hooks/backup'
-      preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/ajuda/categoria/$slug': {
+      id: '/_authenticated/ajuda/categoria/$slug'
+      path: '/ajuda/categoria/$slug'
+      fullPath: '/ajuda/categoria/$slug'
+      preLoaderRoute: typeof AuthenticatedAjudaCategoriaSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/integrations/onedrive/status': {
-      id: '/api/integrations/onedrive/status'
-      path: '/api/integrations/onedrive/status'
-      fullPath: '/api/integrations/onedrive/status'
-      preLoaderRoute: typeof ApiIntegrationsOnedriveStatusRouteImport
+    '/_authenticated/cadastros/templates-tarefas/$id': {
+      id: '/_authenticated/cadastros/templates-tarefas/$id'
+      path: '/$id'
+      fullPath: '/cadastros/templates-tarefas/$id'
+      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
+      parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
+    }
+    '/_authenticated/configuracoes/integracoes/onedrive-admin': {
+      id: '/_authenticated/configuracoes/integracoes/onedrive-admin'
+      path: '/integracoes/onedrive-admin'
+      fullPath: '/configuracoes/integracoes/onedrive-admin'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport
+      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    }
+    '/api/integracoes/onedrive/status': {
+      id: '/api/integracoes/onedrive/status'
+      path: '/api/integracoes/onedrive/status'
+      fullPath: '/api/integracoes/onedrive/status'
+      preLoaderRoute: typeof ApiIntegracoesOnedriveStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/integrations/onedrive/health': {
@@ -1412,40 +1419,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiIntegrationsOnedriveHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/integracoes/onedrive/status': {
-      id: '/api/integracoes/onedrive/status'
-      path: '/api/integracoes/onedrive/status'
-      fullPath: '/api/integracoes/onedrive/status'
-      preLoaderRoute: typeof ApiIntegracoesOnedriveStatusRouteImport
+    '/api/integrations/onedrive/status': {
+      id: '/api/integrations/onedrive/status'
+      path: '/api/integrations/onedrive/status'
+      fullPath: '/api/integrations/onedrive/status'
+      preLoaderRoute: typeof ApiIntegrationsOnedriveStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/configuracoes/integracoes/onedrive-admin': {
-      id: '/_authenticated/configuracoes/integracoes/onedrive-admin'
-      path: '/integracoes/onedrive-admin'
-      fullPath: '/configuracoes/integracoes/onedrive-admin'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesIntegracoesOnedriveAdminRouteImport
-      parentRoute: typeof AuthenticatedConfiguracoesRoute
+    '/api/public/hooks/backup': {
+      id: '/api/public/hooks/backup'
+      path: '/api/public/hooks/backup'
+      fullPath: '/api/public/hooks/backup'
+      preLoaderRoute: typeof ApiPublicHooksBackupRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/cadastros/templates-tarefas/$id': {
-      id: '/_authenticated/cadastros/templates-tarefas/$id'
-      path: '/$id'
-      fullPath: '/cadastros/templates-tarefas/$id'
-      preLoaderRoute: typeof AuthenticatedCadastrosTemplatesTarefasIdRouteImport
-      parentRoute: typeof AuthenticatedCadastrosTemplatesTarefasRoute
+    '/api/public/onedrive-file/$itemId': {
+      id: '/api/public/onedrive-file/$itemId'
+      path: '/api/public/onedrive-file/$itemId'
+      fullPath: '/api/public/onedrive-file/$itemId'
+      preLoaderRoute: typeof ApiPublicOnedriveFileItemIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/ajuda/categoria/$slug': {
-      id: '/_authenticated/ajuda/categoria/$slug'
-      path: '/ajuda/categoria/$slug'
-      fullPath: '/ajuda/categoria/$slug'
-      preLoaderRoute: typeof AuthenticatedAjudaCategoriaSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ajuda/artigo/$slug': {
-      id: '/_authenticated/ajuda/artigo/$slug'
-      path: '/ajuda/artigo/$slug'
-      fullPath: '/ajuda/artigo/$slug'
-      preLoaderRoute: typeof AuthenticatedAjudaArtigoSlugRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/api/rdo/$rdoId/arquivos': {
+      id: '/api/rdo/$rdoId/arquivos'
+      path: '/api/rdo/$rdoId/arquivos'
+      fullPath: '/api/rdo/$rdoId/arquivos'
+      preLoaderRoute: typeof ApiRdoRdoIdArquivosRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/rdo/$rdoId/arquivos/$arquivoId': {
       id: '/api/rdo/$rdoId/arquivos/$arquivoId'
